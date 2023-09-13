@@ -408,7 +408,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<bool> RestorePost(int postId, int? newTopicId = null)
         {
-            var deletedItem = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbRecycleBin>(
+            using var transaction = SqlExecuter.BeginTransaction();
+            var deletedItem = await transaction.QueryFirstOrDefaultAsync<PhpbbRecycleBin>(
                 "SELECT * from phpbb_recycle_bin WHERE type = @postType AND id = @postId",
                 new
                 {
@@ -433,7 +434,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var toAdd = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+            var toAdd = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
 				$@"INSERT INTO phpbb_posts(topic_id, forum_id, poster_id, icon_id, poster_ip, post_time, post_approved, post_reported, enable_bbcode, enable_smilies, enable_magic_url, enable_sig, post_username, post_subject, post_text, post_checksum, post_attachment, bbcode_bitfield, bbcode_uid, post_postcount, post_edit_time, post_edit_reason, post_edit_user, post_edit_count, post_edit_locked)
                    VALUES (@TopicId, @ForumId, @PosterId, @IconId, @PosterIp, @PostTime, @PostApproved, @PostReported, @EnableBbcode, @EnableSmilies, @EnableMagicUrl, @EnableSig, @PostUsername, @PostSubject, @PostText, @PostChecksum, @PostAttachment, @BbcodeBitfield, @BbcodeUid, @PostPostcount, @PostEditTime, @PostEditReason, @PostEditUser, @PostEditCount, @PostEditLocked);
                    SELECT * FROM phpbb_posts WHERE post_id = {SqlExecuter.LastInsertedItemId};",
@@ -467,18 +468,18 @@ namespace PhpbbInDotnet.Forum.Pages
                     IsOrphan = 0
                 }))
                 {
-                    await SqlExecuter.ExecuteAsync(
+                    await transaction.ExecuteAsync(
 						@"INSERT INTO phpbb_attachments(post_msg_id, topic_id, in_message, poster_id, is_orphan, physical_filename, real_filename, download_count, attach_comment, extension, mimetype, filesize, filetime, thumbnail)
                           VALUES (@PostMsgId, @TopicId, @InMessage, @PosterId, @IsOrphan, @PhysicalFilename, @RealFilename, @DownloadCount, @AttachComment, @Extension, @Mimetype, @Filesize, @Filetime, @Thumbnail);",
                         a);
                 }
             }
 
-            await _moderatorService.CascadePostAdd(toAdd, false);
+            await _moderatorService.CascadePostAdd(toAdd, false, transaction);
 
             await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, ForumUser.UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a><br/>Old post id: {dto.PostId}");
 
-            await SqlExecuter.ExecuteAsync(
+            await transaction.ExecuteAsync(
 				"DELETE FROM phpbb_recycle_bin WHERE type = @postType AND id = @postId",
 				new
 				{
@@ -490,7 +491,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<bool> ParentTopicExists()
             {
-                var result = await SqlExecuter.ExecuteScalarAsync<int>(
+                var result = await transaction.ExecuteScalarAsync<int>(
                     "SELECT count(1) FROM phpbb_topics WHERE topic_id = @topicId",
                     new { topicId = dto?.TopicId ?? 0 });
                 return result == 1;

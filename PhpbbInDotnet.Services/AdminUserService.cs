@@ -228,7 +228,7 @@ namespace PhpbbInDotnet.Services
                     case AdminUserActions.Delete_KeepMessages:
                         {
                             using var transaction = _sqlExecuter.BeginTransaction();
-                            await _sqlExecuter.ExecuteAsync(
+                            await transaction.ExecuteAsync(
                                 @"UPDATE phpbb_posts
                                      SET post_username = @username
                                         ,poster_id = @ANONYMOUS_USER_ID
@@ -238,11 +238,10 @@ namespace PhpbbInDotnet.Services
                                     Constants.ANONYMOUS_USER_ID,
                                     userId,
                                     user.Username
-                                },
-                                transaction);
+                                });
 
                             await deleteUser(transaction);
-                            transaction.Commit();
+                            transaction.CommitTransaction();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -250,24 +249,21 @@ namespace PhpbbInDotnet.Services
                     case AdminUserActions.Delete_DeleteMessages:
                         {
                             using var transaction = _sqlExecuter.BeginTransaction();
-                            var toDelete = await _sqlExecuter.QueryAsync<PhpbbPosts>(
+                            var toDelete = await transaction.QueryAsync<PhpbbPosts>(
                                 "SELECT * FROM phpbb_posts WHERE poster_id = @userId",
-                                new { userId },
-                                transaction);
-                            await _sqlExecuter.ExecuteAsync(
+                                new { userId });
+                            await transaction.ExecuteAsync(
                                 "DELETE FROM phpbb_posts WHERE post_id IN @postIds",
                                 new
                                 {
                                     postIds = toDelete.Select(p => p.PostId).DefaultIfEmpty()
-                                },
-                                transaction);
-                            toDelete.AsList().ForEach(async p => await _moderatorService.CascadePostDelete(p, false, false));
-                            await _sqlExecuter.ExecuteAsync(
+                                });
+                            toDelete.AsList().ForEach(async p => await _moderatorService.CascadePostDelete(p, false, false, transaction));
+                            await transaction.ExecuteAsync(
                                 @"UPDATE phpbb_users SET user_should_sign_in = 1 WHERE user_id = @userId",
-                                new { userId },
-                                transaction);
+                                new { userId });
                             await deleteUser(transaction);
-                            transaction.Commit();
+                            transaction.CommitTransaction();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -338,9 +334,8 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
 
-            async Task deleteUser(IDbTransaction transaction)
-            {
-                await _sqlExecuter.ExecuteAsync(
+            Task deleteUser(ITransactionalSqlExecuter transaction)
+                => transaction.ExecuteAsync(
                     @"DELETE FROM phpbb_acl_users WHERE user_id = @userId;
                     DELETE FROM phpbb_banlist WHERE ban_userid = @userId;
                     DELETE FROM phpbb_bots WHERE user_id = @userId;
@@ -375,9 +370,7 @@ namespace PhpbbInDotnet.Services
                         Constants.ANONYMOUS_USER_ID,
                         user.Username,
                         userId
-                    },
-                    transaction);
-			}
+                    });
         }
 
         public async Task<(string? Message, bool IsSuccess, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch? searchParameters)

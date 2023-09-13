@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		private readonly ILogger _logger;
 		private readonly RetryPolicy _retryPolicy;
 
-		protected readonly DatabaseType DatabaseType;
+		protected internal readonly DatabaseType DatabaseType;
 		protected readonly IDbConnection Connection;
 
 		public DapperProxy(IConfiguration configuration, IDbConnection dbConnection, ILogger logger)
@@ -43,61 +43,101 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			Connection = dbConnection;
 		}
 
-        public Task<int> ExecuteAsync(string sql, object? param, IDbTransaction? dbTransaction)
+        public Task<int> ExecuteAsync(string sql, object? param)
+            => ExecuteAsyncImpl(sql, param, dbTransaction: null);
+
+        public T ExecuteScalar<T>(string sql, object? param)
+            => ExecuteScalarImpl<T>(sql, param, dbTransaction: null);
+
+        public Task<T> ExecuteScalarAsync<T>(string sql, object? param)
+            => ExecuteScalarAsyncImpl<T>(sql, param, dbTransaction: null);
+
+        public IEnumerable<dynamic> Query(string sql, object? param)
+            => QueryImpl(sql, param, dbTransaction: null);
+
+        public IEnumerable<T> Query<T>(string sql, object? param)
+            => QueryImpl<T>(sql, param, dbTransaction: null);
+
+        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
+            => QueryAsyncImpl(sql, param, dbTransaction: null);
+
+        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
+            => QueryAsyncImpl<T>(sql, param, dbTransaction: null);
+
+        public T QueryFirstOrDefault<T>(string sql, object? param)
+            => QueryFirstOrDefaultImpl<T>(sql, param, dbTransaction: null);
+
+        public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param)
+            => QueryFirstOrDefaultAsyncImpl(sql, param, dbTransaction: null);
+
+        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
+            => QueryFirstOrDefaultAsyncImpl<T>(sql, param, dbTransaction: null);
+
+        public T QuerySingle<T>(string sql, object? param)
+            => QuerySingleImpl<T>(sql, param, dbTransaction: null);
+
+        public Task<T> QuerySingleAsync<T>(string sql, object? param)
+            => QuerySingleAsyncImpl<T>(sql, param, dbTransaction: null);
+
+        public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
+            => QuerySingleOrDefaultAsyncImpl(sql, param, dbTransaction: null);
+
+        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
+            => QuerySingleOrDefaultAsyncImpl<T>(sql, param, dbTransaction: null);
+
+		public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
+			=> QueryMultipleAsyncImpl(sql, param, dbTransaction: null);
+
+        #region internal impl
+
+        internal Task<int> ExecuteAsyncImpl(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.ExecuteAsync(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public T ExecuteScalar<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal T ExecuteScalarImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecute(() => Connection.ExecuteScalar<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<T> ExecuteScalarAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<T> ExecuteScalarAsyncImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.ExecuteScalarAsync<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public IEnumerable<dynamic> Query(string sql, object? param, IDbTransaction? dbTransaction)
+        internal IEnumerable<dynamic> QueryImpl(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecute(() => Connection.Query(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public IEnumerable<T> Query<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal IEnumerable<T> QueryImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecute(() => Connection.Query<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<IEnumerable<dynamic>> QueryAsyncImpl(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.QueryAsync(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<IEnumerable<T>> QueryAsyncImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.QueryAsync<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public T QueryFirstOrDefault<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal T QueryFirstOrDefaultImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecute(() => Connection.QueryFirstOrDefault<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<dynamic> QueryFirstOrDefaultAsyncImpl(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.QueryFirstOrDefaultAsync(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<T> QueryFirstOrDefaultAsyncImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.QueryFirstOrDefaultAsync<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public T QuerySingle<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal T QuerySingleImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecute(() => Connection.QuerySingle<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<T> QuerySingleAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<T> QuerySingleAsyncImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.QuerySingleAsync<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<dynamic> QuerySingleOrDefaultAsyncImpl(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.QuerySingleOrDefaultAsync(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+        internal Task<T> QuerySingleOrDefaultAsyncImpl<T>(string sql, object? param, IDbTransaction? dbTransaction)
             => ResilientExecuteAsync(() => Connection.QuerySingleOrDefaultAsync<T>(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-		public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param, IDbTransaction? dbTransaction)
-			=> ResilientExecuteAsync(() => Connection.QueryMultipleAsync(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
+        internal Task<SqlMapper.GridReader> QueryMultipleAsyncImpl(string sql, object? param, IDbTransaction? dbTransaction)
+            => ResilientExecuteAsync(() => Connection.QueryMultipleAsync(sql, param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-		public IDbTransaction BeginTransaction()
-		{
-			if (Connection.State == ConnectionState.Closed)
-			{
-				Connection.Open();
-			}
-			return Connection.BeginTransaction(IsolationLevel.ReadUncommitted);
-		}
+        #endregion
 
-		private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
+        private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
 		{ 
 			var originalStackTrace = context.TryGetValue(nameof(Environment.StackTrace), out var stackTrace) ? stackTrace.ToString() : null;
 			var myStackTrace = string.Join(Environment.NewLine, originalStackTrace?

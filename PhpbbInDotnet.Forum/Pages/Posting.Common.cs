@@ -92,14 +92,13 @@ namespace PhpbbInDotnet.Forum.Pages
             using var transaction = SqlExecuter.BeginTransaction();
             if (Action == PostingActions.NewTopic)
             {
-                curTopic = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                curTopic = await transaction.QueryFirstOrDefaultAsync<PhpbbTopics>(
                     @$"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) 
                        VALUES (@forumId, @postTitle, @now); 
                        SELECT * 
                          FROM phpbb_topics 
                         WHERE topic_id = {SqlExecuter.LastInsertedItemId};", 
-                    new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() },
-                    transaction);
+                    new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() });
                 TopicId = curTopic.TopicId;
             }
 
@@ -107,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText?.Trim()));
             if (post == null)
             {
-                post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                post = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     @$"INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) 
                        VALUES (@forumId, @topicId, @userId, @subject, @textForSaving, @now, @attachment, @checksum, @ip, @username); 
                        SELECT * 
@@ -125,14 +124,13 @@ namespace PhpbbInDotnet.Forum.Pages
                         checksum = HashUtility.ComputeMD5Hash(textForSaving),
                         ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                         username = HttpUtility.HtmlEncode(usr.Username)
-                    },
-                    transaction);
+                    });
 
-                await _moderatorService.CascadePostAdd(post, false);
+                await _moderatorService.CascadePostAdd(post, false, transaction);
             }
             else
             {
-                post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                post = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     @"UPDATE phpbb_posts 
                          SET post_subject = @subject, post_text = @textForSaving, post_attachment = @attachment, post_checksum = @checksum, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 
                        WHERE post_id = @postId; 
@@ -149,14 +147,14 @@ namespace PhpbbInDotnet.Forum.Pages
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         reason = HttpUtility.HtmlEncode(EditReason ?? string.Empty),
                         usr.UserId
-                    }, transaction);
+                    });
 
-                await _moderatorService.CascadePostEdit(post);
+                await _moderatorService.CascadePostEdit(post, transaction);
             }
 
             foreach (var attach in Attachments!)
             {
-                await SqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     @"UPDATE phpbb_attachments 
                          SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 
                        WHERE attach_id = @attachId",
@@ -166,34 +164,30 @@ namespace PhpbbInDotnet.Forum.Pages
                         post.TopicId,
                         comment = await _writingService.PrepareTextForSaving(attach.AttachComment),
                         attach.AttachId
-                    }, 
-                    transaction);
+                    });
             }
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
-                var existing = await SqlExecuter.QueryAsync<string>(
+                var existing = await transaction.QueryAsync<string>(
                     "SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", 
-                    new { TopicId }, 
-                    transaction);
+                    new { TopicId });
                 if (!existing.SequenceEqual(PollOptionsEnumerable, StringComparer.InvariantCultureIgnoreCase))
                 {
-                    await SqlExecuter.ExecuteAsync(
+                    await transaction.ExecuteAsync(
                         @"DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
                           DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
-                        new { TopicId }, 
-                        transaction);
+                        new { TopicId });
 
                     foreach (var (option, id) in PollOptionsEnumerable.Indexed(startIndex: 1))
                     {
-                        await SqlExecuter.ExecuteAsync(
+                        await transaction.ExecuteAsync(
                             @"INSERT INTO phpbb_poll_options (poll_option_id, topic_id, poll_option_text, poll_option_total) 
                               VALUES (@id, @topicId, @text, 0)",
-                            new { id, TopicId, text = HttpUtility.HtmlEncode(option) }, 
-                            transaction);
+                            new { id, TopicId, text = HttpUtility.HtmlEncode(option) });
                     }
                 }
-                await SqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     @"UPDATE phpbb_topics 
                          SET poll_start = @start, poll_length = @length, poll_max_options = @maxOptions, poll_title = @title, poll_vote_change = @change 
                        WHERE topic_id = @topicId",
@@ -205,19 +199,17 @@ namespace PhpbbInDotnet.Forum.Pages
                         title = HttpUtility.HtmlEncode(PollQuestion),
                         change = PollCanChangeVote.ToByte(),
                         TopicId
-                    }, 
-                    transaction);
+                    });
             }
 
             if (Action == PostingActions.NewTopic || Action == PostingActions.NewForumPost)
             {
-                await SqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     "DELETE FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
-                    new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }, 
-                    transaction);
+                    new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
             }
 
-            transaction.Commit();
+            transaction.CommitTransaction();
 
             Response.Cookies.DeleteObject(CookieBackupKey);
 

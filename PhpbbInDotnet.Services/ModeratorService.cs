@@ -74,26 +74,23 @@ namespace PhpbbInDotnet.Services
             try
             {
                 using var transaction = _sqlExecuter.BeginTransaction();
-                var topicRows = await _sqlExecuter.ExecuteAsync(
+                var topicRows = await transaction.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
-                    new { topicId, destinationForumId },
-                    transaction);
+                    new { topicId, destinationForumId });
 
                 if (topicRows == 0)
                 {
                     return (_translationProvider.Moderator[language, "DESTINATION_DOESNT_EXIST"], false);
                 }
 
-                var oldPosts = (await _sqlExecuter.QueryAsync<PhpbbPosts>(
+                var oldPosts = (await transaction.QueryAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", 
-                    new { topicId },
-                    transaction)).AsList();
+                    new { topicId })).AsList();
                 var oldForumId = oldPosts.FirstOrDefault()?.ForumId ?? 0;
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     "UPDATE phpbb_posts SET forum_id = @destinationForumId WHERE topic_id = @topicId; " +
                     "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId",
-                    new { destinationForumId, topicId },
-                    transaction);
+                    new { destinationForumId, topicId });
                 foreach (var post in oldPosts)
                 {
                     await CascadePostDeleteCore(post, true, true, transaction);
@@ -102,7 +99,7 @@ namespace PhpbbInDotnet.Services
                 }
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.");
 
-                transaction.Commit();
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
@@ -141,17 +138,16 @@ namespace PhpbbInDotnet.Services
             try
             {
                 using var transaction = _sqlExecuter.BeginTransaction();
-                var posts = (await _sqlExecuter.QueryAsync<PhpbbPosts>(
+                var posts = (await transaction.QueryAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE topic_id = @topicId", 
-                    new { topicId }, 
-                    transaction)).AsList();
+                    new { topicId })).AsList();
 
                 if (!posts.Any())
                 {
                     return (string.Format(_translationProvider.Moderator[language, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
-                var topic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                var topic = await transaction.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                 if (topic != null)
                 {
                     var dto = new TopicDto
@@ -168,7 +164,7 @@ namespace PhpbbInDotnet.Services
                         TopicLastPostTime = topic.TopicLastPostTime,
                         Poll = await _postService.GetPoll(topic)
                     };
-                    await _sqlExecuter.ExecuteAsync(
+                    await transaction.ExecuteAsync(
                         "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
                         new
                         {
@@ -177,21 +173,19 @@ namespace PhpbbInDotnet.Services
                             content = await CompressionUtility.CompressObject(dto),
                             now = DateTime.UtcNow.ToUnixTimestamp(),
                             logDto.UserId
-                        },
-                        transaction);
+                        });
 
-                    await _sqlExecuter.ExecuteAsync(
+                    await transaction.ExecuteAsync(
                         "DELETE FROM phpbb_topics WHERE topic_id = @topicId; " +
                         "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId",
-                        new { topicId },
-                        transaction);
+                        new { topicId });
                 }
 
                 await DeletePostsCore(posts, logDto, false);
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId);
 
-                transaction.Commit();
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "TOPIC_DELETED_SUCCESSFULLY"], true);
             }
@@ -290,17 +284,16 @@ namespace PhpbbInDotnet.Services
                 }
 
                 using var transaction = _sqlExecuter.BeginTransaction();
-                var posts = (await _sqlExecuter.QueryAsync<PhpbbPosts>(
+                var posts = (await transaction.QueryAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", 
-                    new { postIds },
-                    transaction)).AsList();
+                    new { postIds })).AsList();
 
                 if (posts.Count != postIds.Length)
                 {
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                var curTopic = await transaction.QueryFirstOrDefaultAsync<PhpbbTopics>(
                     $@"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @title, @time);
                        SELECT * FROM phpbb_topics WHERE topic_id = {_sqlExecuter.LastInsertedItemId};",
                     new 
@@ -308,14 +301,12 @@ namespace PhpbbInDotnet.Services
                         forumId = destinationForumId!.Value, 
                         title = posts.First().PostSubject, 
                         time = posts.First().PostTime 
-                    }, 
-                    transaction);
+                    });
                 var oldTopicId = posts.First().TopicId;
 
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     "UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", 
-                    new { curTopic.TopicId, curTopic.ForumId, postIds }, 
-                    transaction);
+                    new { curTopic.TopicId, curTopic.ForumId, postIds });
 
                 foreach (var post in posts)
                 {
@@ -326,7 +317,7 @@ namespace PhpbbInDotnet.Services
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}");
                 }
 
-                transaction.Commit();
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "POSTS_SPLIT_SUCCESSFULLY"], true);
             }
@@ -353,28 +344,25 @@ namespace PhpbbInDotnet.Services
                 }
 
                 using var transaction = _sqlExecuter.BeginTransaction();
-                var posts = (await _sqlExecuter.QueryAsync<PhpbbPosts>(
+                var posts = (await transaction.QueryAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", 
-                    new { postIds }, 
-                    transaction)).AsList();
+                    new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
                     return (_translationProvider.Moderator[language, "AT_LEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                var newTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                var newTopic = await transaction.QueryFirstOrDefaultAsync<PhpbbTopics>(
                     "SELECT * FROM phpbb_topics WHERE topic_id = @destinationTopicId", 
-                    new { destinationTopicId }, 
-                    transaction);
+                    new { destinationTopicId });
                 if (newTopic == null)
                 {
                     return (string.Format(_translationProvider.Moderator[language, "TOPIC_DOESNT_EXIST_FORMAT"], destinationTopicId), false);
                 }
 
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     "UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", 
-                    new { newTopic.TopicId, newTopic.ForumId, postIds }, 
-                    transaction);
+                    new { newTopic.TopicId, newTopic.ForumId, postIds });
 
                 var oldTopicId = posts.First().TopicId;
                 foreach (var post in posts)
@@ -386,7 +374,7 @@ namespace PhpbbInDotnet.Services
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}");
                 }
 
-                transaction.Commit();
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "POSTS_MOVED_SUCCESSFULLY"], true);
             }
@@ -429,15 +417,13 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             var postIds = posts.Select(p => p.PostId).DefaultIfEmpty();
             using var transaction = _sqlExecuter.BeginTransaction();
-            var attachments = (await _sqlExecuter.QueryAsync<PhpbbAttachments>(
+            var attachments = (await transaction.QueryAsync<PhpbbAttachments>(
                 "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", 
-                new { postIds },
-                transaction)).AsList();
-            await _sqlExecuter.ExecuteAsync(
+                new { postIds })).AsList();
+            await transaction.ExecuteAsync(
                 @"DELETE FROM phpbb_posts WHERE post_id IN @postIds;
                   DELETE FROM phpbb_attachments WHERE post_msg_id IN @postIds", 
-                new { postIds },
-                transaction);
+                new { postIds });
 
             foreach (var post in posts)
             {
@@ -455,7 +441,7 @@ namespace PhpbbInDotnet.Services
                     PostText = post.PostText,
                 };
 
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
                     new
                     {
@@ -464,8 +450,7 @@ namespace PhpbbInDotnet.Services
                         content = await CompressionUtility.CompressObject(dto),
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         logDto.UserId
-                    },
-                    transaction);
+                    });
 
                 await CascadePostDeleteCore(post, false, false, transaction);
 
@@ -475,7 +460,7 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            transaction.Commit();
+            transaction.CommitTransaction();
         }
 
         public async Task<(string Message, bool? IsSuccess)> DuplicatePost(int postId, OperationLogDto logDto)
@@ -484,18 +469,16 @@ namespace PhpbbInDotnet.Services
             try
             {
                 using var transaction = _sqlExecuter.BeginTransaction();
-                var post = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                var post = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE post_id = @postId",
-                    new { postId },
-                    transaction);
+                    new { postId });
                 if (post == null)
                 {
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
-                var attachments = await _sqlExecuter.QueryAsync<PhpbbAttachments>
+                var attachments = await transaction.QueryAsync<PhpbbAttachments>
                     ("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id",
-                    new { postId },
-                    transaction);
+                    new { postId });
 
                 post.PostTime++;
                 post.PostAttachment = attachments.Any().ToByte();
@@ -504,12 +487,11 @@ namespace PhpbbInDotnet.Services
                 post.PostEditUser = 0;
                 post.PostEditTime = 0;
 
-                var entity = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                var entity = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     @$"INSERT INTO phpbb_posts(topic_id, forum_id, poster_id, icon_id, poster_ip, post_time, post_approved, post_reported, enable_bbcode, enable_smilies, enable_magic_url, enable_sig, post_username, post_subject, post_text, post_checksum, post_attachment, bbcode_bitfield, bbcode_uid, post_postcount, post_edit_time, post_edit_reason, post_edit_user, post_edit_count, post_edit_locked)
                        VALUES (@TopicId, @ForumId, @PosterId, @IconId, @PosterIp, @PostTime, @PostApproved, @PostReported, @EnableBbcode, @EnableSmilies, @EnableMagicUrl, @EnableSig, @PostUsername, @PostSubject, @PostText, @PostChecksum, @PostAttachment, @BbcodeBitfield, @BbcodeUid, @PostPostcount, @PostEditTime, @PostEditReason, @PostEditUser, @PostEditCount, @PostEditLocked);
                        SELECT * FROM phpbb_posts WHERE post_id = {_sqlExecuter.LastInsertedItemId}",
-                    post, 
-                    transaction);
+                    post);
 
                 foreach (var a in attachments)
                 {
@@ -520,18 +502,17 @@ namespace PhpbbInDotnet.Services
 					}
 					a.PostMsgId = entity.PostId;
 					a.PhysicalFilename = name;
-                    await _sqlExecuter.ExecuteAsync(
+                    await transaction.ExecuteAsync(
                         @"INSERT INTO phpbb_attachments (post_msg_id, topic_id, in_message, poster_id, is_orphan, physical_filename, real_filename, download_count, attach_comment, extension, mimetype, filesize, filetime, thumbnail)
                           VALUES (@PostMsgId, @TopicId, @InMessage, @PosterId, @IsOrphan, @PhysicalFilename, @RealFilename, @DownloadCount, @AttachComment, @Extension, @Mimetype, @Filesize, @Filetime, @Thumbnail);",
-                        a, 
-                        transaction);
+                        a);
 				}
 
                 await CascadePostAddCore(entity, false, transaction);
 
                 await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId);
 
-                transaction.Commit();
+                transaction.CommitTransaction();
 
                 return (string.Empty, true);
             }
@@ -542,23 +523,22 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public Task CascadePostEdit(PhpbbPosts edited)
-            => CascadePostEditCore(edited, transaction: null);
+        public Task CascadePostEdit(PhpbbPosts edited, ITransactionalSqlExecuter transaction)
+            => CascadePostEditCore(edited, transaction);
 
-        private async Task CascadePostEditCore(PhpbbPosts edited, IDbTransaction? transaction)
+        private async Task CascadePostEditCore(PhpbbPosts edited, ITransactionalSqlExecuter transaction)
         {
-            using var multiple = await _sqlExecuter.QueryMultipleAsync(
+            using var multiple = await transaction.QueryMultipleAsync(
                 "SELECT * FROM phpbb_topics WHERE topic_id = @topicId;" +
                 "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
                 new
                 {
                     edited.TopicId,
                     edited.ForumId
-                },
-                transaction);
+                });
             var curTopic = await multiple.ReadFirstOrDefaultAsync<PhpbbTopics>();
             var curForum = await multiple.ReadFirstOrDefaultAsync<PhpbbForums>();
-            var usr = await _userService.GetForumUserById(edited.PosterId);
+            var usr = await _userService.GetForumUserById(edited.PosterId, transaction);
 
             if (curTopic.TopicFirstPostId == edited.PostId)
             {
@@ -576,23 +556,22 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic)
-            => CascadePostAddCore(added, ignoreTopic, transaction: null);
+        public Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic, ITransactionalSqlExecuter transaction)
+            => CascadePostAddCore(added, ignoreTopic, transaction);
 
-        private async Task CascadePostAddCore(PhpbbPosts added, bool ignoreTopic, IDbTransaction? transaction)
+        private async Task CascadePostAddCore(PhpbbPosts added, bool ignoreTopic, ITransactionalSqlExecuter transaction)
         {
-            using var multiple = await _sqlExecuter.QueryMultipleAsync(
+            using var multiple = await transaction.QueryMultipleAsync(
                 "SELECT * FROM phpbb_topics WHERE topic_id = @topicId;" +
                 "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
                 new
                 {
                     added.TopicId,
                     added.ForumId
-                },
-                transaction);
+                });
             var curTopic = await multiple.ReadFirstOrDefaultAsync<PhpbbTopics>();
             var curForum = await multiple.ReadFirstOrDefaultAsync<PhpbbForums>();
-            var usr = await _userService.GetForumUserById(added.PosterId);
+            var usr = await _userService.GetForumUserById(added.PosterId, transaction);
 
             await SetForumLastPost(curForum, added, usr, transaction);
 
@@ -602,23 +581,21 @@ namespace PhpbbInDotnet.Services
                 await SetTopicFirstPost(curTopic, added, usr, false, transaction);
             }
 
-            await _sqlExecuter.ExecuteAsync(
+            await transaction.ExecuteAsync(
                 "UPDATE phpbb_topics SET topic_replies = topic_replies + 1, topic_replies_real = topic_replies_real + 1 WHERE topic_id = @topicId; " +
                 "UPDATE phpbb_users SET user_posts = user_posts + 1 WHERE user_id = @userId",
-                new { curTopic.TopicId, usr.UserId },
-                transaction);
+                new { curTopic.TopicId, usr.UserId });
         }
 
-        public Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports)
-            => CascadePostDeleteCore(deleted, ignoreTopic, ignoreAttachmentsAndReports, transaction: null);
+        public Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, ITransactionalSqlExecuter transaction)
+            => CascadePostDeleteCore(deleted, ignoreTopic, ignoreAttachmentsAndReports, transaction);
 
-        private async Task CascadePostDeleteCore(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, IDbTransaction? transaction)
+        private async Task CascadePostDeleteCore(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, ITransactionalSqlExecuter transaction)
         {
-            using var multiple = await _sqlExecuter.QueryMultipleAsync(
+            using var multiple = await transaction.QueryMultipleAsync(
                 "SELECT * FROM phpbb_topics WHERE topic_id = @topicId;" +
                 "SELECT count(1) FROM phpbb_posts WHERE topic_id = @topicId;",
-                new { deleted.TopicId },
-                transaction);
+                new { deleted.TopicId });
             var curTopic = await multiple.ReadFirstOrDefaultAsync<PhpbbTopics>();
             var postCount = await multiple.ReadSingleAsync<long>();
 
@@ -636,45 +613,42 @@ namespace PhpbbInDotnet.Services
                 {
                     if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
                     {
-                        var lastTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                        var lastTopicPost = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                             "SELECT * FROM phpbb_posts WHERE topic_id = @curTopicId AND post_id <> @deletedPostId ORDER BY post_time DESC",
                             new
                             {
                                 curTopicId = curTopic.TopicId,
                                 deletedPostId = deleted.PostId
-                            },
-                            transaction);
+                            });
 
                         if (lastTopicPost != null)
                         {
-                            var lastTopicPostUser = await _userService.GetForumUserById(lastTopicPost.PosterId);
+                            var lastTopicPostUser = await _userService.GetForumUserById(lastTopicPost.PosterId, transaction);
                             await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, transaction, true);
                         }
                     }
 
                     if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                     {
-                        var firstTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                        var firstTopicPost = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                             "SELECT * FROM phpbb_posts WHERE topic_id = @curTopicId AND post_id <> @deletedPostId ORDER BY post_time ASC",
                             new
                             {
                                 curTopicId = curTopic.TopicId,
                                 deletedPostId = deleted.PostId
-                            },
-                            transaction);
+                            });
                         if (firstTopicPost != null)
                         {
-                            var firstPostUser = await _userService.GetForumUserById(firstTopicPost.PosterId);
+                            var firstPostUser = await _userService.GetForumUserById(firstTopicPost.PosterId, transaction);
                             await SetTopicFirstPost(curTopic, firstTopicPost, firstPostUser, false, transaction, true);
                         }
                     }
 
                     if (!ignoreTopic)
                     {
-                        await _sqlExecuter.ExecuteAsync(
+                        await transaction.ExecuteAsync(
                             "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
-                            new { curTopic.TopicId },
-                            transaction);
+                            new { curTopic.TopicId });
                     }
                 }
             }
@@ -682,44 +656,40 @@ namespace PhpbbInDotnet.Services
 
             if (!ignoreAttachmentsAndReports)
             {
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     "DELETE FROM phpbb_reports WHERE post_id = @postId; " +
                     "DELETE FROM phpbb_attachments WHERE post_msg_id = @postId",
-                    new { deleted.PostId },
-                    transaction);
+                    new { deleted.PostId });
             }
 
             if (curTopic != null)
             {
-                var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                var curForum = await transaction.QueryFirstOrDefaultAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @forumId", 
-                    new { forumId = curTopic?.ForumId ?? deleted.ForumId },
-                    transaction);
+                    new { forumId = curTopic?.ForumId ?? deleted.ForumId });
                 if (curForum != null && curForum.ForumLastPostId == deleted.PostId)
                 {
-                    var lastForumPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                    var lastForumPost = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                         "SELECT * FROM phpbb_posts WHERE forum_id = @curForumId AND post_id <> @deletedPostId ORDER BY post_time DESC",
                         new
                         {
                             curForumId = curForum.ForumId,
                             deletedPostId = deleted.PostId
-                        },
-                        transaction);
+                        });
                     if (lastForumPost != null)
                     {
-                        var lastForumPostUser = await _userService.GetForumUserById(lastForumPost.PosterId);
+                        var lastForumPostUser = await _userService.GetForumUserById(lastForumPost.PosterId, transaction);
                         await SetForumLastPost(curForum, lastForumPost, lastForumPostUser, transaction, true);
                     }
                 }
             }
 
-            await _sqlExecuter.ExecuteAsync(
+            await transaction.ExecuteAsync(
                 "UPDATE phpbb_users SET user_posts = user_posts - 1 WHERE user_id = @posterId",
-                new { deleted.PosterId },
-                transaction);
+                new { deleted.PosterId });
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, IDbTransaction? transaction, bool hardReset = false)
+        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, ITransactionalSqlExecuter transaction, bool hardReset = false)
         {
             if (hardReset || topic.TopicLastPostTime < post.PostTime)
             {
@@ -730,7 +700,7 @@ namespace PhpbbInDotnet.Services
                 topic.TopicLastPosterId = post.PosterId;
                 topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     @"UPDATE phpbb_topics 
                          SET topic_last_post_id = @TopicLastPostId, 
                              topic_last_post_subject = @TopicLastPostSubject, 
@@ -739,12 +709,11 @@ namespace PhpbbInDotnet.Services
                              topic_last_poster_id = @TopicLastPosterId, 
                              topic_last_poster_name = @TopicLastPosterName 
                        WHERE topic_id = @TopicId",
-                    topic,
-                    transaction);
+                    topic);
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, ForumUser author, IDbTransaction? transaction, bool hardReset = false)
+        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, ForumUser author, ITransactionalSqlExecuter transaction, bool hardReset = false)
         {
             if (hardReset || forum.ForumLastPostTime < post.PostTime)
             {
@@ -755,7 +724,7 @@ namespace PhpbbInDotnet.Services
                 forum.ForumLastPosterId = post.PosterId;
                 forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     @"UPDATE phpbb_forums 
                          SET forum_last_post_id = @ForumLastPostId, 
                              forum_last_post_subject = @ForumLastPostSubject, 
@@ -764,14 +733,13 @@ namespace PhpbbInDotnet.Services
                              forum_last_poster_id = @ForumLastPosterId, 
                              forum_last_poster_name = @ForumLastPosterName 
                        WHERE forum_id = @ForumId",
-                    forum,
-                    transaction);
+                    forum);
             }
         }
 
-        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, bool setTopicTitle, IDbTransaction? transaction, bool goForward = false)
+        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, bool setTopicTitle, ITransactionalSqlExecuter transaction, bool goForward = false)
         {
-            var curFirstPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
+            var curFirstPost = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
             if (topic.TopicFirstPostId == 0 || goForward || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))
             {
                 if (setTopicTitle)
@@ -782,15 +750,14 @@ namespace PhpbbInDotnet.Services
                 topic.TopicFirstPosterColour = author.UserColor!;
                 topic.TopicFirstPosterName = author.Username!;
 
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     @"UPDATE phpbb_topics 
                          SET topic_title = @TopicTitle, 
                              topic_first_post_id = @TopicFirstPostId, 
                              topic_first_poster_colour = @TopicFirstPosterColour, 
                              topic_first_poster_name = @TopicFirstPosterName
                     WHERE topic_id = @topicId",
-                    topic,
-                    transaction);
+                    topic);
             }
         }
 
