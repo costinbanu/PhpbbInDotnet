@@ -89,6 +89,9 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param = null)
             => _implementation.QuerySingleOrDefaultAsyncImpl(sql, param, _transaction);
 
+        public Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = DapperProxy.TIMEOUT)
+            => _implementation.ExecuteAsyncWithoutResiliency(sql, param, commandTimeout);
+
         public IDapperProxy WithPagination(int skip, int take)
             => new PaginatedDapperProxy(_implementation, _implementation.DatabaseType, skip, take, _transaction);
     }

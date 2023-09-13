@@ -16,7 +16,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 {
     class DapperProxy : IDapperProxy
 	{
-		protected const int TIMEOUT = 60;
+		internal protected const int TIMEOUT = 60;
 		static readonly TimeSpan[] DURATIONS = new[]
 		{
 			TimeSpan.FromSeconds(1),
@@ -87,6 +87,9 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 
 		public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
 			=> QueryMultipleAsyncImpl(sql, param, dbTransaction: null);
+
+        public Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = TIMEOUT)
+            => Connection.ExecuteAsync(sql, param, commandTimeout: commandTimeout);
 
         #region internal impl
 

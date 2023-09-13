@@ -74,6 +74,9 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
             => _implementation.QueryMultipleAsyncImpl(AdjustSql(sql), AdjustParameters(param), _transaction);
 
+        public Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = DapperProxy.TIMEOUT)
+            => _implementation.ExecuteAsyncWithoutResiliency(sql, param, commandTimeout);
+
         private string AdjustSql(string sql)
         {
             var stmt = _databaseType switch

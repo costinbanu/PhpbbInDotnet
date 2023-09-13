@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-	class ModeratorService : IModeratorService
+    class ModeratorService : IModeratorService
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IPostService _postService;
