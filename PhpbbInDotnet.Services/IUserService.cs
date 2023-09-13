@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Objects;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace PhpbbInDotnet.Services
         Task<PhpbbUsers> GetAnonymousDbUserAsync();
         ForumUserExpanded GetAnonymousForumUserExpanded();
         Task<ForumUserExpanded> GetAnonymousForumUserExpandedAsync();
-        Task<ForumUser> GetForumUserById(int userId);
+        Task<ForumUser> GetForumUserById(int userId, ITransactionalSqlExecuter? transaction = null);
         Task<IEnumerable<PhpbbGroups>> GetAllGroups();
         Task<IEnumerable<PhpbbRanks>> GetAllRanks();
         Task<PhpbbGroups> GetUserGroup(int userId);
