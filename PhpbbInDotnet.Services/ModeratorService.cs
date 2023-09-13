@@ -93,9 +93,9 @@ namespace PhpbbInDotnet.Services
                     new { destinationForumId, topicId });
                 foreach (var post in oldPosts)
                 {
-                    await CascadePostDeleteCore(post, true, true, transaction);
+                    await CascadePostDelete(post, true, true, transaction);
                     post.ForumId = destinationForumId;
-                    await CascadePostAddCore(post, true, transaction);
+                    await CascadePostAdd(post, true, transaction);
                 }
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.", transaction);
 
@@ -181,7 +181,7 @@ namespace PhpbbInDotnet.Services
                         new { topicId });
                 }
 
-                await DeletePostsCore(posts, logDto, false);
+                await DeletePostsCore(posts, logDto, false, transaction);
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId, transaction: transaction);
 
@@ -310,10 +310,10 @@ namespace PhpbbInDotnet.Services
 
                 foreach (var post in posts)
                 {
-                    await CascadePostDeleteCore(post, false, true, transaction);
+                    await CascadePostDelete(post, false, true, transaction);
                     post.TopicId = curTopic.TopicId;
                     post.ForumId = curTopic.ForumId;
-                    await CascadePostAddCore(post, false, transaction);
+                    await CascadePostAdd(post, false, transaction);
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}", transaction);
                 }
 
@@ -367,10 +367,10 @@ namespace PhpbbInDotnet.Services
                 var oldTopicId = posts.First().TopicId;
                 foreach (var post in posts)
                 {
-                    await CascadePostDeleteCore(post, false, true, transaction);
+                    await CascadePostDelete(post, false, true, transaction);
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
-                    await CascadePostAddCore(post, false, transaction);
+                    await CascadePostAdd(post, false, transaction);
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}", transaction);
                 }
 
@@ -395,13 +395,16 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var posts = (await _sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
+                using var transaction = _sqlExecuter.BeginTransaction();
+                var posts = (await transaction.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                await DeletePostsCore(posts, logDto, true);
+                await DeletePostsCore(posts, logDto, true, transaction);
+
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "POSTS_DELETED_SUCCESSFULLY"], true);
             }
@@ -412,11 +415,10 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog)
+        private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog, ITransactionalSqlExecuter transaction)
         {
             var language = _translationProvider.GetLanguage();
             var postIds = posts.Select(p => p.PostId).DefaultIfEmpty();
-            using var transaction = _sqlExecuter.BeginTransaction();
             var attachments = (await transaction.QueryAsync<PhpbbAttachments>(
                 "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", 
                 new { postIds })).AsList();
@@ -452,15 +454,13 @@ namespace PhpbbInDotnet.Services
                         logDto.UserId
                     });
 
-                await CascadePostDeleteCore(post, false, false, transaction);
+                await CascadePostDelete(post, false, false, transaction);
 
                 if (shouldLog)
                 {
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post, transaction: transaction);
                 }
             }
-
-            transaction.CommitTransaction();
         }
 
         public async Task<(string Message, bool? IsSuccess)> DuplicatePost(int postId, OperationLogDto logDto)
@@ -508,7 +508,7 @@ namespace PhpbbInDotnet.Services
                         a);
 				}
 
-                await CascadePostAddCore(entity, false, transaction);
+                await CascadePostAdd(entity, false, transaction);
 
                 await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId, transaction: transaction);
 
@@ -553,10 +553,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic, ITransactionalSqlExecuter transaction)
-            => CascadePostAddCore(added, ignoreTopic, transaction);
-
-        private async Task CascadePostAddCore(PhpbbPosts added, bool ignoreTopic, ITransactionalSqlExecuter transaction)
+        public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic, ITransactionalSqlExecuter transaction)
         {
             using var multiple = await transaction.QueryMultipleAsync(
                 "SELECT * FROM phpbb_topics WHERE topic_id = @topicId;" +
@@ -584,10 +581,7 @@ namespace PhpbbInDotnet.Services
                 new { curTopic.TopicId, usr.UserId });
         }
 
-        public Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, ITransactionalSqlExecuter transaction)
-            => CascadePostDeleteCore(deleted, ignoreTopic, ignoreAttachmentsAndReports, transaction);
-
-        private async Task CascadePostDeleteCore(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, ITransactionalSqlExecuter transaction)
+        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, ITransactionalSqlExecuter transaction)
         {
             using var multiple = await transaction.QueryMultipleAsync(
                 "SELECT * FROM phpbb_topics WHERE topic_id = @topicId;" +
