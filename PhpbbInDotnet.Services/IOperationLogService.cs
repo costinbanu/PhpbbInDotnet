@@ -1,4 +1,5 @@
 ﻿using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Objects;
 using System.Collections.Generic;
@@ -16,9 +17,9 @@ namespace PhpbbInDotnet.Services
         Task LogAdminGroupAction(AdminGroupActions action, int adminUserId, PhpbbGroups group);
         Task LogAdminRankAction(AdminRankActions action, int adminUserId, PhpbbRanks rank);
         Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string? additionalData = null);
-        Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, int postId, string? additionalData = null);
-        Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string? additionalData = null);
-        Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string? additionalData = null);
+        Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, int postId, string? additionalData = null, ITransactionalSqlExecuter? transaction = null);
+        Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string? additionalData = null, ITransactionalSqlExecuter? transaction = null);
+        Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string? additionalData = null, ITransactionalSqlExecuter? transaction = null);
         Task LogUserProfileAction(UserProfileActions action, int editingUser, PhpbbUsers targetUser, string? additionalData = null);
     }
 }

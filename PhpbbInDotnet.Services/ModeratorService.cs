@@ -97,7 +97,7 @@ namespace PhpbbInDotnet.Services
                     post.ForumId = destinationForumId;
                     await CascadePostAddCore(post, true, transaction);
                 }
-                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.");
+                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.", transaction);
 
                 transaction.CommitTransaction();
 
@@ -183,7 +183,7 @@ namespace PhpbbInDotnet.Services
 
                 await DeletePostsCore(posts, logDto, false);
 
-                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId);
+                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId, transaction: transaction);
 
                 transaction.CommitTransaction();
 
@@ -314,7 +314,7 @@ namespace PhpbbInDotnet.Services
                     post.TopicId = curTopic.TopicId;
                     post.ForumId = curTopic.ForumId;
                     await CascadePostAddCore(post, false, transaction);
-                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}");
+                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}", transaction);
                 }
 
                 transaction.CommitTransaction();
@@ -371,7 +371,7 @@ namespace PhpbbInDotnet.Services
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
                     await CascadePostAddCore(post, false, transaction);
-                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}");
+                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}", transaction);
                 }
 
                 transaction.CommitTransaction();
@@ -456,7 +456,7 @@ namespace PhpbbInDotnet.Services
 
                 if (shouldLog)
                 {
-                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post);
+                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post, transaction: transaction);
                 }
             }
 
@@ -510,7 +510,7 @@ namespace PhpbbInDotnet.Services
 
                 await CascadePostAddCore(entity, false, transaction);
 
-                await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId);
+                await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId, transaction: transaction);
 
                 transaction.CommitTransaction();
 
