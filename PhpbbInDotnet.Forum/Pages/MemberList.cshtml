@@ -174,7 +174,7 @@
     }
     @{
         var anonymousUserCount = _sessionCounter.GetActiveSessionCount();
-        var botCount = _sessionCounter.GetActiveBotCount();
+        var botCount = _sessionCounter.GetTotalActiveBotCount();
         var displayUsers = Model.Mode == MemberListPages.ActiveBots ? "display:none" : "display:initial";
         var displayBots = Model.Mode == MemberListPages.ActiveBots ? "display:initial" : "display:none";
     }
@@ -229,24 +229,26 @@
                 )
             );
             isFirst = true;
-            foreach (var bot in Model.BotList!)
+            foreach (var botGroup in Model.BotList!)
             {
                 if (!isFirst)
                 {
                     <hr class="BoxSeparator" />
                 }
                 <div class="FlexCenter">
-                    <div class="PostTitle" style="overflow-wrap: break-word">
-                        @Html.Raw(bot.IP)
+                    <div style="font-weight: bold" class="PostInputWidth">
+                        @Html.Raw(botGroup.Key)
                     </div>
-                    <div class="FlexRight PostInputWidth">
-                        @if (Model.CurrentUserIsAdmin)
+                    <div>
+                        @foreach (var bot in botGroup)
                         {
-                            <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a><br />
-                        }
-                        @Html.Raw(bot.UserAgent) <br />
-                        @Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]:
-                        <formatted-date date="@bot.EntryTime.ToString("o")" format="@dateFormat" />
+                            <p>
+								@Html.Raw(bot.IP)
+                                <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a>
+								@Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]
+								<formatted-date date="@bot.EntryTime.ToString("o")" format="@dateFormat" />
+                            </p>
+                        }                        
                     </div>
                 </div>
                 isFirst = false;

@@ -6,7 +6,8 @@ namespace PhpbbInDotnet.Services
 {
     public interface IAnonymousSessionCounter
     {
-        int GetActiveBotCount();
+        int GetTotalActiveBotCount();
+        int GetActiveBotCountByUserAgent(string userAgent);
         int GetActiveSessionCount();
         IEnumerable<BotData> GetBots();
         void UpsertBot(string ip, string userAgent, TimeSpan expiration);

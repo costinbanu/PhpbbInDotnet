@@ -49,7 +49,8 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 {
                     isBot = true;
                     var now = DateTime.UtcNow;
-                    if ((now.Hour < 0 || now.Hour > 2) && _sessionCounter.GetActiveBotCount() > 300)
+                    //TODO: configurable hours and count
+                    if ((now.Hour < 0 || now.Hour > 2) && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 10 && context.Session.GetInt32("SessionCounted") != 1)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                         return;
@@ -100,16 +101,13 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 {
                     if (isBot)
                     {
-                        if (context.Connection.RemoteIpAddress is not null)
-                        {
-                            _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress.ToString(), userAgent ?? "n/a", sessionTrackingTimeout);
-                        }
+                        _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress?.ToString() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);
                     }
                     else
                     {
-                        context.Session.SetInt32("SessionCounted", 1);
                         _sessionCounter.UpsertSession(context.Session.Id, sessionTrackingTimeout);
                     }
+                    context.Session.SetInt32("SessionCounted", 1);
                 }
             }
             catch (Exception ex)
