@@ -13,6 +13,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
@@ -36,9 +37,29 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
+            var isBot = false;
+            string? userAgent = null;
+            var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);
+            if ((!hasUserId || userId == 1) && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header))
+            {
+                userAgent = header.ToString();
+                var dd = new DeviceDetector(userAgent);
+                dd.Parse();
+                if (dd.IsBot())
+                {
+                    isBot = true;
+                    var now = DateTime.UtcNow;
+                    if ((now.Hour < 0 || now.Hour > 2) && _sessionCounter.GetActiveBotCount() > 300)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                        return;
+                    }
+                }
+            }
+
             ForumUser baseUser;
             PhpbbUsers dbUser;
-            if (IdentityUtility.TryGetUserId(context.User, out var userId))
+            if (hasUserId)
             {
                 dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
@@ -75,16 +96,13 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
             {
-                if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && context.Session.GetInt32("SessionCounted") != 1)
+                if (user.IsAnonymous && context.Session.GetInt32("SessionCounted") != 1)
                 {
-                    var userAgent = header.ToString();
-                    var dd = new DeviceDetector(userAgent);
-                    dd.Parse();
-                    if (dd.IsBot())
+                    if (isBot)
                     {
                         if (context.Connection.RemoteIpAddress is not null)
                         {
-                            _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeout);
+                            _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress.ToString(), userAgent ?? "n/a", sessionTrackingTimeout);
                         }
                     }
                     else
