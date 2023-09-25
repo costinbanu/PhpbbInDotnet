@@ -79,7 +79,12 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}",
   "RecurringTasksTimeToRun": "02:00",
   "ForumIsReadOnly": false,
-  "MinimumAge": 16
+  "MinimumAge": 16,
+  "BotConfig": {
+    "UnlimitedAccessStartTime": "00:00:00",
+    "UnlimitedAccessEndTime": "02:00:00",
+    "InstanceCountLimit": 50
+  }
 }
 ```
 
@@ -131,6 +136,9 @@ IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
 RecurringTasksTimeToRun | string | 02:00 | Required recurring tasks (DB table sync etc) will run daily at this specified hour (UTC). Must be in the HH:mm format.
 ForumIsReadOnly | bool | false | Whether the entire forum is in read-only mode. This means that the forum can be read, but no posts or private messages can be submitted.
 MinimumAge | int | 16 | Minimum age for users to register
+BotConfig.UnlimitedAccessStartTime | string | null | Time range lower bound for non-restricted bot traffic; can be null or just the time component of a DateTime object ("02:00:00"); if null no restriction applies.
+BotConfig__UnlimitedAccessEndTime | int | null | Time range upper bound for non-restricted bot traffic; can be null or just the time component of a DateTime object ("02:00:00"); if null no restriction applies.
+BotConfig__InstanceCountLimit | int | 0 | Maximum allowed instance count for one bot, if not within the non-restricted time range
 ### Branding
 #### Forum header
 The application will display the `ForumName` app setting value in the upper left corner of the screen (as a header that links to the forum's first page).

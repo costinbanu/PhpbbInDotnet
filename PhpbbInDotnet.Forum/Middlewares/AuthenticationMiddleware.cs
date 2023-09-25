@@ -10,6 +10,7 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
@@ -49,8 +50,10 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 {
                     isBot = true;
                     var now = DateTime.UtcNow;
-                    //TODO: configurable hours and count
-                    if ((now.Hour < 0 || now.Hour > 2) && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 10 && context.Session.GetInt32("SessionCounted") != 1)
+                    var botConfig = _config.GetObject<BotConfig>();
+                    var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
+                    var shouldLimitBasedOnCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32("SessionCounted") != 1;
+                    if (shouldLimitBasedOnTime && shouldLimitBasedOnCount)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                         return;
