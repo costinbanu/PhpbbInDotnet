@@ -240,13 +240,15 @@
                         @Html.Raw(botGroup.Key)
                     </div>
                     <div>
-                        @foreach (var bot in botGroup)
+                        @foreach (var bots in botGroup.GroupBy(x => x.IP))
                         {
                             <p>
-								@Html.Raw(bot.IP)
-                                <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a>
+								@Html.Raw(bots.Key)
+                                <a href="https://whatismyipaddress.com/ip/@bots.Key" target="_blank">[IP Lookup]</a>
+                                (@bots.Count())
+                                <br/>
 								@Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]
-								<formatted-date date="@bot.EntryTime.ToString("o")" format="@dateFormat" />
+                                <formatted-date date="@bots.Max(x => x.EntryTime).ToString("o")" format="@dateFormat" />
                             </p>
                         }                        
                     </div>
