@@ -46,7 +46,7 @@ namespace PhpbbInDotnet.Services
             => _userAgentCache.SelectMany(x => x.Value.Value);
 
         public int GetTotalActiveBotCount()
-            => _userAgentCache.Count;
+            => _userAgentCache.SelectMany(x => x.Value.Value).Count();
 
         public int GetActiveBotCountByUserAgent(string userAgent)
             => _userAgentCache.TryGetValue(userAgent, out var item) ? item.Value.Count : 0;

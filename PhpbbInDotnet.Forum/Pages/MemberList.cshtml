@@ -218,16 +218,14 @@
     </div>
     <div id="bots" style="@displayBots">
         <p>&nbsp;</p>
-        @if (Model.BotList?.Any() == true) {
+        @if (Model.BotList?.Any() == true) 
+        {
             @await Html.PartialAsync(
                 "_PaginationControlsPartial",
                 new _PaginationControlsPartialModel(
                     paginator: Model.BotPaginator!, allowPaginationChange: false, includeEasyNavigation: false, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
-                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"
-
-                )
-            );
+                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"));
             isFirst = true;
             foreach (var botGroup in Model.BotList!)
             {
@@ -236,8 +234,10 @@
                     <hr class="BoxSeparator" />
                 }
                 <div class="FlexCenter">
-                    <div style="font-weight: bold" class="PostInputWidth">
-                        @Html.Raw(botGroup.Key)
+                    <div class="PostInputWidth">
+                        <span style="font-weight: bold" >@Html.Raw(botGroup.Key)</span>
+                        <br />
+                        (@botGroup.Count())
                     </div>
                     <div>
                         @foreach (var bots in botGroup.GroupBy(x => x.IP))
@@ -261,10 +261,7 @@
                 new _PaginationControlsPartialModel(
                     paginator: Model.BotPaginator!, allowPaginationChange: false, includeEasyNavigation: true, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
-                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"
-
-                )
-            )
+                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"))
         }
     </div>
 </div>

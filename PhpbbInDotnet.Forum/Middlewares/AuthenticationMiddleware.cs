@@ -52,7 +52,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
                     var now = DateTime.UtcNow;
                     var botConfig = _config.GetObject<BotConfig>();
                     var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
-                    var shouldLimitBasedOnCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32("SessionCounted") != 1;
+                    var shouldLimitBasedOnCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32("SessionCounted") != 1;
                     if (shouldLimitBasedOnTime && shouldLimitBasedOnCount)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
