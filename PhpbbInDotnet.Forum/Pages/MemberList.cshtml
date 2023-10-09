@@ -3,6 +3,7 @@
 
 @using Domain
 @using Domain.Utilities
+@using Domain.Extensions
 @using Services
 @using System.Web
 @using Microsoft.Extensions.Configuration
@@ -23,7 +24,7 @@
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
     <script src="~/js/tabbedPage.js"></script>
-    <link rel="stylesheet" href="~/css/tabbedPage.css" />
+	<link rel="stylesheet" href="~/css/tabbedPage.css" />
 </environment>
 
 <script>
@@ -127,10 +128,9 @@
             <span asp-validation-for="ValidationDummy" class="validation"></span>
         }
 
-        var isFirst = true;
-        foreach (var group in Model.GroupList ?? Enumerable.Empty<PhpbbInDotnet.Database.Entities.PhpbbGroups>())
+        foreach (var (group, index) in (Model.GroupList ?? Enumerable.Empty<PhpbbInDotnet.Database.Entities.PhpbbGroups>()).Indexed())
         {
-            if (!isFirst)
+            if (index > 0)
             {
                 <hr class="BoxSeparator" />
             }
@@ -153,7 +153,6 @@
                     </a>
                 </div>
             </div>
-            isFirst = false;
         }
     }
 </div>
@@ -226,34 +225,35 @@
                     paginator: Model.BotPaginator!, allowPaginationChange: false, includeEasyNavigation: false, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
                     forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"));
-            isFirst = true;
-            foreach (var botGroup in Model.BotList!)
+            foreach (var (botGroup, index) in Model.BotList.Indexed())
             {
-                if (!isFirst)
+                if (index > 0)
                 {
                     <hr class="BoxSeparator" />
                 }
-                <div class="FlexCenter">
-                    <div class="PostInputWidth">
-                        <span style="font-weight: bold" >@Html.Raw(botGroup.Key)</span>
-                        <br />
-                        (@botGroup.Count())
-                    </div>
-                    <div>
-                        @foreach (var bots in botGroup.GroupBy(x => x.IP))
-                        {
-                            <p>
-								@Html.Raw(bots.Key)
-                                <a href="https://whatismyipaddress.com/ip/@bots.Key" target="_blank">[IP Lookup]</a>
-                                (@bots.Count())
-                                <br/>
-								@Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]
-                                <formatted-date date="@bots.Max(x => x.EntryTime).ToString("o")" format="@dateFormat" />
-                            </p>
-                        }                        
+                <button type="button" class="collapsible">
+					@Html.Raw(botGroup.Key) (@botGroup.Count())
+                </button>
+                @*<h4 onclick="expandSection('botSection', 'botChar')" style="cursor:pointer" id="botTitle">
+                    
+                    <span id="botChar">&#x1F53D;</span>
+                </h4>*@
+                <div class="content" @*id="botSection" style="display:none"*@>
+                    @foreach (var bots in botGroup.GroupBy(x => x.IP))
+                    {
+                        <p>
+                            @Html.Raw(bots.Key)
+                            <a href="https://whatismyipaddress.com/ip/@bots.Key" target="_blank">[IP Lookup]</a>
+                            (@bots.Count())
+                            <br />
+                            @Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]
+                            <formatted-date date="@bots.Max(x => x.EntryTime).ToString("o")" format="@dateFormat" />
+                        </p>
+                    }
+                    <div style="width:100%; text-align:right; font-size:1.5em">
+                        <a href="#botTitle">&#x23EB;</a>
                     </div>
                 </div>
-                isFirst = false;
             }
 
             @await Html.PartialAsync(
@@ -292,4 +292,6 @@
         }
         return true;
     }
+
+    enableCollapsibles();
 </script>

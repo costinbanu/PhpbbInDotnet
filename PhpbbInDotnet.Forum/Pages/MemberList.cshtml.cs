@@ -169,7 +169,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 toDo: () =>
                                 {
                                     BotList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).GroupBy(x => x.UserAgent).Skip(PAGE_SIZE * (PageNum - 1)).Take(PAGE_SIZE);
-                                    BotPaginator = new Paginator(_sessionCounter.GetTotalActiveBotCount(), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
+                                    BotPaginator = new Paginator(_sessionCounter.GetUniqueBotCount(), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
                                 },
                                 evaluateSuccess: () => BotList!.Any() && PageNum == BotPaginator!.CurrentPage,
                                 fix: () => PageNum = BotPaginator!.CurrentPage);

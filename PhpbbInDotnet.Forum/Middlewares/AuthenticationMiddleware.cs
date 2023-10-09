@@ -55,7 +55,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
                     var shouldLimitBasedOnCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32("SessionCounted") != 1;
                     if (shouldLimitBasedOnTime && shouldLimitBasedOnCount)
                     {
-                        context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                        context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
                         return;
                     }
                 }
