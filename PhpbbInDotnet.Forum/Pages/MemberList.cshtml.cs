@@ -48,7 +48,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<PhpbbRanks>? RankList { get; private set; }
         public IEnumerable<PhpbbGroups>? GroupList { get; private set; }
         public bool SearchWasPerformed { get; private set; }
-        public IEnumerable<BotData>? BotList { get; private set; }
+        public IEnumerable<IGrouping<string, BotData>>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
         public bool CurrentUserIsAdmin { get; private set; }
         public int RegisteredUserCount { get; private set; }
@@ -168,8 +168,8 @@ namespace PhpbbInDotnet.Forum.Pages
                             ResiliencyUtility.RetryOnce(
                                 toDo: () =>
                                 {
-                                    BotList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).Skip(PAGE_SIZE * (PageNum - 1)).Take(PAGE_SIZE);
-                                    BotPaginator = new Paginator(_sessionCounter.GetActiveBotCount(), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
+                                    BotList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).GroupBy(x => x.UserAgent).Skip(PAGE_SIZE * (PageNum - 1)).Take(PAGE_SIZE);
+                                    BotPaginator = new Paginator(_sessionCounter.GetUniqueBotCount(), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
                                 },
                                 evaluateSuccess: () => BotList!.Any() && PageNum == BotPaginator!.CurrentPage,
                                 fix: () => PageNum = BotPaginator!.CurrentPage);
