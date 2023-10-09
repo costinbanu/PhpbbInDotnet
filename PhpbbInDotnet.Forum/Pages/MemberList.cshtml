@@ -3,6 +3,7 @@
 
 @using Domain
 @using Domain.Utilities
+@using Domain.Extensions
 @using Services
 @using System.Web
 @using Microsoft.Extensions.Configuration
@@ -23,7 +24,7 @@
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
     <script src="~/js/tabbedPage.js"></script>
-    <link rel="stylesheet" href="~/css/tabbedPage.css" />
+	<link rel="stylesheet" href="~/css/tabbedPage.css" />
 </environment>
 
 <script>
@@ -127,10 +128,9 @@
             <span asp-validation-for="ValidationDummy" class="validation"></span>
         }
 
-        var isFirst = true;
-        foreach (var group in Model.GroupList ?? Enumerable.Empty<PhpbbInDotnet.Database.Entities.PhpbbGroups>())
+        foreach (var (group, index) in (Model.GroupList ?? Enumerable.Empty<PhpbbInDotnet.Database.Entities.PhpbbGroups>()).Indexed())
         {
-            if (!isFirst)
+            if (index > 0)
             {
                 <hr class="BoxSeparator" />
             }
@@ -153,7 +153,6 @@
                     </a>
                 </div>
             </div>
-            isFirst = false;
         }
     }
 </div>
@@ -174,7 +173,7 @@
     }
     @{
         var anonymousUserCount = _sessionCounter.GetActiveSessionCount();
-        var botCount = _sessionCounter.GetActiveBotCount();
+        var botCount = _sessionCounter.GetTotalActiveBotCount();
         var displayUsers = Model.Mode == MemberListPages.ActiveBots ? "display:none" : "display:initial";
         var displayBots = Model.Mode == MemberListPages.ActiveBots ? "display:initial" : "display:none";
     }
@@ -218,38 +217,43 @@
     </div>
     <div id="bots" style="@displayBots">
         <p>&nbsp;</p>
-        @if (Model.BotList?.Any() == true) {
+        @if (Model.BotList?.Any() == true) 
+        {
             @await Html.PartialAsync(
                 "_PaginationControlsPartial",
                 new _PaginationControlsPartialModel(
                     paginator: Model.BotPaginator!, allowPaginationChange: false, includeEasyNavigation: false, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
-                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"
-
-                )
-            );
-            isFirst = true;
-            foreach (var bot in Model.BotList!)
+                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"));
+            foreach (var (botGroup, index) in Model.BotList.Indexed())
             {
-                if (!isFirst)
+                if (index > 0)
                 {
                     <hr class="BoxSeparator" />
                 }
-                <div class="FlexCenter">
-                    <div class="PostTitle" style="overflow-wrap: break-word">
-                        @Html.Raw(bot.IP)
-                    </div>
-                    <div class="FlexRight PostInputWidth">
-                        @if (Model.CurrentUserIsAdmin)
-                        {
-                            <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a><br />
-                        }
-                        @Html.Raw(bot.UserAgent) <br />
-                        @Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]:
-                        <formatted-date date="@bot.EntryTime.ToString("o")" format="@dateFormat" />
+                <button type="button" class="collapsible">
+					@Html.Raw(botGroup.Key) (@botGroup.Count())
+                </button>
+                @*<h4 onclick="expandSection('botSection', 'botChar')" style="cursor:pointer" id="botTitle">
+                    
+                    <span id="botChar">&#x1F53D;</span>
+                </h4>*@
+                <div class="content" @*id="botSection" style="display:none"*@>
+                    @foreach (var bots in botGroup.GroupBy(x => x.IP))
+                    {
+                        <p>
+                            @Html.Raw(bots.Key)
+                            <a href="https://whatismyipaddress.com/ip/@bots.Key" target="_blank">[IP Lookup]</a>
+                            (@bots.Count())
+                            <br />
+                            @Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]
+                            <formatted-date date="@bots.Max(x => x.EntryTime).ToString("o")" format="@dateFormat" />
+                        </p>
+                    }
+                    <div style="width:100%; text-align:right; font-size:1.5em">
+                        <a href="#botTitle">&#x23EB;</a>
                     </div>
                 </div>
-                isFirst = false;
             }
 
             @await Html.PartialAsync(
@@ -257,10 +261,7 @@
                 new _PaginationControlsPartialModel(
                     paginator: Model.BotPaginator!, allowPaginationChange: false, includeEasyNavigation: true, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
-                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"
-
-                )
-            )
+                    forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"))
         }
     </div>
 </div>
@@ -291,4 +292,6 @@
         }
         return true;
     }
+
+    enableCollapsibles();
 </script>

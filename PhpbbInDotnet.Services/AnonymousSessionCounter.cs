@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using PhpbbInDotnet.Objects;
+﻿using PhpbbInDotnet.Objects;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,13 +11,13 @@ namespace PhpbbInDotnet.Services
     {
         public AnonymousSessionCounter()
         {
-            _sessionCache = new ConcurrentDictionary<string, Item>();
-            _ipCache = new ConcurrentDictionary<string, Item>();
+            _sessionCache = new ConcurrentDictionary<string, Item<string>>();
+            _userAgentCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();
         }
 
         public void UpsertSession(string sessionId, TimeSpan expiration)
         {
-            _sessionCache.TryAdd(sessionId, new Item(sessionId, null, expiration, _sessionCache));
+            _sessionCache.TryAdd(sessionId, new Item<string>(sessionId, string.Empty, expiration, _sessionCache));
         }
 
         public int GetActiveSessionCount()
@@ -26,38 +25,45 @@ namespace PhpbbInDotnet.Services
 
         public void UpsertBot(string ip, string userAgent, TimeSpan expiration)
         {
-            _ipCache.TryAdd(
-                ip,
-                new Item(
-                    ip,
-                    JsonConvert.SerializeObject(new BotData
-                    {
-                        IP = ip,
-                        UserAgent = userAgent,
-                        EntryTime = DateTime.UtcNow
-                    }),
-                    expiration,
-                    _ipCache
-                )
-            );
+            var data = new BotData
+            {
+                EntryTime = DateTime.UtcNow,
+                IP = ip,
+                UserAgent = userAgent
+            };
+
+            _userAgentCache.AddOrUpdate(
+                key: userAgent,
+                addValue: new Item<ConcurrentBag<BotData>>(userAgent, new ConcurrentBag<BotData> { data }, expiration, _userAgentCache),
+                updateValueFactory: (_, curValue) =>
+                {
+                    curValue.Value.Add(data);
+                    return curValue;
+                });
         }
 
         public IEnumerable<BotData> GetBots()
-            => _ipCache.Select(x => JsonConvert.DeserializeObject<BotData>(x.Value.Value!)!);
+            => _userAgentCache.SelectMany(x => x.Value.Value);
 
-        public int GetActiveBotCount()
-            => _ipCache.Count;
+        public int GetTotalActiveBotCount()
+            => _userAgentCache.SelectMany(x => x.Value.Value).Count();
 
-        private readonly ConcurrentDictionary<string, Item> _sessionCache;
-        private readonly ConcurrentDictionary<string, Item> _ipCache;
+        public int GetUniqueBotCount()
+            => _userAgentCache.Count;
 
-        private class Item : IDisposable
+        public int GetActiveBotCountByUserAgent(string userAgent)
+            => _userAgentCache.TryGetValue(userAgent, out var item) ? item.Value.Count : 0;
+
+        private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;
+        private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _userAgentCache;
+
+        private class Item<TValue> : IDisposable
         {
             private readonly Timer _timer;
 
-            internal string? Value { get; }
+            internal TValue Value { get; private set; }
 
-            internal Item(string key, string? value, TimeSpan expiration, ConcurrentDictionary<string, Item> cache)
+            internal Item(string key, TValue value, TimeSpan expiration, ConcurrentDictionary<string, Item<TValue>> cache)
             {
                 Value = value;
                 _timer = new Timer(expiration.TotalMilliseconds);

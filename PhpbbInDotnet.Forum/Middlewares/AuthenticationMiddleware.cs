@@ -10,9 +10,11 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
@@ -36,9 +38,32 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
+            var isBot = false;
+            string? userAgent = null;
+            var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);
+            if ((!hasUserId || userId == 1) && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header))
+            {
+                userAgent = header.ToString();
+                var dd = new DeviceDetector(userAgent);
+                dd.Parse();
+                if (dd.IsBot())
+                {
+                    isBot = true;
+                    var now = DateTime.UtcNow;
+                    var botConfig = _config.GetObject<BotConfig>();
+                    var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
+                    var shouldLimitBasedOnCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32("SessionCounted") != 1;
+                    if (shouldLimitBasedOnTime && shouldLimitBasedOnCount)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+                        return;
+                    }
+                }
+            }
+
             ForumUser baseUser;
             PhpbbUsers dbUser;
-            if (IdentityUtility.TryGetUserId(context.User, out var userId))
+            if (hasUserId)
             {
                 dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
@@ -75,23 +100,17 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
             {
-                if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && context.Session.GetInt32("SessionCounted") != 1)
+                if (user.IsAnonymous && context.Session.GetInt32("SessionCounted") != 1)
                 {
-                    var userAgent = header.ToString();
-                    var dd = new DeviceDetector(userAgent);
-                    dd.Parse();
-                    if (dd.IsBot())
+                    if (isBot)
                     {
-                        if (context.Connection.RemoteIpAddress is not null)
-                        {
-                            _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeout);
-                        }
+                        _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress?.ToString() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);
                     }
                     else
                     {
-                        context.Session.SetInt32("SessionCounted", 1);
                         _sessionCounter.UpsertSession(context.Session.Id, sessionTrackingTimeout);
                     }
+                    context.Session.SetInt32("SessionCounted", 1);
                 }
             }
             catch (Exception ex)
