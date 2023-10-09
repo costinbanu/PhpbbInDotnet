@@ -124,9 +124,10 @@ namespace PhpbbInDotnet.Forum.Middlewares
             {
                 if (!user.IsAnonymous && DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout)
                 {
-                    await _sqlExecuter.ExecuteAsync(
+                    await _sqlExecuter.ExecuteAsyncWithoutResiliency(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
-                        new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId });
+                        new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId },
+                        commandTimeout: 10);
                 }
             }
             catch (Exception ex)
