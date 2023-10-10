@@ -26,6 +26,12 @@ select, input {
         color: white !important;
     }
 
+
+    .PostInfoLink:hover, .PostInfoLink:focus {
+        color: #337ab7 !important;
+        text-decoration: underline !important;
+    }
+
 .MyButton {
     box-shadow: inset 0px 1px 0px 0px #ffffff;
     background: linear-gradient(to bottom, #e3e1e1 5%, #cdcdcd 100%);
@@ -256,10 +262,6 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
         color: #d5e9fb !important;
         text-decoration: unset !important;
     }
-
-AhrefOverride {
-
-}
 
 @media (max-width: 768px) {
     .Summary {

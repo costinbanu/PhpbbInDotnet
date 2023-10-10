@@ -41,6 +41,8 @@
     "Admin": {
         "CONFIRM_USER_COMMAND_FORMAT": "Received command '{0}' for user '{1}'. Are you sure you want to continue?",
         "ADMIN_GROUP_TITLE_FORMAT": "Manage group - {0}",
-        "ADD_NEW_GROUP": "Add new group"
+        "ADD_NEW_GROUP": "Add new group",
+        "IP_LOOKUP": "IP Lookup",
+        "FORUM_IP_SEARCH": "Search forum for IP"
     }
 }

@@ -239,10 +239,6 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     min-height: unset !important;
 }
 
-AhrefOverride {
-
-}
-
 .content {
     background-color: #f1f1f1;
     border: 1px solid #ccc;
@@ -259,6 +255,9 @@ AhrefOverride {
 
 .Error {
     color: #f57371;
+}
+.PostInfoLink {
+
 }
 
 @media (max-width: 768px) {

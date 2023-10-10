@@ -17,8 +17,7 @@
         nameof(AdminModel.SystemLogPath),
         Model.SystemLogs?.Select(l => new SelectListItem(l.LogDate.ToString("D", new System.Globalization.CultureInfo(Model.Language!)), l.LogPath)),
         _translationProvider.Admin[Model.Language, "GET_SYSTEM_LOG_FOR_DATE"],
-        new { style = "height: 30px; padding-top: 0px" }
-    )
+        new { style = "height: 30px; padding-top: 0px" })
     <p style="clear:both"></p>
     <input type="submit" value="@Html.Raw(_translationProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
 </form>
@@ -31,10 +30,9 @@
         m => m.LogType,
         EnumUtility.EnumToDropDownList(selectedItem: Model.LogType, textTransform: x => x.ToString()),
         _translationProvider.Admin[Model.Language, "SORT_BY_LOG_TYPE"],
-        new { style = "height: 30px; padding-top: 0px" }
-    )
+        new { style = "height: 30px; padding-top: 0px" })
     <p style="clear:both"></p>
-    <input asp asp-for="AuthorName" placeholder="@Html.Raw(_translationProvider.BasicText[Model.Language, "SEARCH_BY_AUTHOR"])" style="width:100%; height: 30px" autocomplete="new-password" class="InputBox" />
+    <input asp asp-for="AuthorName" placeholder="@Html.Raw(_translationProvider.BasicText[Model.Language, "SEARCH_BY_AUTHOR"])" autocomplete="new-password" class="InputBox" />
     <p style="clear:both"></p>
     <p id="tributeHolder" style="position:relative"></p>
     <input type="hidden" name="authorId" id="authorId" />

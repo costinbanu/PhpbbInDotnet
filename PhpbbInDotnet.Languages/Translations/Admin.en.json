@@ -98,6 +98,7 @@
     "CANT_REMIND_INVALID_USER_STATE_FORMAT": "The user '{0}' can't receive a reminder because their current status ('{1}') doesn't allow it.",
     "ONE_OR_MORE_INVALID_INPUT_DATES": "One or more dates is invalid.",
     "OPEN_IN_ADMIN_PANEL": "Open in admin panel",
+    "COPY_USER_AGENT": "Copy user-agent",
 
     "INVALID_RANK_NAME": "Invalid rank name",
     "RANK_DOESNT_EXIST_FORMAT": "The rank '{0}' doesn't exist.",

@@ -98,6 +98,7 @@
     "CANT_REMIND_INVALID_USER_STATE_FORMAT": "Utilizatorului '{0}' nu i se poate trimite o reamintire deoarece statusul său curent ('{1}') nu necesită reamintiri.",
     "ONE_OR_MORE_INVALID_INPUT_DATES": "Una sau mai multe date este invalidă.",
     "OPEN_IN_ADMIN_PANEL": "Deschide în panoul administratorului",
+    "COPY_USER_AGENT": "Copiază user-agent",
 
     "INVALID_RANK_NAME": "Numele rangului este invalid",
     "RANK_DOESNT_EXIST_FORMAT": "Rangul {0} nu există.",

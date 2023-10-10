@@ -265,12 +265,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (isSelf)
                 {
-                    if (dbUser.UserInactiveReason == UserInactiveReason.NotInactive)
-                    {
-                        dbUser.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
-                        dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
-                    }
                     var registrationCode = Guid.NewGuid().ToString("n");
+
+                    dbUser.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
+                    dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
                     dbUser.UserActkey = registrationCode;
 
                     var subject = string.Format(TranslationProvider.Email[dbUser.UserLang, "EMAIL_CHANGED_SUBJECT_FORMAT"], Configuration.GetValue<string>("ForumName"));
@@ -279,9 +277,10 @@ namespace PhpbbInDotnet.Forum.Pages
                         subject: subject,
                         bodyRazorViewName: "_WelcomeEmailPartial",
                         bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, dbUser.Username, dbUser.UserLang));
+
+                    userShouldSignIn = true;
                 }
 
-                userShouldSignIn = true;
                 EmailChanged = true;
             }
 
