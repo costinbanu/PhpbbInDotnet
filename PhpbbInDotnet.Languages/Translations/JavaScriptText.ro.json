@@ -41,6 +41,8 @@
     "Admin": {
         "CONFIRM_USER_COMMAND_FORMAT": "Am primit comanda '{0}' pentru utilizatorul '{1}'. Ești sigur că dorești să continui?",
         "ADMIN_GROUP_TITLE_FORMAT": "Administrează grup - {0}",
-        "ADD_NEW_GROUP": "Adaugă un grup nou"
+        "ADD_NEW_GROUP": "Adaugă un grup nou",
+        "IP_LOOKUP": "Caută IP",
+        "FORUM_IP_SEARCH": "Caută IP pe forum"
     }
 }

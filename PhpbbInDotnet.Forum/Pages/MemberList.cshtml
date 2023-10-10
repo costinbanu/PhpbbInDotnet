@@ -177,27 +177,27 @@
         var displayUsers = Model.Mode == MemberListPages.ActiveBots ? "display:none" : "display:initial";
         var displayBots = Model.Mode == MemberListPages.ActiveBots ? "display:initial" : "display:none";
     }
-<h4>
-    @string.Format(Model.TranslationProvider.BasicText[Lang, Model.RegisteredUserCount == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], Model.RegisteredUserCount),
-    @string.Format(Model.TranslationProvider.BasicText[Lang, anonymousUserCount == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymousUserCount)
-    @if (Model.CurrentUserIsAdmin)
-    {
-        <span>
-            @Model.TranslationProvider.BasicText[Lang, "AND"]
-            @if (botCount > 0)
-            {
-                <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
-                    @string.Format(Model.TranslationProvider.BasicText[Lang, botCount == 1 ? "BOT_COUNT_SINGLE_FORMAT" : "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], botCount)
-                </a>
-            }
-            else
-            {
-                @string.Format(Model.TranslationProvider.BasicText[Lang, "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], botCount)
-            }
-        </span>
-    }
+    <h4>
+        @string.Format(Model.TranslationProvider.BasicText[Lang, Model.RegisteredUserCount == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], Model.RegisteredUserCount),
+        @string.Format(Model.TranslationProvider.BasicText[Lang, anonymousUserCount == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymousUserCount)
+        @if (Model.CurrentUserIsAdmin)
+        {
+            <span>
+                @Model.TranslationProvider.BasicText[Lang, "AND"]
+                @if (botCount > 0)
+                {
+                    <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
+                        @string.Format(Model.TranslationProvider.BasicText[Lang, botCount == 1 ? "BOT_COUNT_SINGLE_FORMAT" : "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], botCount)
+                    </a>
+                }
+                else
+                {
+                    @string.Format(Model.TranslationProvider.BasicText[Lang, "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], botCount)
+                }
+            </span>
+        }
 
-</h4>
+    </h4>
     <div id="users" style="@displayUsers">
         @if (Model.UserList?.Any() ?? false)
         {
@@ -234,11 +234,12 @@
                 <button type="button" class="collapsible">
 					@Html.Raw(botGroup.Key) (@botGroup.Count())
                 </button>
-                @*<h4 onclick="expandSection('botSection', 'botChar')" style="cursor:pointer" id="botTitle">
-                    
-                    <span id="botChar">&#x1F53D;</span>
-                </h4>*@
-                <div class="content" @*id="botSection" style="display:none"*@>
+
+                <div class="content">
+                    <a href="javascript:copyUserAgent('@Html.Raw(botGroup.Key)')">
+                        @Model.TranslationProvider.Admin[Lang, "COPY_USER_AGENT"]
+                    </a>
+                    <p></p>
                     @foreach (var bots in botGroup.GroupBy(x => x.IP))
                     {
                         <p>
@@ -291,6 +292,14 @@
             $('#pageNumInput').val('1');
         }
         return true;
+    }
+
+    function copyUserAgent(value) {
+        var $temp = $("<input>");
+        $("body").append($temp);
+        $temp.val(value).select();
+        document.execCommand("copy");
+        $temp.remove();
     }
 
     enableCollapsibles();

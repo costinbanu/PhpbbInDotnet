@@ -135,11 +135,14 @@ namespace PhpbbInDotnet.Forum.Pages
             else
             {
 				var newInactiveReason = user.UserInactiveReason;
+                var newInactiveTime = user.UserInactiveTime;
+                var shouldNotifyAdmins = false;
 				if (user.UserInactiveReason == UserInactiveReason.Active_NotConfirmed)
                 {
                     Message = $"<span class=\"message success\">{TranslationProvider.BasicText[Language, "EMAIL_VERIFICATION_SUCCESSFUL"]}</span>";
 
                     newInactiveReason = UserInactiveReason.NotInactive;
+                    newInactiveTime = 0;
                 }
                 else
                 {
@@ -154,29 +157,35 @@ namespace PhpbbInDotnet.Forum.Pages
                         newInactiveReason = UserInactiveReason.ChangedEmailConfirmed;
                     }
 
-                    await SqlExecuter.ExecuteAsync(
-                        "UPDATE phpbb_users SET user_inactive_reason = @newInactiveReason WHERE user_id = @userId",
-                        new
-                        {
-                            newInactiveReason,
-                            user.UserId
-                        });
+                    shouldNotifyAdmins = true;
+                }
 
-                    var admins = await SqlExecuter.QueryAsync<PhpbbUsers>(
-                        "SELECT * FROM phpbb_users WHERE group_id = @ADMIN_GROUP_ID",
+                await SqlExecuter.ExecuteAsync(
+                    @"UPDATE phpbb_users 
+                         SET user_inactive_reason = @newInactiveReason,
+                             user_inactive_time = @newInactiveTime,
+                             user_actkey = ''
+                       WHERE user_id = @userId",
+                    new
+                    {
+                        newInactiveReason,
+                        newInactiveTime,
+                        user.UserId
+                    });
+
+                if (shouldNotifyAdmins)
+                {
+                    var admins = await SqlExecuter.QueryAsync<(string UserLang, string UserEmail)>(
+                        "SELECT user_lang, user_email FROM phpbb_users WHERE group_id = @ADMIN_GROUP_ID",
                         new { Constants.ADMIN_GROUP_ID });
 
-                    await Task.WhenAll(admins.Select(admin =>
-                    {
-                        var subject = TranslationProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
-                        return _emailService.SendEmail(
+                    await Task.WhenAll(admins.Where(a => a.UserEmail == "admin@metrouusor.com").Select(admin => 
+                        _emailService.SendEmail(
                             to: admin.UserEmail,
-                            subject: subject,
+                            subject: TranslationProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"],
                             bodyRazorViewName: "_NewUserNotification",
-                            bodyRazorViewModel: new SimpleEmailBody(user.Username, admin.UserLang));
-                    }));
+                            bodyRazorViewModel: new SimpleEmailBody(user.Username, admin.UserLang))));
                 }
-                user.UserActkey = string.Empty;
             }
             Title = TranslationProvider.BasicText[Language, "EMAIL_CONFIRM_TITLE"];
         }

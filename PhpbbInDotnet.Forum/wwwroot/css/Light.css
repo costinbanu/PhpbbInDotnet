@@ -225,14 +225,9 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     text-decoration: underline;
 }
 
-.AhrefOverride {
+.PostInfoLink {
 
 }
-
-    /*.AhrefOverride a:focus, a:hover {
-        color: white;
-        text-decoration: none;
-    }*/
 
 @media (max-width: 768px) {
     .Summary {

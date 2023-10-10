@@ -308,7 +308,8 @@ namespace PhpbbInDotnet.Services
                             await _sqlExecuter.ExecuteAsync(
                                 @"UPDATE phpbb_users
                                      SET user_reminded = 1
-                                        ,user_reminded_time = @userRemindedTime",
+                                        ,user_reminded_time = @userRemindedTime
+                                   WHERE user_id = @userId",
                                 new
                                 {
                                     userRemindedTime = DateTime.UtcNow.ToUnixTimestamp(),

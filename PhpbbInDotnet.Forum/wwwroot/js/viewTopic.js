@@ -33,8 +33,11 @@
 
     
 
-    showMessageDetails(ip, editTime, timeFormat, editCount, editUser, encodedReports) {
-        let content = `<b>IP:</b> ${ip} [<a href='./IPLookup?ip=${ip}' target='_blank'>${dictionary.ViewTopic['DO_SEARCH']}</a>]<br/>`;
+    showMessageDetails(ip, ipWhoIsLink, editTime, timeFormat, editCount, editUser, encodedReports) {
+        let content =
+            `<b>IP:</b> ${ip}
+            [<a href='./IPLookup?ip=${ip}' target='_blank' class='PostInfoLink'>${dictionary.Admin['FORUM_IP_SEARCH']}</a>]
+            [<a href='${ipWhoIsLink}' target='_blank' class='PostInfoLink'>${dictionary.Admin['IP_LOOKUP']}</a>]<br/>`;
         if (editCount > 0) {
             content = content +
                 `<b>${dictionary.ViewTopic['LAST_CHANGED']}</b> ${new Date(editTime).format(timeFormat)} <b>${dictionary.ViewTopic['CHANGED_BY']}</b> ${editUser}<br />

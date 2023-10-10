@@ -38,6 +38,7 @@ namespace PhpbbInDotnet.Services
                 updateValueFactory: (_, curValue) =>
                 {
                     curValue.Value.Add(data);
+                    curValue.ResetTimer();
                     return curValue;
                 });
         }
@@ -62,6 +63,12 @@ namespace PhpbbInDotnet.Services
             private readonly Timer _timer;
 
             internal TValue Value { get; private set; }
+
+            internal void ResetTimer()
+            {
+                _timer.Stop();
+                _timer.Start();
+            }
 
             internal Item(string key, TValue value, TimeSpan expiration, ConcurrentDictionary<string, Item<TValue>> cache)
             {
