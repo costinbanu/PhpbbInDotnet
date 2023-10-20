@@ -73,7 +73,10 @@ namespace PhpbbInDotnet.Services
             internal Item(string key, TValue value, TimeSpan expiration, ConcurrentDictionary<string, Item<TValue>> cache)
             {
                 Value = value;
-                _timer = new Timer(expiration.TotalMilliseconds);
+                _timer = new Timer(expiration.TotalMilliseconds)
+                {
+                    AutoReset = false
+                };
                 _timer.Elapsed += new ElapsedEventHandler((_, __) =>
                 {
                     if (cache.TryRemove(key, out var obj))
