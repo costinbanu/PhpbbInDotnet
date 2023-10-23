@@ -104,11 +104,13 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly ILogger _logger;
 		private readonly IImageResizeService _imageResizeService;
         private readonly IModeratorService _moderatorService;
+		private readonly INotificationService _notificationService;
 
-        static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
+		static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
 
-        public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
-            IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IImageResizeService imageResizeService, IModeratorService moderatorService)
+        public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, 
+            IConfiguration config, ILogger logger, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
+            IImageResizeService imageResizeService, IModeratorService moderatorService, INotificationService notificationService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             PollExpirationDaysString = "1";
@@ -121,6 +123,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _logger = logger;
             _imageResizeService = imageResizeService;
             _moderatorService = moderatorService;
+            _notificationService = notificationService;
         }
     }
 }

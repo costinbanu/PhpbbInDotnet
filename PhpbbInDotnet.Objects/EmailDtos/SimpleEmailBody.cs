@@ -1,15 +1,13 @@
-﻿namespace PhpbbInDotnet.Objects
+﻿namespace PhpbbInDotnet.Objects.EmailDtos
 {
     public class SimpleEmailBody
     {
-        public SimpleEmailBody(string userName, string language)
+        public SimpleEmailBody(string language, string userName)
         {
-            UserName = userName;
             Language = language;
+            UserName = userName;
         }
-
         public string UserName { get; }
-
         public string Language { get; }
     }
 }

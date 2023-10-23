@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Identity.Client;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -24,14 +25,13 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class ViewTopicModel : AuthenticatedPageModel
     {
+        #region Model
+
         [BindProperty]
         public int? ForumId { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public bool? Highlight { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? TopicId { get; set; }
@@ -98,6 +98,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public List<ReportDto>? Reports { get; private set; }
 
+        public bool IsSubscribed { get; private set; }
+
+        #endregion model
+
         private PhpbbTopics? _currentTopic;
         private readonly IPostService _postService;
         private readonly IModeratorService _moderatorService;
@@ -143,11 +147,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (postId.HasValue)
                 {
-                    return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId.Value, highlight = false });
+                    return RedirectToPage("ViewTopic", "ByPostId", new { PostId });
                 }
                 else
                 {
-                    return RedirectToPage("ViewTopic", new { topicId = TopicId!.Value, pageNum = 1 });
+                    return RedirectToPage("ViewTopic", new { TopicId, pageNum = 1 });
                 }
             });
 
@@ -195,6 +199,28 @@ namespace PhpbbInDotnet.Forum.Pages
                     newVotes.Select(vote => new { topicId, vote }));
                 return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
             }));
+
+        public Task<IActionResult> OnPostToggleTopicSubscription(int lastPostId)
+            => WithRegisteredUser(async user =>
+            {
+                if (!IsSubscribed)
+                {
+                    await SqlExecuter.ExecuteAsync(
+                        "INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@user_id, @topic_id, 0)",
+                        new { user.UserId, TopicId });
+                }
+                else
+                {
+					await SqlExecuter.ExecuteAsync(
+	                    "DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+	                    new { user.UserId, TopicId });
+				}
+
+                return RedirectToPage("ViewTopic", "ByPostId", new { postId = lastPostId });
+            });
+
+
+        #region moderator handlers
 
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(ForumId ?? 0, async () =>
@@ -485,6 +511,8 @@ namespace PhpbbInDotnet.Forum.Pages
             return !exclusionList.Any(e => e == action);
         }
 
+        #endregion moderator handlers
+
         private async Task PopulateModel(PhpbbForums curForum, PhpbbTopics curTopic, int computedPageNum = 1)
         {
             _currentTopic = curTopic;
@@ -504,7 +532,15 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRulesLink = curForum.ForumRulesLink;
             ForumRules = curForum.ForumRules;
             ForumRulesUid = curForum.ForumRulesUid;
-            Poll = await _postService.GetPoll(_currentTopic);
+
+            var pollTask = _postService.GetPoll(_currentTopic);
+            var subscribedTask = SqlExecuter.ExecuteScalarAsync<byte>(
+                "SELECT notify_status FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+                new { ForumUser.UserId, TopicId });
+            await Task.WhenAll(pollTask, subscribedTask);
+
+            Poll = await pollTask;
+            IsSubscribed = (await subscribedTask).ToBool();
 
             if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
             {
@@ -513,8 +549,9 @@ namespace PhpbbInDotnet.Forum.Pages
             try
             {
                 await SqlExecuter.ExecuteAsyncWithoutResiliency(
-                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
-                    new { topicId = TopicId!.Value },
+					@"UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId;
+                      UPDATE phpbb_topics_watch SET notify_status = 0 WHERE topic_id = @topicId AND user_id = @userId;",
+                    new { TopicId, ForumUser.UserId },
                     commandTimeout: 10);
             }
             catch (Exception ex)

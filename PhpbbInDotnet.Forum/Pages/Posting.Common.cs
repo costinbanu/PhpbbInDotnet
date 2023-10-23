@@ -213,6 +213,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
             Response.Cookies.DeleteObject(CookieBackupKey);
 
+            if (Action == PostingActions.NewTopic || Action == PostingActions.NewForumPost)
+            {
+                try
+                {
+                    var tree = await ForumService.GetForumTree(ForumUser, forceRefresh: false, fetchUnreadData: false);
+                    var path = $"{ForumService.GetPathText(tree, post.ForumId)} → {curTopic!.TopicTitle}";
+                    await _notificationService.SendNewPostNotification(post.TopicId, post.PostId, path);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Failed to notify subscribers");
+                }
+            }
+
             return post.PostId;
         }
 

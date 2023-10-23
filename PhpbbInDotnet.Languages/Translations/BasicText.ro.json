@@ -60,6 +60,8 @@
     "WROTE_FORMAT": "<b>{0}</b> a scris",
     "HERE": "aici",
     "ANONYMOUS": "anonim",
+    "SUBSCRIBE_TO_TOPIC": "Abonare subiect",
+    "UNSUBSCRIBE_TO_TOPIC": "Dezabonare subiect",
 
     //post/topic/forum summary
     "LAST_POST_TEXT": "Ultimul mesaj de",

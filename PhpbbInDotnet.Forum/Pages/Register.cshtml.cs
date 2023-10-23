@@ -9,8 +9,8 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
+using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public class RegisterModel : BaseModel
     {
         private readonly ISqlExecuter _sqlExecuter;

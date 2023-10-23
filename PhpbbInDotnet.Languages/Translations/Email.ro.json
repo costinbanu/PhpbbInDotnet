@@ -1,27 +1,32 @@
 ﻿{
-  "GREETING_BEGIN": "Salut!",
-  "GREETING_END": "O zi bună!",
+    "GREETING_BEGIN": "Salut!",
+    "GREETING_END": "O zi bună!",
 
-  "RESETPASS_SUBJECT_FORMAT": "Resetează-ți parola pe \"{0}\"",
-  "RESETPASS_BODY_FORMAT": "Pentru a continua, trebuie să îți setezi o nouă parolă.<br /><a href=\"{0}\">Apasă aici</a> pentru a o seta.",
-  "RESETPASS_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost asociată contului \"{0}\" pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.",
+    "RESETPASS_SUBJECT_FORMAT": "Resetează-ți parola pe \"{0}\"",
+    "RESETPASS_BODY_FORMAT": "Pentru a continua, trebuie să îți setezi o nouă parolă.<br /><a href=\"{0}\">Apasă aici</a> pentru a o seta.",
+    "RESETPASS_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost asociată contului \"{0}\" pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.",
 
-  "WELCOME_SUBJECT_FORMAT": "Bine ai venit pe \"{0}\"",
-  "WELCOME_REMINDER_SUBJECT_FORMAT": "Reamintire: bine ai venit pe \"{0}\"",
-  "WELCOME_BODY_FORMAT": "Pentru a continua, trebuie să îți confirmi adresa de email.<br /><a href=\"{0}\">Apasă aici</a> pentru a o confirma.",
-  "WELCOME_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost folosită pentru a înregistra contul \"{0}\" pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare de înregistrare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.",
-  "WELCOME_REMINDER_FORMAT": "Îți reamintim că pe data de {0:d} te-ai înregistrat pe \"{1}\". Momentan, contul tău este inactiv. Te rugăm să urmezi pașii următori pentru a putea să îți folosești contul de pe \"{1}\".",
+    "WELCOME_SUBJECT_FORMAT": "Bine ai venit pe \"{0}\"",
+    "WELCOME_REMINDER_SUBJECT_FORMAT": "Reamintire: bine ai venit pe \"{0}\"",
+    "WELCOME_BODY_FORMAT": "Pentru a continua, trebuie să îți confirmi adresa de email.<br /><a href=\"{0}\">Apasă aici</a> pentru a o confirma.",
+    "WELCOME_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost folosită pentru a înregistra contul \"{0}\" pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare de înregistrare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.",
+    "WELCOME_REMINDER_FORMAT": "Îți reamintim că pe data de {0:d} te-ai înregistrat pe \"{1}\". Momentan, contul tău este inactiv. Te rugăm să urmezi pașii următori pentru a putea să îți folosești contul de pe \"{1}\".",
 
-  "NEWUSER_SUBJECT": "Cont de utilizator nou",
-  "NEWUSER_BODY_FORMAT": "Următorul cont a fost creat recent: '{0}'<br /><br /><a href=\"{1}\">Vezi utilizatorii inactivi</a>.",
+    "NEWUSER_SUBJECT": "Cont de utilizator nou",
+    "NEWUSER_BODY_FORMAT": "Următorul cont a fost creat recent: '{0}'<br /><br /><a href=\"{1}\">Vezi utilizatorii inactivi</a>.",
 
-  "NEWPM_SUBJECT_FORMAT": "Ai primit un mesaj privat nou pe \"{0}\"",
-  "NEWPM_BODY_FORMAT": "Ai primit un nou mesaj privat de la \"{0}\".<br />Accesează-ți căsuța poștală <a href=\"{1}\">aici</a>.",
+    "NEWPM_SUBJECT_FORMAT": "Ai primit un mesaj privat nou pe \"{0}\"",
+    "NEWPM_BODY_FORMAT": "Ai primit un nou mesaj privat de la \"{0}\".<br />Accesează-ți căsuța poștală <a href=\"{1}\">aici</a>.",
 
-  "EMAIL_CHANGED_SUBJECT_FORMAT": "Schimbarea adresei de email pe \"{0}\"",
-  "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT": "Reamintire: schimbarea adresei de email pe \"{0}\"",
-  "EMAIL_CHANGED_REMINDER_FORMAT": "Îți reamintim că pe data de {0:d} ți-ai schimbat adresa de email pe \"{1}\". Momentan, contul tău este inactiv. Te rugăm să urmezi pașii următori pentru a continua să îți folosești contul de pe \"{1}\".",
+    "EMAIL_CHANGED_SUBJECT_FORMAT": "Schimbarea adresei de email pe \"{0}\"",
+    "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT": "Reamintire: schimbarea adresei de email pe \"{0}\"",
+    "EMAIL_CHANGED_REMINDER_FORMAT": "Îți reamintim că pe data de {0:d} ți-ai schimbat adresa de email pe \"{1}\". Momentan, contul tău este inactiv. Te rugăm să urmezi pașii următori pentru a continua să îți folosești contul de pe \"{1}\".",
 
-  "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT": "Contul pe \"{0}\" a fost activat.",
-  "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT": "Bine ai venit pe <a href=\"{0}\">{1}</a>! Contul tău \"{2}\" a fost activat."
+    "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT": "Contul pe \"{0}\" a fost activat.",
+    "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT": "Bine ai venit pe <a href=\"{0}\">{1}</a>! Contul tău \"{2}\" a fost activat.",
+
+    "NEW_POST_SUBJECT_FORMAT": "Mesaj nou pe \"{0}\"",
+    "NEW_POST_IN_TOPIC_BODY_FORMAT": "Un mesaj nou a fost postat în subiectul {0}. Citește-l aici:<br /><a href=\"{1}\">{1}</a>",
+    "NEW_POST_IN_TOPIC_DISCLAIMER_FORMAT": "Ai primit acest e-mail deoarece ești abonat la notificări privind mesaje noi în subiectul menționat mai sus. Pentru a te dezabona, apasă <a href=\"{0}\">aici</a>."
+
 }

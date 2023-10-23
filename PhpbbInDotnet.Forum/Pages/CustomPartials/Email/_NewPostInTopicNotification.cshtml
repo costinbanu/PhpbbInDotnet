@@ -1,0 +1,34 @@
+﻿@model NewPostNotificationDto
+
+@using Microsoft.Extensions.Configuration
+@using Domain
+@using Domain.Utilities
+@using Objects.EmailDtos
+
+@inject IConfiguration _config
+@inject Languages.ITranslationProvider _translationProvider
+
+@{
+	var baseUrl = _config.GetValue<string>("BaseUrl");
+	var forumName = _config.GetValue<string>("ForumName");
+}
+
+<h3>
+	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEW_POST_SUBJECT_FORMAT"], forumName))
+</h3>
+
+<p>
+	@Html.Raw(_translationProvider.Email[Model.Language, "GREETING_BEGIN"])
+</p>
+
+<p>
+	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEW_POST_IN_TOPIC_BODY_FORMAT"], Model.Path, ForumLinkUtility.GetAbsoluteUrlToPost(baseUrl, Model.PostId)))
+</p>
+
+<p>
+	@Html.Raw(_translationProvider.Email[Model.Language, "GREETING_END"])
+</p>
+
+<p style="font-size:0.85em">
+	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEW_POST_IN_TOPIC_DISCLAIMER_FORMAT"], ForumLinkUtility.GetAbsoluteUrlToNotificationUnsubscribePage(baseUrl, topicId: Model.TopicId)))
+</p>

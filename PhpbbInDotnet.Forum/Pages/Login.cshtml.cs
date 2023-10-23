@@ -10,8 +10,8 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
 using System;
 using System.ComponentModel;
@@ -22,7 +22,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public class LoginModel : BaseModel
     {
         private readonly ISqlExecuter _sqlExecuter;
@@ -197,7 +197,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     to: EmailForPwdReset!,
                     subject: string.Format(TranslationProvider.Email[Language, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
                     bodyRazorViewName: "_ResetPasswordPartial",
-                    bodyRazorViewModel: new _ResetPasswordPartialModel(resetKey, user.UserId, user.Username, iv, Language));
+                    bodyRazorViewModel: new ResetPasswordDto(resetKey, user.UserId, user.Username, iv, Language));
 
                 await Task.WhenAll(dbChangesTask, emailTask);
             }

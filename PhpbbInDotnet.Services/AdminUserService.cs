@@ -8,6 +8,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.EmailDtos;
 using Serilog;
 using System;
 using System.Collections.Generic;

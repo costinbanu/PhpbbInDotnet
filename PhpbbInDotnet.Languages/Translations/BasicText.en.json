@@ -60,6 +60,8 @@
     "WROTE_FORMAT": "<b>{0}</b> wrote",
     "HERE": "here",
     "ANONYMOUS": "anonymous",
+    "SUBSCRIBE_TO_TOPIC": "Subscribe to topic",
+    "UNSUBSCRIBE_TO_TOPIC": "Unsubscribe to topic",
 
     //post/topic/forum summary
     "LAST_POST_TEXT": "Last post by",

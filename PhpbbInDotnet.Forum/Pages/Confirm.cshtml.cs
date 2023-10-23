@@ -7,6 +7,7 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
 using System;
 using System.Collections.Generic;
