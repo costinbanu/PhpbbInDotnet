@@ -15,7 +15,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken, ResponseCache(NoStore = true, Duration = 0)]
     public class ViewForumModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;
@@ -31,6 +31,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? ForumTitle { get; private set; }
         public string? ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
+        public bool ShouldScrollToBottom { get; private set; }
+        public bool IsSubscribed { get; private set; }
+
 
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
@@ -51,39 +54,29 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("Index");
                 }
 
+                var parentTask = SqlExecuter.QuerySingleOrDefaultAsync<(int ForumId, string ForumName)>(
+                    "SELECT forum_id, forum_name FROM phpbb_forums WHERE forum_id = @ParentId",
+                    new { thisForum.ParentId });
+                var subscribedTask = SqlExecuter.QueryFirstOrDefaultAsync<PhpbbForumsWatch?>(
+                    "SELECT * FROM phpbb_forums_watch WHERE forum_id = @forumId AND user_id = @userId",
+                    new { thisForum.ForumId, ForumUser.UserId });
+                var topicGroupsTask = ForumService.GetTopicGroups(ForumId);
+                await Task.WhenAll(parentTask, subscribedTask, topicGroupsTask);
+
                 ForumTitle = HttpUtility.HtmlDecode(thisForum.ForumName ?? "untitled");
                 ForumRulesLink = thisForum.ForumRulesLink;
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
-                Topics = await ForumService.GetTopicGroups(ForumId);
-                var parent = await SqlExecuter.QuerySingleOrDefaultAsync<(int ForumId, string ForumName)>(
-                    "SELECT forum_id, forum_name FROM phpbb_forums WHERE forum_id = @ParentId",
-                    new { thisForum.ParentId });
+                Topics = await topicGroupsTask;
+                var parent = await parentTask;
                 ParentForumId = parent.ForumId;
                 ParentForumTitle = HttpUtility.HtmlDecode(string.IsNullOrWhiteSpace(parent.ForumName) ? Configuration.GetValue<string>("ForumName") : parent.ForumName);
                 Forums = await ForumService.GetForumTree(ForumUser, _forceTreeRefresh, true);
+                IsSubscribed = (await subscribedTask) is not null;
 
                 return Page();
             });
-
-        public IActionResult OnGetNewPosts()
-        {
-            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetNewPosts));
-            return RedirectToPage("NewPosts");
-        }
-
-        public IActionResult OnGetOwnPosts()
-        {
-            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetOwnPosts));
-            return RedirectToPage("OwnPosts");
-        }
-
-        public IActionResult OnGetDrafts()
-        {
-            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetDrafts));
-            return RedirectToPage("Drafts");
-        }
 
         public async Task<IActionResult> OnPostMarkForumsRead()
             => await WithRegisteredUser((_) => WithValidForum(ForumId, ForumId == 0, async (_) =>
@@ -103,6 +96,25 @@ namespace PhpbbInDotnet.Forum.Pages
 
                  return await OnGet();
              }));
+
+        public Task<IActionResult> OnPostToggleForumSubscription()
+            => WithRegisteredUser(curUser => WithValidForum(ForumId, async curForum =>
+            {
+                var affectedRows = await SqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_forums_watch WHERE user_id = @userId AND forum_id = @forumId",
+                    new { curUser.UserId, curForum.ForumId });
+
+                if (affectedRows == 0)
+                {
+                    await SqlExecuter.ExecuteAsync(
+                        "INSERT INTO phpbb_forums_watch(user_id, forum_id, notify_status) VALUES (@userId, @forumId, 0)",
+                        new { curUser.UserId, curForum.ForumId });
+                }
+
+                ShouldScrollToBottom = true;
+
+                return await OnGet();
+            }));
 
         async Task MarkShortcutsRead()
         {

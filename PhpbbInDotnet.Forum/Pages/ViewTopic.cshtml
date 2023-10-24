@@ -174,25 +174,32 @@
             <span>&#x1F4DD;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[lang, "WRITE_NEW_POST", Casing.FirstUpper])</span>
         }
     </button>
-    <span>&nbsp;&bull;&nbsp;</span>
+    @if (!currentUser.IsAnonymous)
+    {
+        <span>&nbsp;&bull;&nbsp;</span>
+    }
 }
 else if (!isCurrentForumReadOnly)
 {
     <p></p>
     <button type="button" disabled class="MyButton">&#x1F512;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSED_TOPIC", Casing.FirstUpper])</button>
-    <span>&nbsp;&bull;&nbsp;</span>
+    @if (!currentUser.IsAnonymous)
+    {
+        <span>&nbsp;&bull;&nbsp;</span>
+    }
 }
 
-@{
+@if (!currentUser.IsAnonymous)
+{
     var key = Model.IsSubscribed ? "UNSUBSCRIBE_FROM_TOPIC" : "SUBSCRIBE_TO_TOPIC";
     var emoji = Model.IsSubscribed ? "❌" : "✔️";
+
+    <input type="submit" class="MyButton" value="@emoji @Model.TranslationProvider.BasicText[lang, key]" form="ToggleTopicSubscriptionForm" />
+    <form method="post" asp-page-handler="ToggleTopicSubscription" id="ToggleTopicSubscriptionForm">
+        <input asp-for="TopicId" type="hidden" />
+        <input name="LastPostId" value="@Model.Posts!.Last().PostId" type="hidden" />
+    </form>
 }
-<input type="submit" class="MyButton" value="@emoji @Model.TranslationProvider.BasicText[lang, key, Casing.FirstUpper]" form="ToggleTopicSubscriptionForm" />
-<form method="post" asp-page-handler="ToggleTopicSubscription" id="ToggleTopicSubscriptionForm">
-    <input asp-for="TopicId" type="hidden" />
-    <input asp-for="IsSubscribed" type="hidden" />
-    <input name="LastPostId" value="@Model.Posts!.Last().PostId" type="hidden" />
-</form>
 
 <p></p>
 @await Html.PartialAsync(

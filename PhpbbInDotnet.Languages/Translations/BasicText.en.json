@@ -61,11 +61,15 @@
     "HERE": "here",
     "ANONYMOUS": "anonymous",
 
-    //topic subscriptions
+    //new post subscriptions
     "SUBSCRIBE_TO_TOPIC": "Subscribe to topic",
-    "UNSUBSCRIBE_TO_TOPIC": "Unsubscribe to topic",
+    "UNSUBSCRIBE_FROM_TOPIC": "Unsubscribe from topic",
     "UNSUBSCRIBE_FROM_TOPIC_SUBSCRIPTION_NOT_FOUND_FORMAT": "No subscription to the topic <a href=\"{0}\">{1}</a> was found.",
     "UNSUBSCRIBE_FROM_TOPIC_SUCCESS_FORMAT": "You have successfully unsubscribed from the topic <a href=\"{0}\">{1}</a>.",
+    "SUBSCRIBE_TO_FORUM": "Subscribe to forum",
+    "UNSUBSCRIBE_FROM_FORUM": "Unsubscribe from forum",
+    "UNSUBSCRIBE_FROM_FORUM_SUBSCRIPTION_NOT_FOUND_FORMAT": "No subscription to the forum <a href=\"{0}\">{1}</a> was found.",
+    "UNSUBSCRIBE_FROM_FORUM_SUCCESS_FORMAT": "You have successfully unsubscribed from the forum <a href=\"{0}\">{1}</a>.",
 
     //post/topic/forum summary
     "LAST_POST_TEXT": "Last post by",

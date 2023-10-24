@@ -60,9 +60,6 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public int? ClosestPostId { get; set; }
 
-        [BindProperty]
-        public bool IsSubscribed { get; set; }
-
         public PollDto? Poll { get; private set; }
         public List<PostDto>? Posts { get; private set; }
         public string? TopicTitle { get; private set; }
@@ -73,6 +70,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public (string? Message, bool? IsSuccess) ModeratorActionResult { get; private set; }
         public Paginator? Paginator { get; private set; }
         public Guid CorrelationId { get; private set; }
+        public bool IsSubscribed { get; private set; }
 
         public bool ShowTopic => (TopicAction == ModeratorTopicActions.MoveTopic
             || TopicAction == ModeratorTopicActions.CreateShortcut)
@@ -202,26 +200,25 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public Task<IActionResult> OnPostToggleTopicSubscription(int lastPostId)
-            => WithRegisteredUser(async user =>
+            => WithRegisteredUser(curUser => WithValidTopic(TopicId ?? 0, async(_, curTopic) =>
             {
-                if (!IsSubscribed)
+                var affectedRows = await SqlExecuter.ExecuteAsync(
+	                "DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+	                new { curUser.UserId, curTopic.TopicId });
+
+                if (affectedRows == 0)
                 {
                     await SqlExecuter.ExecuteAsync(
                         "INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@userId, @topicId, 0)",
-                        new { user.UserId, TopicId });
+                        new { curUser.UserId, curTopic.TopicId });
                 }
-                else
-                {
-					await SqlExecuter.ExecuteAsync(
-	                    "DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
-	                    new { user.UserId, TopicId });
-				}
 
-                return RedirectToPage("ViewTopic", "ByPostId", new { postId = lastPostId });
-            });
+                PostId = lastPostId;
+                return await OnGetByPostId();
+            }));
 
 
-        #region moderator handlers
+        #region Moderator handlers
 
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(ForumId ?? 0, async () =>
@@ -512,7 +509,7 @@ namespace PhpbbInDotnet.Forum.Pages
             return !exclusionList.Any(e => e == action);
         }
 
-        #endregion moderator handlers
+        #endregion Moderator handlers
 
         private async Task PopulateModel(PhpbbForums curForum, PhpbbTopics curTopic, int computedPageNum = 1)
         {
@@ -550,9 +547,8 @@ namespace PhpbbInDotnet.Forum.Pages
             try
             {
                 await SqlExecuter.ExecuteAsyncWithoutResiliency(
-					@"UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId;
-                      UPDATE phpbb_topics_watch SET notify_status = 0 WHERE topic_id = @topicId AND user_id = @userId;",
-                    new { TopicId, ForumUser.UserId },
+					"UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
+                    new { TopicId },
                     commandTimeout: 10);
             }
             catch (Exception ex)

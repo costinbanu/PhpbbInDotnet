@@ -474,18 +474,14 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                await _sqlExecuter.CallStoredProcedureAsync(
-                    "mark_forum_read",
-                    new 
-                    { 
-                        forumId, 
-                        userId, 
-                        markTime = DateTime.UtcNow.ToUnixTimestamp() 
-                    });
+                await _sqlExecuter.CallStoredProcedureAsync("mark_forum_read", new { forumId, userId, markTime = DateTime.UtcNow.ToUnixTimestamp() });
+                await _sqlExecuter.ExecuteAsyncWithoutResiliency(
+                    "UPDATE phpbb_forums_watch SET notify_status = 0 WHERE forum_id = @forumId AND user_id = @userId",
+                    new { forumId, userId });
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error marking forums as read.");
+                _logger.Warning(ex, "Error marking forums as read.");
             }
         }
 
@@ -509,6 +505,9 @@ namespace PhpbbInDotnet.Services
                 try
                 {
                     await _sqlExecuter.CallStoredProcedureAsync("mark_topic_read", new { forumId, topicId, userId, markTime });
+                    await _sqlExecuter.ExecuteAsyncWithoutResiliency(
+                        "UPDATE phpbb_topics_watch SET notify_status = 0 WHERE topic_id = @topicId AND user_id = @userId",
+                        new { topicId, userId });
                 }
                 catch (Exception ex)
                 {

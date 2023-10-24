@@ -218,8 +218,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 try
                 {
                     var tree = await ForumService.GetForumTree(ForumUser, forceRefresh: false, fetchUnreadData: false);
-                    var path = ForumService.GetPathText(tree, post.ForumId) + Constants.FORUM_PATH_SEPARATOR + curTopic!.TopicTitle;
-                    await _notificationService.SendNewPostNotification(post.PosterId, post.TopicId, post.PostId, path);
+                    var path = ForumService.GetPathText(tree, post.ForumId);
+                    await _notificationService.SendNewPostNotification(post.PosterId, post.ForumId, post.TopicId, post.PostId, path, curTopic!.TopicTitle);
                 }
                 catch (Exception ex)
                 {

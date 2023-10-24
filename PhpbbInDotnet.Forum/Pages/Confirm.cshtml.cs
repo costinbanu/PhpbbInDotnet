@@ -242,7 +242,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var affectedRows = await SqlExecuter.ExecuteAsync(
                 "DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
-                new { curUser.UserId, TopicId });
+                new { curUser.UserId, curTopic.TopicId });
             
             var tree = await ForumService.GetForumTree(curUser, forceRefresh: false, fetchUnreadData: false);
             var path = ForumService.GetPathText(tree, curForum.ForumId) + Constants.FORUM_PATH_SEPARATOR + curTopic.TopicTitle;
@@ -253,6 +253,23 @@ namespace PhpbbInDotnet.Forum.Pages
 
             return Page();
         }));
+
+        public Task<IActionResult> OnGetUnsubscribeFromForum()
+            => WithRegisteredUser(curUser => WithValidForum(ForumId ?? 0, async curForum =>
+            {
+                var affectedRows = await SqlExecuter.ExecuteAsync(
+                            "DELETE FROM phpbb_forums_watch WHERE user_id = @userId AND forum_id = @forumId",
+                            new { curUser.UserId, curForum.ForumId });
+
+                var tree = await ForumService.GetForumTree(curUser, forceRefresh: false, fetchUnreadData: false);
+                var path = ForumService.GetPathText(tree, curForum.ForumId);
+                var url = ForumLinkUtility.GetRelativeUrlToForum(curForum.ForumId);
+                Message = affectedRows != 1
+                            ? string.Format(TranslationProvider.BasicText[Language, "UNSUBSCRIBE_FROM_FORUM_SUBSCRIPTION_NOT_FOUND_FORMAT"], url, path)
+                            : string.Format(TranslationProvider.BasicText[Language, "UNSUBSCRIBE_FROM_FORUM_SUCCESS_FORMAT"], url, path);
+
+                return Page();
+            }));
 
         private async Task SetFrontendData()
         {
