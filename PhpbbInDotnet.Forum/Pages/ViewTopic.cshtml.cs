@@ -60,6 +60,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public int? ClosestPostId { get; set; }
 
+        [BindProperty]
+        public bool IsSubscribed { get; set; }
+
         public PollDto? Poll { get; private set; }
         public List<PostDto>? Posts { get; private set; }
         public string? TopicTitle { get; private set; }
@@ -97,8 +100,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public Dictionary<int, List<AttachmentDto>>? Attachments { get; private set; }
 
         public List<ReportDto>? Reports { get; private set; }
-
-        public bool IsSubscribed { get; private set; }
 
         #endregion model
 
@@ -206,7 +207,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!IsSubscribed)
                 {
                     await SqlExecuter.ExecuteAsync(
-                        "INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@user_id, @topic_id, 0)",
+                        "INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@userId, @topicId, 0)",
                         new { user.UserId, TopicId });
                 }
                 else
@@ -534,13 +535,13 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRulesUid = curForum.ForumRulesUid;
 
             var pollTask = _postService.GetPoll(_currentTopic);
-            var subscribedTask = SqlExecuter.ExecuteScalarAsync<byte>(
-                "SELECT notify_status FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+            var subscribedTask = SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopicsWatch?>(
+                "SELECT * FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
                 new { ForumUser.UserId, TopicId });
             await Task.WhenAll(pollTask, subscribedTask);
 
             Poll = await pollTask;
-            IsSubscribed = (await subscribedTask).ToBool();
+            IsSubscribed = (await subscribedTask) is not null;
 
             if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
             {
