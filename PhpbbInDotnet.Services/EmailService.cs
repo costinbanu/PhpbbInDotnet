@@ -33,7 +33,7 @@ namespace PhpbbInDotnet.Services
         {
             if (!_environment.IsProduction() && !_smtpConfig.AllowedReceivers.Contains(to))
             {
-                _logger.Warning("An attempt to send an email to an external receiver while testing was blocked. The email was not sent.");
+                _logger.Warning("An attempt to send an email with subject '{subject}' to the external receiver '{to}' while testing in '{environment}' was blocked. The email was not sent.", subject, to, _environment.EnvironmentName);
                 return;
             }
 

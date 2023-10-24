@@ -31,11 +31,11 @@ namespace PhpbbInDotnet.Services
                     @"SELECT u.*
 						FROM phpbb_users u
 						JOIN phpbb_topics_watch tw ON u.user_id = tw.user_id
-						JOIN phpbb_zebra z ON u.user_id = z.user_id
+						LEFT JOIN phpbb_zebra z ON u.user_id = z.user_id
 					   WHERE u.user_id <> @authorId
 						 AND tw.topic_id = @topicId 
 						 AND tw.notify_status = 0
-						 AND (z.zebra_id <> @authorId OR z.foe <> 1)",
+						 AND (z.zebra_id IS NULL OR z.zebra_id <> @authorId OR z.foe <> 1)",
 					new { topicId, authorId });
 
 				await Task.WhenAll(topicSubscribers.Select(subscriber => _emailService.SendEmail(

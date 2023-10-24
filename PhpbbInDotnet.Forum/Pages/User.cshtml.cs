@@ -675,7 +675,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (topicId > 0)
                 {
                     preferredTopicTitle = ForumService.GetPathText(tree, forumId);
-                    return (topicId, $"{preferredTopicTitle} → {topicTitle}");
+                    return (topicId, preferredTopicTitle + Constants.FORUM_PATH_SEPARATOR + topicTitle);
                 }
                 return (null, null);
             }

@@ -60,8 +60,12 @@
     "WROTE_FORMAT": "<b>{0}</b> a scris",
     "HERE": "aici",
     "ANONYMOUS": "anonim",
+
+    //topic subscriptions
     "SUBSCRIBE_TO_TOPIC": "Abonare subiect",
-    "UNSUBSCRIBE_TO_TOPIC": "Dezabonare subiect",
+    "UNSUBSCRIBE_FROM_TOPIC": "Dezabonare subiect",
+    "UNSUBSCRIBE_FROM_TOPIC_SUBSCRIPTION_NOT_FOUND_FORMAT": "Nu a fost găsit un abonament la subiectul <a href=\"{0}\">{1}</a>.",
+    "UNSUBSCRIBE_FROM_TOPIC_SUCCESS_FORMAT": "Ai fost dezabonat cu succes de la subiectul <a href=\"{0}\">{1}</a>.",
 
     //post/topic/forum summary
     "LAST_POST_TEXT": "Ultimul mesaj de",

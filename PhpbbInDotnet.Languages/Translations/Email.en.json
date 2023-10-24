@@ -26,6 +26,6 @@
     "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT": "Welcome to <a href=\"{0}\">{1}</a>! Your account \"{2}\" has been activated.",
 
     "NEW_POST_SUBJECT_FORMAT": "New post on \"{0}\"",
-    "NEW_POST_IN_TOPIC_BODY_FORMAT": "A new forum post has been posted in the topic {0}. Read it here:<br /><a href=\"{1}\">{1}</a>",
+    "NEW_POST_IN_TOPIC_BODY_FORMAT": "A new forum post has been posted in the topic <a href=\"{0}\">{1}</a>",
     "NEW_POST_IN_TOPIC_DISCLAIMER_FORMAT": "You received this e-mail because you have subscribed to new post notifications in the topic mentioned above. To unsubscribe, click <a href=\"{0}\">here</a>."
 }

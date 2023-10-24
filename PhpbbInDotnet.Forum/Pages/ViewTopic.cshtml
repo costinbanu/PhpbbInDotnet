@@ -184,7 +184,7 @@ else if (!isCurrentForumReadOnly)
 }
 
 @{
-    var key = Model.IsSubscribed ? "UNSUBSCRIBE_TO_TOPIC" : "SUBSCRIBE_TO_TOPIC";
+    var key = Model.IsSubscribed ? "UNSUBSCRIBE_FROM_TOPIC" : "SUBSCRIBE_TO_TOPIC";
     var emoji = Model.IsSubscribed ? "❌" : "✔️";
 }
 <input type="submit" class="MyButton" value="@emoji @Model.TranslationProvider.BasicText[lang, key, Casing.FirstUpper]" form="ToggleTopicSubscriptionForm" />

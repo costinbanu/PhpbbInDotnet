@@ -48,7 +48,7 @@
             {
                 <p class="Caption">
                     <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@attachment.PostId" target="_blank">
-                        @Html.Raw(_forumService.GetPathText(tree, attachment.ForumId.Value)) → @Html.Raw(attachment.TopicTitle)
+                        @Html.Raw(_forumService.GetPathText(tree, attachment.ForumId.Value) + Constants.FORUM_PATH_SEPARATOR + attachment.TopicTitle)
                     </a>
                 </p>
             }

@@ -371,7 +371,7 @@ namespace PhpbbInDotnet.Services
             {
                 if (!isFirst)
                 {
-                    sb = sb.Append(" → ");
+                    sb = sb.Append(Constants.FORUM_PATH_SEPARATOR);
                 }
                 isFirst = false;
                 sb = sb.Append($"<a href=\"{ForumLinkUtility.GetRelativeUrlToForum(breadCrumb.Item.ForumId)}\">{breadCrumb.Item.ForumName}</a>");
@@ -413,7 +413,7 @@ namespace PhpbbInDotnet.Services
             {
                 if (!isFirst)
                 {
-                    sb = sb.Append(" → ");
+                    sb = sb.Append(Constants.FORUM_PATH_SEPARATOR);
                 }
                 isFirst = false;
                 sb = sb.Append(ForumName);

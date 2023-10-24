@@ -26,7 +26,7 @@
     "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT": "Bine ai venit pe <a href=\"{0}\">{1}</a>! Contul tău \"{2}\" a fost activat.",
 
     "NEW_POST_SUBJECT_FORMAT": "Mesaj nou pe \"{0}\"",
-    "NEW_POST_IN_TOPIC_BODY_FORMAT": "Un mesaj nou a fost postat în subiectul {0}. Citește-l aici:<br /><a href=\"{1}\">{1}</a>",
+    "NEW_POST_IN_TOPIC_BODY_FORMAT": "Un mesaj nou a fost postat în subiectul <a href=\"{0}\">{1}</a>",
     "NEW_POST_IN_TOPIC_DISCLAIMER_FORMAT": "Ai primit acest e-mail deoarece ești abonat la notificări privind mesaje noi în subiectul menționat mai sus. Pentru a te dezabona, apasă <a href=\"{0}\">aici</a>."
 
 }

@@ -22,7 +22,7 @@
 </p>
 
 <p>
-	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEW_POST_IN_TOPIC_BODY_FORMAT"], Model.Path, ForumLinkUtility.GetAbsoluteUrlToPost(baseUrl, Model.PostId)))
+	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEW_POST_IN_TOPIC_BODY_FORMAT"], ForumLinkUtility.GetAbsoluteUrlToPost(baseUrl, Model.PostId), Model.Path))
 </p>
 
 <p>

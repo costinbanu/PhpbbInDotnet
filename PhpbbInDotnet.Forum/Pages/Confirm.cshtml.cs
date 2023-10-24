@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
@@ -235,6 +236,23 @@ namespace PhpbbInDotnet.Forum.Pages
             Message = $"<span class=\"message success\">{TranslationProvider.BasicText[Language, "GENERIC_SUCCESS"]}</span>";
             await SetFrontendData();
         }
+
+        public Task<IActionResult> OnGetUnsubscribeFromTopic()
+            => WithRegisteredUser(curUser => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
+        {
+            var affectedRows = await SqlExecuter.ExecuteAsync(
+                "DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+                new { curUser.UserId, TopicId });
+            
+            var tree = await ForumService.GetForumTree(curUser, forceRefresh: false, fetchUnreadData: false);
+            var path = ForumService.GetPathText(tree, curForum.ForumId) + Constants.FORUM_PATH_SEPARATOR + curTopic.TopicTitle;
+            var url = ForumLinkUtility.GetRelativeUrlToTopic(curTopic.TopicId, pageNum: 1);
+            Message = affectedRows != 1 
+                ? string.Format(TranslationProvider.BasicText[Language, "UNSUBSCRIBE_FROM_TOPIC_SUBSCRIPTION_NOT_FOUND_FORMAT"], url, path) 
+                : string.Format(TranslationProvider.BasicText[Language, "UNSUBSCRIBE_FROM_TOPIC_SUCCESS_FORMAT"], url, path);
+
+            return Page();
+        }));
 
         private async Task SetFrontendData()
         {

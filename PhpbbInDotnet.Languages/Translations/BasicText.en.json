@@ -60,8 +60,12 @@
     "WROTE_FORMAT": "<b>{0}</b> wrote",
     "HERE": "here",
     "ANONYMOUS": "anonymous",
+
+    //topic subscriptions
     "SUBSCRIBE_TO_TOPIC": "Subscribe to topic",
     "UNSUBSCRIBE_TO_TOPIC": "Unsubscribe to topic",
+    "UNSUBSCRIBE_FROM_TOPIC_SUBSCRIPTION_NOT_FOUND_FORMAT": "No subscription to the topic <a href=\"{0}\">{1}</a> was found.",
+    "UNSUBSCRIBE_FROM_TOPIC_SUCCESS_FORMAT": "You have successfully unsubscribed from the topic <a href=\"{0}\">{1}</a>.",
 
     //post/topic/forum summary
     "LAST_POST_TEXT": "Last post by",
