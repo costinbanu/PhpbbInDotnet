@@ -20,7 +20,6 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private bool _forceTreeRefresh;
         private readonly IBBCodeRenderingService _renderingService;
-        private readonly ILogger _logger;
 
         public HashSet<ForumTree>? Forums { get; private set; }
         public List<TopicGroup>? Topics { get; private set; }
@@ -36,11 +35,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public int ForumId { get; set; }
 
         public ViewForumModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
-            ITranslationProvider translationProvider, ILogger logger, IConfiguration config, IBBCodeRenderingService renderingService)
+            ITranslationProvider translationProvider, IConfiguration config, IBBCodeRenderingService renderingService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _renderingService = renderingService;
-            _logger = logger;
         }
 
         public async Task<IActionResult> OnGet()
@@ -66,24 +64,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 return Page();
             });
-
-        public IActionResult OnGetNewPosts()
-        {
-            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetNewPosts));
-            return RedirectToPage("NewPosts");
-        }
-
-        public IActionResult OnGetOwnPosts()
-        {
-            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetOwnPosts));
-            return RedirectToPage("OwnPosts");
-        }
-
-        public IActionResult OnGetDrafts()
-        {
-            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetDrafts));
-            return RedirectToPage("Drafts");
-        }
 
         public async Task<IActionResult> OnPostMarkForumsRead()
             => await WithRegisteredUser((_) => WithValidForum(ForumId, ForumId == 0, async (_) =>
