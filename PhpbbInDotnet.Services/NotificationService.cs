@@ -83,5 +83,61 @@ namespace PhpbbInDotnet.Services
 
             topicTransaction.CommitTransaction();
         }
-	}
+
+		public async Task ToggleTopicSubscription(int userId, int topicId)
+		{
+            var affectedRows = await _sqlExecuter.ExecuteAsync(
+				"DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+				new { userId, topicId });
+
+            if (affectedRows == 0)
+            {
+                await _sqlExecuter.ExecuteAsync(
+                    "INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@userId, @topicId, 0)",
+                    new { userId, topicId });
+            }
+        }
+
+		public async Task ToggleForumSubscription(int userId, int forumId)
+		{
+            var affectedRows = await _sqlExecuter.ExecuteAsync(
+				"DELETE FROM phpbb_forums_watch WHERE user_id = @userId AND forum_id = @forumId",
+				new { userId, forumId });
+
+            if (affectedRows == 0)
+            {
+                await _sqlExecuter.ExecuteAsync(
+                    "INSERT INTO phpbb_forums_watch(user_id, forum_id, notify_status) VALUES (@userId, @forumId, 0)",
+                    new { userId, forumId });
+            }
+        }
+
+		public Task StartSendingForumNotifications(int userId, int forumId)
+			=> _sqlExecuter.ExecuteAsyncWithoutResiliency(
+                    "UPDATE phpbb_forums_watch SET notify_status = 0 WHERE forum_id = @forumId AND user_id = @userId",
+                    new { forumId, userId });
+
+        public Task StartSendingTopicNotifications(int userId, int topicId)
+			=> _sqlExecuter.ExecuteAsyncWithoutResiliency(
+                    "UPDATE phpbb_topics_watch SET notify_status = 0 WHERE topic_id = @topicId AND user_id = @userId",
+                    new { topicId, userId });
+
+		public async Task<bool> IsSubscribedToTopic(int userId, int topicId)
+		{
+			var result = await _sqlExecuter.QueryFirstOrDefaultAsync(
+				"SELECT 1 FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+				new { userId, topicId });
+
+			return result is not null;
+		}
+
+        public async Task<bool> IsSubscribedToForum(int userId, int forumId)
+        {
+            var result = await _sqlExecuter.QueryFirstOrDefaultAsync(
+                "SELECT 1 FROM phpbb_forums_watch WHERE user_id = @userId AND forum_id = @forumId",
+                new { userId, forumId });
+
+            return result is not null;
+        }
+    }
 }

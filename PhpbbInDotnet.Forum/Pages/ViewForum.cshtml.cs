@@ -20,7 +20,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private bool _forceTreeRefresh;
         private readonly IBBCodeRenderingService _renderingService;
-        private readonly ILogger _logger;
+        private readonly INotificationService _notificationService;
 
         public HashSet<ForumTree>? Forums { get; private set; }
         public List<TopicGroup>? Topics { get; private set; }
@@ -38,12 +38,12 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        public ViewForumModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
-            ITranslationProvider translationProvider, ILogger logger, IConfiguration config, IBBCodeRenderingService renderingService)
+        public ViewForumModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
+            IConfiguration config, IBBCodeRenderingService renderingService, INotificationService notificationService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _renderingService = renderingService;
-            _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task<IActionResult> OnGet()
@@ -57,9 +57,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var parentTask = SqlExecuter.QuerySingleOrDefaultAsync<(int ForumId, string ForumName)>(
                     "SELECT forum_id, forum_name FROM phpbb_forums WHERE forum_id = @ParentId",
                     new { thisForum.ParentId });
-                var subscribedTask = SqlExecuter.QueryFirstOrDefaultAsync<PhpbbForumsWatch?>(
-                    "SELECT * FROM phpbb_forums_watch WHERE forum_id = @forumId AND user_id = @userId",
-                    new { thisForum.ForumId, ForumUser.UserId });
+                var subscribedTask = _notificationService.IsSubscribedToForum(ForumUser.UserId, thisForum.ForumId);
                 var topicGroupsTask = ForumService.GetTopicGroups(ForumId);
                 await Task.WhenAll(parentTask, subscribedTask, topicGroupsTask);
 
@@ -73,7 +71,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ParentForumId = parent.ForumId;
                 ParentForumTitle = HttpUtility.HtmlDecode(string.IsNullOrWhiteSpace(parent.ForumName) ? Configuration.GetValue<string>("ForumName") : parent.ForumName);
                 Forums = await ForumService.GetForumTree(ForumUser, _forceTreeRefresh, true);
-                IsSubscribed = (await subscribedTask) is not null;
+                IsSubscribed = await subscribedTask;
 
                 return Page();
             });
@@ -100,16 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostToggleForumSubscription()
             => WithRegisteredUser(curUser => WithValidForum(ForumId, async curForum =>
             {
-                var affectedRows = await SqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_forums_watch WHERE user_id = @userId AND forum_id = @forumId",
-                    new { curUser.UserId, curForum.ForumId });
-
-                if (affectedRows == 0)
-                {
-                    await SqlExecuter.ExecuteAsync(
-                        "INSERT INTO phpbb_forums_watch(user_id, forum_id, notify_status) VALUES (@userId, @forumId, 0)",
-                        new { curUser.UserId, curForum.ForumId });
-                }
+                await _notificationService.ToggleForumSubscription(curUser.UserId, curForum.ForumId);
 
                 ShouldScrollToBottom = true;
 

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Identity.Client;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -106,15 +105,17 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IModeratorService _moderatorService;
         private readonly IWritingToolsService _writingToolsService;
         private readonly ILogger _logger;
+        private readonly INotificationService _notificationService;
 
-        public ViewTopicModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
-            IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration, ILogger logger)
+        public ViewTopicModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IPostService postService,
+            IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration, ILogger logger, INotificationService notificationService)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _postService = postService;
             _moderatorService = moderatorService;
             _writingToolsService = writingToolsService;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task<IActionResult> OnGetByPostId()
@@ -202,18 +203,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostToggleTopicSubscription(int lastPostId)
             => WithRegisteredUser(curUser => WithValidTopic(TopicId ?? 0, async(_, curTopic) =>
             {
-                var affectedRows = await SqlExecuter.ExecuteAsync(
-	                "DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
-	                new { curUser.UserId, curTopic.TopicId });
-
-                if (affectedRows == 0)
-                {
-                    await SqlExecuter.ExecuteAsync(
-                        "INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@userId, @topicId, 0)",
-                        new { curUser.UserId, curTopic.TopicId });
-                }
+                await _notificationService.ToggleTopicSubscription(curUser.UserId, curTopic.TopicId);
 
                 PostId = lastPostId;
+
                 return await OnGetByPostId();
             }));
 
@@ -532,13 +525,11 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRulesUid = curForum.ForumRulesUid;
 
             var pollTask = _postService.GetPoll(_currentTopic);
-            var subscribedTask = SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopicsWatch?>(
-                "SELECT * FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
-                new { ForumUser.UserId, TopicId });
+            var subscribedTask = _notificationService.IsSubscribedToTopic(ForumUser.UserId, TopicId!.Value);
             await Task.WhenAll(pollTask, subscribedTask);
 
             Poll = await pollTask;
-            IsSubscribed = (await subscribedTask) is not null;
+            IsSubscribed = await subscribedTask;
 
             if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
             {

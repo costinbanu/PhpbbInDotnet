@@ -21,17 +21,20 @@ namespace PhpbbInDotnet.Services
         private readonly IConfiguration _config;
         private readonly ILogger _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly INotificationService _notificationService;
+
         private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(ISqlExecuter sqlExecuter, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor)
+        public ForumTreeService(ISqlExecuter sqlExecuter, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService)
         {
             _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(ForumUserExpanded user, bool includePasswordProtected = false)
@@ -475,9 +478,7 @@ namespace PhpbbInDotnet.Services
             try
             {
                 await _sqlExecuter.CallStoredProcedureAsync("mark_forum_read", new { forumId, userId, markTime = DateTime.UtcNow.ToUnixTimestamp() });
-                await _sqlExecuter.ExecuteAsyncWithoutResiliency(
-                    "UPDATE phpbb_forums_watch SET notify_status = 0 WHERE forum_id = @forumId AND user_id = @userId",
-                    new { forumId, userId });
+                await _notificationService.StartSendingForumNotifications(userId, forumId);
             }
             catch (Exception ex)
             {
@@ -505,9 +506,7 @@ namespace PhpbbInDotnet.Services
                 try
                 {
                     await _sqlExecuter.CallStoredProcedureAsync("mark_topic_read", new { forumId, topicId, userId, markTime });
-                    await _sqlExecuter.ExecuteAsyncWithoutResiliency(
-                        "UPDATE phpbb_topics_watch SET notify_status = 0 WHERE topic_id = @topicId AND user_id = @userId",
-                        new { topicId, userId });
+                    await _notificationService.StartSendingTopicNotifications(userId, topicId);
                 }
                 catch (Exception ex)
                 {
