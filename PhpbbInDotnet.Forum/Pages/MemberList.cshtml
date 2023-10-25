@@ -225,6 +225,7 @@
                     paginator: Model.BotPaginator!, allowPaginationChange: false, includeEasyNavigation: false, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
                     forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"));
+            <p>&nbsp;</p>
             foreach (var (botGroup, index) in Model.BotList.Indexed())
             {
                 if (index > 0)
@@ -256,7 +257,7 @@
                     </div>
                 </div>
             }
-
+            <p>&nbsp;</p>
             @await Html.PartialAsync(
                 "_PaginationControlsPartial",
                 new _PaginationControlsPartialModel(
