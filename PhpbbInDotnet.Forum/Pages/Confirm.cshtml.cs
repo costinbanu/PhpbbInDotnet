@@ -186,7 +186,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             to: admin.UserEmail,
                             subject: TranslationProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"],
                             bodyRazorViewName: "_NewUserNotification",
-                            bodyRazorViewModel: new SimpleEmailBody(user.Username, admin.UserLang))));
+                            bodyRazorViewModel: new SimpleEmailBody(admin.UserLang, user.Username))));
                 }
             }
             Title = TranslationProvider.BasicText[Language, "EMAIL_CONFIRM_TITLE"];

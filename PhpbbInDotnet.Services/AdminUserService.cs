@@ -165,7 +165,7 @@ namespace PhpbbInDotnet.Services
                                 to: user.UserEmail,
                                 subject: string.Format(_translationProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
                                 bodyRazorViewName: "_AccountActivatedNotification",
-                                bodyRazorViewModel: new SimpleEmailBody(user.Username, user.UserLang));
+                                bodyRazorViewModel: new SimpleEmailBody(user.UserLang, user.Username));
 
                             await _sqlExecuter.ExecuteAsync(
                                 @"UPDATE phpbb_users
