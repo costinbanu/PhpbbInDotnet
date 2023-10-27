@@ -24,14 +24,13 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class ViewTopicModel : AuthenticatedPageModel
     {
+        #region Model
+
         [BindProperty]
         public int? ForumId { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public bool? Highlight { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? TopicId { get; set; }
@@ -70,6 +69,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public (string? Message, bool? IsSuccess) ModeratorActionResult { get; private set; }
         public Paginator? Paginator { get; private set; }
         public Guid CorrelationId { get; private set; }
+        public bool IsSubscribed { get; private set; }
 
         public bool ShowTopic => (TopicAction == ModeratorTopicActions.MoveTopic
             || TopicAction == ModeratorTopicActions.CreateShortcut)
@@ -98,20 +98,24 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public List<ReportDto>? Reports { get; private set; }
 
+        #endregion model
+
         private PhpbbTopics? _currentTopic;
         private readonly IPostService _postService;
         private readonly IModeratorService _moderatorService;
         private readonly IWritingToolsService _writingToolsService;
         private readonly ILogger _logger;
+        private readonly INotificationService _notificationService;
 
-        public ViewTopicModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
-            IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration, ILogger logger)
+        public ViewTopicModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IPostService postService,
+            IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration, ILogger logger, INotificationService notificationService)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _postService = postService;
             _moderatorService = moderatorService;
             _writingToolsService = writingToolsService;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task<IActionResult> OnGetByPostId()
@@ -143,11 +147,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (postId.HasValue)
                 {
-                    return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId.Value, highlight = false });
+                    return RedirectToPage("ViewTopic", "ByPostId", new { PostId });
                 }
                 else
                 {
-                    return RedirectToPage("ViewTopic", new { topicId = TopicId!.Value, pageNum = 1 });
+                    return RedirectToPage("ViewTopic", new { TopicId, pageNum = 1 });
                 }
             });
 
@@ -195,6 +199,19 @@ namespace PhpbbInDotnet.Forum.Pages
                     newVotes.Select(vote => new { topicId, vote }));
                 return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
             }));
+
+        public Task<IActionResult> OnPostToggleTopicSubscription(int lastPostId)
+            => WithRegisteredUser(curUser => WithValidTopic(TopicId ?? 0, async(_, curTopic) =>
+            {
+                await _notificationService.ToggleTopicSubscription(curUser.UserId, curTopic.TopicId);
+
+                PostId = lastPostId;
+
+                return await OnGetByPostId();
+            }));
+
+
+        #region Moderator handlers
 
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(ForumId ?? 0, async () =>
@@ -485,6 +502,8 @@ namespace PhpbbInDotnet.Forum.Pages
             return !exclusionList.Any(e => e == action);
         }
 
+        #endregion Moderator handlers
+
         private async Task PopulateModel(PhpbbForums curForum, PhpbbTopics curTopic, int computedPageNum = 1)
         {
             _currentTopic = curTopic;
@@ -504,7 +523,13 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRulesLink = curForum.ForumRulesLink;
             ForumRules = curForum.ForumRules;
             ForumRulesUid = curForum.ForumRulesUid;
-            Poll = await _postService.GetPoll(_currentTopic);
+
+            var pollTask = _postService.GetPoll(_currentTopic);
+            var subscribedTask = _notificationService.IsSubscribedToTopic(ForumUser.UserId, TopicId!.Value);
+            await Task.WhenAll(pollTask, subscribedTask);
+
+            Poll = await pollTask;
+            IsSubscribed = await subscribedTask;
 
             if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
             {
@@ -513,8 +538,8 @@ namespace PhpbbInDotnet.Forum.Pages
             try
             {
                 await SqlExecuter.ExecuteAsyncWithoutResiliency(
-                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
-                    new { topicId = TopicId!.Value },
+					"UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
+                    new { TopicId },
                     commandTimeout: 10);
             }
             catch (Exception ex)

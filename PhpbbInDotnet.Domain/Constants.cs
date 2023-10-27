@@ -41,6 +41,8 @@ namespace PhpbbInDotnet.Domain
 
         public const string LOG_FOLDER = "logs";
 
+        public const string FORUM_PATH_SEPARATOR = " → ";
+
         public static class ViewDataKeys
         {
             public const string BREADCRUMBS = "BreadCrumbs";

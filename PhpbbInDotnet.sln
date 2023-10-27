@@ -28,7 +28,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Domain", "Php
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.RecurringTasks", "PhpbbInDotnet.RecurringTasks\PhpbbInDotnet.RecurringTasks.csproj", "{4C4F3852-20FE-4F99-BDA6-427DF47B7AE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.RecurringTasks.UnitTests", "PhpbbInDotnet.RecurringTasks.UnitTests\PhpbbInDotnet.RecurringTasks.UnitTests.csproj", "{02142DA4-F51F-471A-AE3B-499614752004}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.RecurringTasks.UnitTests", "PhpbbInDotnet.RecurringTasks.UnitTests\PhpbbInDotnet.RecurringTasks.UnitTests.csproj", "{02142DA4-F51F-471A-AE3B-499614752004}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
