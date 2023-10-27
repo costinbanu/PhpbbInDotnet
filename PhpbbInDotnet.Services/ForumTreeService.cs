@@ -21,17 +21,20 @@ namespace PhpbbInDotnet.Services
         private readonly IConfiguration _config;
         private readonly ILogger _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly INotificationService _notificationService;
+
         private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(ISqlExecuter sqlExecuter, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor)
+        public ForumTreeService(ISqlExecuter sqlExecuter, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService)
         {
             _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(ForumUserExpanded user, bool includePasswordProtected = false)
@@ -371,7 +374,7 @@ namespace PhpbbInDotnet.Services
             {
                 if (!isFirst)
                 {
-                    sb = sb.Append(" → ");
+                    sb = sb.Append(Constants.FORUM_PATH_SEPARATOR);
                 }
                 isFirst = false;
                 sb = sb.Append($"<a href=\"{ForumLinkUtility.GetRelativeUrlToForum(breadCrumb.Item.ForumId)}\">{breadCrumb.Item.ForumName}</a>");
@@ -413,7 +416,7 @@ namespace PhpbbInDotnet.Services
             {
                 if (!isFirst)
                 {
-                    sb = sb.Append(" → ");
+                    sb = sb.Append(Constants.FORUM_PATH_SEPARATOR);
                 }
                 isFirst = false;
                 sb = sb.Append(ForumName);
@@ -474,18 +477,12 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                await _sqlExecuter.CallStoredProcedureAsync(
-                    "mark_forum_read",
-                    new 
-                    { 
-                        forumId, 
-                        userId, 
-                        markTime = DateTime.UtcNow.ToUnixTimestamp() 
-                    });
+                await _sqlExecuter.CallStoredProcedureAsync("mark_forum_read", new { forumId, userId, markTime = DateTime.UtcNow.ToUnixTimestamp() });
+                await _notificationService.StartSendingForumNotifications(userId, forumId);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error marking forums as read.");
+                _logger.Warning(ex, "Error marking forums as read.");
             }
         }
 
@@ -509,6 +506,7 @@ namespace PhpbbInDotnet.Services
                 try
                 {
                     await _sqlExecuter.CallStoredProcedureAsync("mark_topic_read", new { forumId, topicId, userId, markTime });
+                    await _notificationService.StartSendingTopicNotifications(userId, topicId);
                 }
                 catch (Exception ex)
                 {

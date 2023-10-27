@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace PhpbbInDotnet.Objects
+namespace PhpbbInDotnet.Objects.EmailDtos
 {
     public class WelcomeEmailDto : SimpleEmailBody
     {
         public WelcomeEmailDto(string subject, string registrationCode, string userName, string language)
-            : base(userName, language)
+            : base(language, userName)
         {
             Subject = subject;
             RegistrationCode = registrationCode;
@@ -15,7 +15,7 @@ namespace PhpbbInDotnet.Objects
 
         public string RegistrationCode { get; }
 
-        public bool IsRegistrationReminder { get; set; }
+		public bool IsRegistrationReminder { get; set; }
 
         public DateTime? RegistrationDate { get; set; }
 

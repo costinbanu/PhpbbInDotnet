@@ -61,6 +61,16 @@
     "HERE": "aici",
     "ANONYMOUS": "anonim",
 
+    //new post subscriptions
+    "SUBSCRIBE_TO_TOPIC": "Abonare subiect",
+    "UNSUBSCRIBE_FROM_TOPIC": "Dezabonare subiect",
+    "UNSUBSCRIBE_FROM_TOPIC_SUBSCRIPTION_NOT_FOUND_FORMAT": "Nu a fost găsit un abonament la subiectul <a href=\"{0}\">{1}</a>.",
+    "UNSUBSCRIBE_FROM_TOPIC_SUCCESS_FORMAT": "Ai fost dezabonat cu succes de la subiectul <a href=\"{0}\">{1}</a>.",
+    "SUBSCRIBE_TO_FORUM": "Abonare forum",
+    "UNSUBSCRIBE_FROM_FORUM": "Dezabonare forum",
+    "UNSUBSCRIBE_FROM_FORUM_SUBSCRIPTION_NOT_FOUND_FORMAT": "Nu a fost găsit un abonament la forumul <a href=\"{0}\">{1}</a>.",
+    "UNSUBSCRIBE_FROM_FORUM_SUCCESS_FORMAT": "Ai fost dezabonat cu succes de la forumul <a href=\"{0}\">{1}</a>.",
+
     //post/topic/forum summary
     "LAST_POST_TEXT": "Ultimul mesaj de",
     "LAST_POST_URL": "<a href=\"{0}\">Ultimul mesaj</a> de",

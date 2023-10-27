@@ -1,0 +1,50 @@
+﻿@model NewPostNotificationDto
+
+@using Microsoft.Extensions.Configuration
+@using Domain
+@using Domain.Utilities
+@using Objects.EmailDtos
+
+@inject IConfiguration _config
+@inject Languages.ITranslationProvider _translationProvider
+
+@{
+	var baseUrl = _config.GetValue<string>("BaseUrl");
+	var forumName = _config.GetValue<string>("ForumName");
+	string bodyTranslationKey, disclaimerTranslationKey, linkToItem, linkToUnsubscribePage;
+
+	if (Model.IsTopicNotification)
+	{
+		bodyTranslationKey = "NEW_POST_IN_TOPIC_BODY_FORMAT";
+		disclaimerTranslationKey = "NEW_POST_IN_TOPIC_DISCLAIMER_FORMAT";
+		linkToItem = ForumLinkUtility.GetAbsoluteUrlToPost(baseUrl, Model.PostId!.Value);
+		linkToUnsubscribePage = ForumLinkUtility.GetAbsoluteUrlToNotificationUnsubscribePage(baseUrl, topicId: Model.TopicId);
+	}
+	else
+	{
+		bodyTranslationKey = "NEW_POST_IN_FORUM_BODY_FORMAT";
+		disclaimerTranslationKey = "NEW_POST_IN_FORUM_DISCLAIMER_FORMAT";
+		linkToItem = ForumLinkUtility.GetAbsoluteUrlToForum(baseUrl, Model.ForumId!.Value);
+		linkToUnsubscribePage = ForumLinkUtility.GetAbsoluteUrlToNotificationUnsubscribePage(baseUrl, forumId: Model.ForumId);
+	}
+}
+
+<h3>
+	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEW_POST_SUBJECT_FORMAT"], forumName))
+</h3>
+
+<p>
+	@Html.Raw(_translationProvider.Email[Model.Language, "GREETING_BEGIN"])
+</p>
+
+<p>
+	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, bodyTranslationKey], linkToItem, Model.Path))
+</p>
+
+<p>
+	@Html.Raw(_translationProvider.Email[Model.Language, "GREETING_END"])
+</p>
+
+<p style="font-size:0.85em">
+	@Html.Raw(string.Format(_translationProvider.Email[Model.Language, disclaimerTranslationKey], linkToUnsubscribePage))
+</p>

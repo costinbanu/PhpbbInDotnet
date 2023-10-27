@@ -13,6 +13,7 @@ using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
+using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
@@ -26,7 +27,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [IgnoreAntiforgeryToken(Order = 1001), ResponseCache(NoStore = true, Duration = 0)]
+	[IgnoreAntiforgeryToken(Order = 1001), ResponseCache(NoStore = true, Duration = 0)]
     public class UserModel : AuthenticatedPageModel
     {
         [BindProperty]
@@ -674,7 +675,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (topicId > 0)
                 {
                     preferredTopicTitle = ForumService.GetPathText(tree, forumId);
-                    return (topicId, $"{preferredTopicTitle} → {topicTitle}");
+                    return (topicId, preferredTopicTitle + Constants.FORUM_PATH_SEPARATOR + topicTitle);
                 }
                 return (null, null);
             }

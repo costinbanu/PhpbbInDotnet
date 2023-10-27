@@ -351,21 +351,22 @@ namespace PhpbbInDotnet.Services
             var lang = _translationProvider.GetLanguage();
             try
             {
-                var forum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                using var transaction = _sqlExecuter.BeginTransaction();
+                var forum = await transaction.QueryFirstOrDefaultAsync<PhpbbForums>(
 				    "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
 				    new { forumId });
                 if (forum == null)
                 {
                     return (string.Format(_translationProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], forumId), false);
                 }
-                var childrenCount = await _sqlExecuter.ExecuteScalarAsync<long>(
+                var childrenCount = await transaction.ExecuteScalarAsync<long>(
                     "SELECT count(1) FROM phpbb_forums WHERE parent_id = @forumId",
                     new { forumId });
 				if (childrenCount > 0)
                 {
                     return (string.Format(_translationProvider.Admin[lang, "CANT_DELETE_HAS_CHILDREN_FORMAT"], forum.ForumName), false);
                 }
-                var topicCount = await _sqlExecuter.ExecuteScalarAsync<long>(
+                var topicCount = await transaction.ExecuteScalarAsync<long>(
 					"SELECT count(1) FROM phpbb_topics WHERE forum_id = 14",
 					new { forumId });
 				if (topicCount > 0)
@@ -392,7 +393,7 @@ namespace PhpbbInDotnet.Services
                     ForumLastPosterColour = forum.ForumLastPosterColour
                 };
 
-                await _sqlExecuter.ExecuteAsync(
+                await transaction.ExecuteAsync(
                     "INSERT INTO phpbb_recycle_bin VALUES (@id, @type, @content, @deleteTime, @deleteUser)",
                     new
                     {
@@ -403,9 +404,12 @@ namespace PhpbbInDotnet.Services
                         deleteUser = adminUserId
                     });
 
-                await _sqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_forums WHERE forum_id = @forumId",
+                await transaction.ExecuteAsync(
+                    @"DELETE FROM phpbb_forums WHERE forum_id = @forumId;
+                      DELETE FROM phpbb_forums_watch WHERE forum_id = @forumId",
                     new { forum.ForumId });
+
+                transaction.CommitTransaction();
 
                 await _operationLogService.LogAdminForumAction(AdminForumActions.Delete, adminUserId, forum);
 

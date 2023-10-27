@@ -176,8 +176,9 @@ namespace PhpbbInDotnet.Services
                         });
 
                     await transaction.ExecuteAsync(
-                        "DELETE FROM phpbb_topics WHERE topic_id = @topicId; " +
-                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId",
+                        @"DELETE FROM phpbb_topics WHERE topic_id = @topicId; 
+                          DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
+                          DELETE FROM phpbb_topics_watch WHERE topic_id = @topicId",
                         new { topicId });
                 }
 

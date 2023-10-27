@@ -1,4 +1,4 @@
-﻿namespace PhpbbInDotnet.Objects
+﻿namespace PhpbbInDotnet.Objects.EmailDtos
 {
     public class NewPMEmailDto
     {

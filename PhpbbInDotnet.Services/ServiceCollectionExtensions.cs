@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IRazorViewService, RazorViewService>();
             services.AddScoped<IUserProfileDataValidationService, UserProfileDataValidationService>();
+            services.AddScoped<INotificationService, NotificationService>();
 
             var storageOptions = configuration.GetObject<StorageOptions>();
             switch (storageOptions.StorageType)

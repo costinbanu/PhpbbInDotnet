@@ -1,7 +1,8 @@
-﻿@model Objects.SimpleEmailBody
+﻿@model SimpleEmailBody
 
 @using Microsoft.Extensions.Configuration
-@using PhpbbInDotnet.Domain
+@using Domain
+@using Objects.EmailDtos
 
 @inject IConfiguration _config
 @inject Languages.ITranslationProvider _translationProvider
