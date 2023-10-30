@@ -54,8 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     FROM phpbb_attachments a 
                     LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id 
                    WHERE attach_id = @id",
-                new { id }
-            );
+                new { id });
 
             if (file == null)
             {

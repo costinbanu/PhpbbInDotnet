@@ -33,10 +33,7 @@
                     includeEasyNavigation: false,
                     language: Model.Language,
                     back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
-                    forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
-
-                )
-            )
+                    forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"))
         </div>
 
         <p>&nbsp;</p>
@@ -52,7 +49,7 @@
                     </a>
                 </p>
             }
-            <a asp-page="File" asp-route-id="@attachment.Id" target="_blank">
+            <a asp-page="File" asp-route-id="@attachment.AttachId" target="_blank">
                 @Html.Raw(attachment.RealFilename)
             </a>
             <br />
@@ -74,10 +71,7 @@
                     includeEasyNavigation: true,
                     language: Model.Language,
                     back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
-                    forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
-
-                )
-            )
+                    forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"))
         </div>
     }
     else
