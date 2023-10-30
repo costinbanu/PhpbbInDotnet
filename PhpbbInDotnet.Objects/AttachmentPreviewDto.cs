@@ -4,7 +4,7 @@ namespace PhpbbInDotnet.Objects
 {
     public class AttachmentPreviewDto : PaginatedResultSet
     {
-        public int Id { get; set; }
+        public int AttachId { get; set; }
         public string? PhysicalFilename { get; set; }
         public string? RealFilename { get; set; }
         public string? Mimetype { get; set; }
