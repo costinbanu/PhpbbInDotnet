@@ -100,15 +100,16 @@ namespace PhpbbInDotnet.Forum.Pages
                         await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
                             {
-                                if (!string.IsNullOrWhiteSpace(Username) || GroupId.HasValue)
+                                var toSearch = Username?.Trim();
+                                if (!string.IsNullOrWhiteSpace(toSearch) || GroupId.HasValue)
                                 {
                                     var stmt = new StringBuilder("FROM phpbb_users WHERE user_id <> @ANONYMOUS_USER_ID");
                                     var param = new DynamicParameters(new { Constants.ANONYMOUS_USER_ID });
 
-                                    if (!string.IsNullOrWhiteSpace(Username))
+                                    if (!string.IsNullOrWhiteSpace(toSearch))
                                     {
                                         stmt.AppendLine(" AND username_clean LIKE @username");
-                                        param.Add("username", $"%{StringUtility.CleanString(Username)}%");
+                                        param.Add("username", $"%{StringUtility.CleanString(toSearch)}%");
                                     }
                                     if (GroupId is not null)
                                     {

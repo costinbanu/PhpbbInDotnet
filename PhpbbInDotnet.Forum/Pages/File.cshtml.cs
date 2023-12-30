@@ -68,7 +68,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (!correlationId.HasValue)
             {
-                await SqlExecuter.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id", new { id });
+                await SqlExecuter.ExecuteAsyncWithoutResiliency(
+                    "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id",
+                    new { id },
+                    commandTimeout: 10);
             }
 
             return await WithValidForum(

@@ -47,13 +47,13 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public IDapperProxy WithPagination(int skip, int take)
 			=> new PaginatedDapperProxy(this, DatabaseType, skip, take, transaction: null);
 
-        public ITransactionalSqlExecuter BeginTransaction()
+        public ITransactionalSqlExecuter BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Snapshot)
         {
             if (Connection.State == ConnectionState.Closed)
             {
                 Connection.Open();
             }
-            var transaction = Connection.BeginTransaction(IsolationLevel.Snapshot);
+            var transaction = Connection.BeginTransaction(isolationLevel);
             return new TransactionalSqlExecuter(transaction, this);
         }
 

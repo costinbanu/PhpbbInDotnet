@@ -21,7 +21,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 
         public string PaginationWildcard => _implementation.PaginationWildcard;
 
-        public ITransactionalSqlExecuter BeginTransaction()
+        public ITransactionalSqlExecuter BeginTransaction(IsolationLevel _)
         {
             throw new NotSupportedException("Transaction already started");
         }
