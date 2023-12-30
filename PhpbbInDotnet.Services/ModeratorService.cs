@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                using var transaction = _sqlExecuter.BeginTransaction();
+                using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
                 var topicRows = await transaction.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
                     new { topicId, destinationForumId });
@@ -137,7 +137,7 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                using var transaction = _sqlExecuter.BeginTransaction();
+                using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
                 var posts = (await transaction.QueryAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE topic_id = @topicId", 
                     new { topicId })).AsList();
@@ -284,7 +284,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                using var transaction = _sqlExecuter.BeginTransaction();
+                using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
                 var posts = (await transaction.QueryAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", 
                     new { postIds })).AsList();
@@ -344,7 +344,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                using var transaction = _sqlExecuter.BeginTransaction();
+                using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
                 var posts = (await transaction.QueryAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", 
                     new { postIds })).AsList();
@@ -396,7 +396,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                using var transaction = _sqlExecuter.BeginTransaction();
+                using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
                 var posts = (await transaction.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
@@ -469,7 +469,7 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                using var transaction = _sqlExecuter.BeginTransaction();
+                using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
                 var post = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE post_id = @postId",
                     new { postId });

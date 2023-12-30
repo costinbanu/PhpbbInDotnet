@@ -60,9 +60,10 @@ namespace PhpbbInDotnet.Services
             {
                 try
                 {
-                    await _sqlExecuter.ExecuteAsync(
+                    await _sqlExecuter.ExecuteAsyncWithoutResiliency(
                         "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id IN @ids",
-                        new { ids });
+                        new { ids },
+                        commandTimeout: 10);
                 }
                 catch (Exception ex)
                 {
