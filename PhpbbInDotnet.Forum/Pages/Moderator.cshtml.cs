@@ -465,7 +465,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            await _moderatorService.CascadePostAdd(toAdd, false, transaction);
+            await _moderatorService.CascadePostAdd(new List<PhpbbPosts> { toAdd }, false, transaction);
 
             await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, ForumUser.UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a><br/>Old post id: {dto.PostId}", transaction);
 

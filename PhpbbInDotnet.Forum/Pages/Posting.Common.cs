@@ -8,6 +8,7 @@ using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Objects;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -126,7 +127,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         username = HttpUtility.HtmlEncode(usr.Username)
                     });
 
-                await _moderatorService.CascadePostAdd(post, false, transaction);
+                await _moderatorService.CascadePostAdd(new List<PhpbbPosts> { post }, false, transaction);
             }
             else
             {

@@ -259,7 +259,7 @@ namespace PhpbbInDotnet.Services
                                 {
                                     postIds = toDelete.Select(p => p.PostId).DefaultIfEmpty()
                                 });
-                            toDelete.AsList().ForEach(async p => await _moderatorService.CascadePostDelete(p, false, false, transaction));
+                            await _moderatorService.CascadePostDelete(toDelete.AsList(), false, false, transaction);
                             await transaction.ExecuteAsync(
                                 @"UPDATE phpbb_users SET user_should_sign_in = 1 WHERE user_id = @userId",
                                 new { userId });
