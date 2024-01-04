@@ -1,6 +1,4 @@
 ﻿using Dapper;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -18,25 +16,23 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    class ModeratorService : IModeratorService
+	class ModeratorService : IModeratorService
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IPostService _postService;
         private readonly IStorageService _storageService;
         private readonly IOperationLogService _operationLogService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger _logger;
         private readonly ITranslationProvider _translationProvider;
 
         public ModeratorService(ISqlExecuter sqlExecuter, IPostService postService, IStorageService storageService, ITranslationProvider translationProvider,
-            IOperationLogService operationLogService, IUserService userService, IHttpContextAccessor httpContextAccessor, ILogger logger)
+            IOperationLogService operationLogService, ILogger logger)
         {
             _translationProvider = translationProvider;
             _sqlExecuter = sqlExecuter;
             _postService = postService;
             _storageService = storageService;
             _operationLogService = operationLogService;
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
@@ -91,21 +87,7 @@ namespace PhpbbInDotnet.Services
                     "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId",
                     new { destinationForumId, topicId });
 
-				await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-				{
-                    oldForumId,
-					Constants.ANONYMOUS_USER_ID,
-					Constants.ANONYMOUS_USER_NAME,
-					Constants.DEFAULT_USER_COLOR
-				});
-
-				await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-				{
-					destinationForumId,
-					Constants.ANONYMOUS_USER_ID,
-					Constants.ANONYMOUS_USER_NAME,
-					Constants.DEFAULT_USER_COLOR
-				});
+                await _postService.SyncForumWithPosts(transaction, oldForumId, destinationForumId);
 
 				await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.", transaction);
 
@@ -192,7 +174,7 @@ namespace PhpbbInDotnet.Services
                         new { topicId });
                 }
 
-                await DeletePostsCore(posts, logDto, false, transaction);
+                await DeletePostsCore(posts, logDto, shouldLog: false, ignoreTopics: true, transaction);
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId, transaction: transaction);
 
@@ -304,7 +286,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                var curTopic = await transaction.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                var newTopic = await transaction.QueryFirstOrDefaultAsync<PhpbbTopics>(
                     $@"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @title, @time);
                        SELECT * FROM phpbb_topics WHERE topic_id = {_sqlExecuter.LastInsertedItemId};",
                     new 
@@ -313,51 +295,24 @@ namespace PhpbbInDotnet.Services
                         title = posts.First().PostSubject, 
                         time = posts.First().PostTime 
                     });
-                var oldTopicId = posts.First().TopicId;
+
+                var oldTopicId = posts[0].TopicId;
+                var oldForumId = posts[0].ForumId;
 
                 await transaction.ExecuteAsync(
                     "UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", 
-                    new { curTopic.TopicId, curTopic.ForumId, postIds });
+                    new { newTopic.TopicId, newTopic.ForumId, postIds });
+
+                await _postService.CascadePostDelete(transaction, ignoreUser: true, ignoreForums: oldForumId == newTopic.ForumId, ignoreTopics: false, ignoreAttachmentsAndReports: true, posts);
               
                 foreach (var post in posts)
                 {
+                    post.TopicId = newTopic.TopicId;
+                    post.ForumId = newTopic.ForumId;
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}", transaction);
                 }
 
-				await transaction.CallStoredProcedureAsync("sync_topic_with_posts", new
-				{
-                    posts[0].TopicId,
-					Constants.ANONYMOUS_USER_ID,
-					Constants.ANONYMOUS_USER_NAME,
-					Constants.DEFAULT_USER_COLOR
-				});
-
-				await transaction.CallStoredProcedureAsync("sync_topic_with_posts", new
-				{
-					curTopic.TopicId,
-					Constants.ANONYMOUS_USER_ID,
-					Constants.ANONYMOUS_USER_NAME,
-					Constants.DEFAULT_USER_COLOR
-				});
-
-                if (posts[0].ForumId != destinationForumId)
-                {
-                    await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-                    {
-                        posts[0].ForumId,
-                        Constants.ANONYMOUS_USER_ID,
-                        Constants.ANONYMOUS_USER_NAME,
-                        Constants.DEFAULT_USER_COLOR
-                    });
-
-                    await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-                    {
-                        destinationForumId,
-                        Constants.ANONYMOUS_USER_ID,
-                        Constants.ANONYMOUS_USER_NAME,
-                        Constants.DEFAULT_USER_COLOR
-                    });
-                }
+                await _postService.CascadePostAdd(transaction, ignoreUser: true, ignoreForums: oldForumId == newTopic.ForumId, posts);
 
 				transaction.CommitTransaction();
 
@@ -406,50 +361,17 @@ namespace PhpbbInDotnet.Services
                     "UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", 
                     new { newTopic.TopicId, newTopic.ForumId, postIds });
 
-                var oldTopicId = posts.First().TopicId;
-				await CascadePostDelete(posts, false, true, transaction);
+                var oldTopicId = posts[0].TopicId;
+                var oldForumId = posts[0].ForumId;
+
+				await _postService.CascadePostDelete(transaction, ignoreUser: true, ignoreForums: oldForumId == newTopic.ForumId, ignoreTopics: false, ignoreAttachmentsAndReports: true, posts);
 				foreach (var post in posts)
                 {
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}", transaction);
                 }
-				await CascadePostAdd(posts, false, transaction);
-
-				await transaction.CallStoredProcedureAsync("sync_topic_with_posts", new
-				{
-					posts[0].TopicId,
-					Constants.ANONYMOUS_USER_ID,
-					Constants.ANONYMOUS_USER_NAME,
-					Constants.DEFAULT_USER_COLOR
-				});
-
-				await transaction.CallStoredProcedureAsync("sync_topic_with_posts", new
-				{
-					newTopic.TopicId,
-					Constants.ANONYMOUS_USER_ID,
-					Constants.ANONYMOUS_USER_NAME,
-					Constants.DEFAULT_USER_COLOR
-				});
-
-				if (posts[0].ForumId != newTopic.ForumId)
-				{
-					await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-					{
-						posts[0].ForumId,
-						Constants.ANONYMOUS_USER_ID,
-						Constants.ANONYMOUS_USER_NAME,
-						Constants.DEFAULT_USER_COLOR
-					});
-
-					await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-					{
-						newTopic.ForumId,
-						Constants.ANONYMOUS_USER_ID,
-						Constants.ANONYMOUS_USER_NAME,
-						Constants.DEFAULT_USER_COLOR
-					});
-				}
+				await _postService.CascadePostAdd(transaction, ignoreUser: true, ignoreForums: oldForumId == newTopic.ForumId, posts);
 
 				transaction.CommitTransaction();
 
@@ -479,7 +401,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                await DeletePostsCore(posts, logDto, true, transaction);
+                await DeletePostsCore(posts, logDto, shouldLog: true, ignoreTopics: false, transaction);
 
                 transaction.CommitTransaction();
 
@@ -492,7 +414,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog, ITransactionalSqlExecuter transaction)
+        private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog, bool ignoreTopics, ITransactionalSqlExecuter transaction)
         {
             var language = _translationProvider.GetLanguage();
             var postIds = posts.Select(p => p.PostId).DefaultIfEmpty();
@@ -536,7 +458,7 @@ namespace PhpbbInDotnet.Services
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post, transaction: transaction);
                 }
             }
-			await CascadePostDelete(posts, false, false, transaction);
+			await _postService.CascadePostDelete(transaction, ignoreUser: false, ignoreForums: false, ignoreTopics, ignoreAttachmentsAndReports: false, posts);
 		}
 
 		public async Task<(string Message, bool? IsSuccess)> DuplicatePost(int postId, OperationLogDto logDto)
@@ -584,7 +506,7 @@ namespace PhpbbInDotnet.Services
                         a);
 				}
 
-                await CascadePostAdd(new List<PhpbbPosts> { entity }, false, transaction);
+                await _postService.CascadePostAdd(transaction, ignoreUser: false, ignoreForums: false, entity);
 
                 await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId, transaction: transaction);
 
@@ -599,115 +521,9 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task CascadePostEdit(PhpbbPosts edited, ITransactionalSqlExecuter transaction)
-        {
-			await transaction.CallStoredProcedureAsync("sync_topic_with_posts", new
-			{
-				edited.TopicId,
-				Constants.ANONYMOUS_USER_ID,
-				Constants.ANONYMOUS_USER_NAME,
-				Constants.DEFAULT_USER_COLOR
-			});
+		#endregion Post
 
-
-			await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-			{
-				edited.ForumId,
-				Constants.ANONYMOUS_USER_ID,
-				Constants.ANONYMOUS_USER_NAME,
-				Constants.DEFAULT_USER_COLOR
-			});
-        }
-
-        public async Task CascadePostAdd(List<PhpbbPosts> added, bool ignoreTopic, ITransactionalSqlExecuter transaction)
-        {
-			await transaction.CallStoredProcedureAsync("sync_topic_with_posts", new
-			{
-                added[0].TopicId,
-				Constants.ANONYMOUS_USER_ID,
-				Constants.ANONYMOUS_USER_NAME,
-				Constants.DEFAULT_USER_COLOR
-			});
-
-
-			await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-			{
-				added[0].ForumId,
-				Constants.ANONYMOUS_USER_ID,
-				Constants.ANONYMOUS_USER_NAME,
-				Constants.DEFAULT_USER_COLOR
-			});
-
-			await transaction.ExecuteAsync(
-                "UPDATE phpbb_users SET user_posts = user_posts + 1 WHERE user_id IN @posterIds",
-                new 
-                { 
-					posterIds = added.Select(d => d.PosterId).Distinct().DefaultIfEmpty()
-				});
-        }
-
-        public async Task CascadePostDelete(List<PhpbbPosts> deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, ITransactionalSqlExecuter transaction)
-        {
-            using var multiple = await transaction.QueryMultipleAsync(
-                "SELECT * FROM phpbb_topics WHERE topic_id = @topicId;" +
-                "SELECT count(1) FROM phpbb_posts WHERE topic_id = @topicId;",
-                new { deleted[0].TopicId });
-            var curTopic = await multiple.ReadFirstOrDefaultAsync<PhpbbTopics>();
-            var postCount = await multiple.ReadSingleAsync<long>();
-			var ordered = deleted.OrderBy(d => d.PostTime).AsList();
-            var lastPost = ordered[^1];
-            var firstPost = ordered[0];
-            var deletedPostIds = deleted.Select(d => d.PostId);
-
-			if (curTopic != null && postCount > 0)
-            {
-                if (postCount == 1 && curTopic.TopicLastPostId == deleted[0].PostId && curTopic.TopicFirstPostId == deleted[0].PostId && !ignoreTopic)
-                {
-                    await DeleteTopic(deleted[0].TopicId, new OperationLogDto
-                    {
-                        Action = ModeratorTopicActions.DeleteTopic,
-                        UserId = _httpContextAccessor.HttpContext?.User is not null && IdentityUtility.TryGetUserId(_httpContextAccessor.HttpContext.User, out var id) ? id : 0
-                    });
-                }
-                else
-                {
-					await transaction.CallStoredProcedureAsync("sync_topic_with_posts", new
-					{
-						curTopic.TopicId,
-						Constants.ANONYMOUS_USER_ID,
-						Constants.ANONYMOUS_USER_NAME,
-						Constants.DEFAULT_USER_COLOR
-					});
-				}
-            }
-
-            if (!ignoreAttachmentsAndReports)
-            {
-                await transaction.ExecuteAsync(
-                    "DELETE FROM phpbb_reports WHERE post_id IN @postIds; " +
-                    "DELETE FROM phpbb_attachments WHERE post_msg_id IN @postIds",
-                    new { postIds = deleted.Select(d => d.PostId) });
-            }
-
-            if (curTopic != null)
-            {
-				await transaction.CallStoredProcedureAsync("sync_forum_with_posts", new
-				{
-					curTopic.ForumId,
-					Constants.ANONYMOUS_USER_ID,
-					Constants.ANONYMOUS_USER_NAME,
-					Constants.DEFAULT_USER_COLOR
-				});
-			}
-
-            await transaction.ExecuteAsync(
-                "UPDATE phpbb_users SET user_posts = user_posts - 1 WHERE user_id IN @posterIds",
-                new { posterIds = deleted.Select(d => d.PosterId).Distinct().DefaultIfEmpty() });
-        }
-
-        #endregion Post
-
-        public async Task<List<ReportDto>> GetReportedMessages(int forumId)
+		public async Task<List<ReportDto>> GetReportedMessages(int forumId)
         {
             return (await _sqlExecuter.QueryAsync<ReportDto>(
                 @"SELECT r.report_id AS id, 

@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -25,17 +26,19 @@ namespace PhpbbInDotnet.Services
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly IModeratorService _moderatorService;
-        private readonly IOperationLogService _operationLogService;
+		private readonly IPostService _postService;
+		private readonly IOperationLogService _operationLogService;
         private readonly ITranslationProvider _translationProvider;
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
 
-        public AdminUserService(ISqlExecuter sqlExecuter, IConfiguration config, IModeratorService moderatorService,
-            ITranslationProvider translationProvider, IOperationLogService operationLogService, ILogger logger, IEmailService emailService)
+        public AdminUserService(ISqlExecuter sqlExecuter, IConfiguration config, IModeratorService moderatorService, ITranslationProvider translationProvider, 
+            IPostService postService, IOperationLogService operationLogService, ILogger logger, IEmailService emailService)
         {
             _sqlExecuter = sqlExecuter;
             _config = config;
             _moderatorService = moderatorService;
+            _postService = postService;
             _operationLogService = operationLogService;
             _translationProvider = translationProvider;
             _logger = logger;
@@ -249,22 +252,18 @@ namespace PhpbbInDotnet.Services
                         }
                     case AdminUserActions.Delete_DeleteMessages:
                         {
-                            using var transaction = _sqlExecuter.BeginTransaction();
+                            using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
+
                             var toDelete = await transaction.QueryAsync<PhpbbPosts>(
                                 "SELECT * FROM phpbb_posts WHERE poster_id = @userId",
                                 new { userId });
-                            await transaction.ExecuteAsync(
-                                "DELETE FROM phpbb_posts WHERE post_id IN @postIds",
-                                new
-                                {
-                                    postIds = toDelete.Select(p => p.PostId).DefaultIfEmpty()
-                                });
-                            await _moderatorService.CascadePostDelete(toDelete.AsList(), false, false, transaction);
-                            await transaction.ExecuteAsync(
-                                @"UPDATE phpbb_users SET user_should_sign_in = 1 WHERE user_id = @userId",
-                                new { userId });
+
+                            await deletePosts(transaction, toDelete.AsList());
+
                             await deleteUser(transaction);
+
                             transaction.CommitTransaction();
+
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -373,7 +372,20 @@ namespace PhpbbInDotnet.Services
                         user.Username,
                         userId
                     });
-        }
+
+            async Task deletePosts(ITransactionalSqlExecuter transaction, List<PhpbbPosts> toDelete)
+            {
+                const int batchSize = 500;
+                for (var i = 0; i < toDelete.Count; i += batchSize)
+                {
+                    var actualToDelete = toDelete.Skip(i).Take(batchSize);
+                    await transaction.ExecuteAsync(
+                        "DELETE FROM phpbb_posts WHERE post_id IN @postIds",
+                        new { postIds = actualToDelete.Select(p => p.PostId).DefaultIfEmpty() });
+                    await _postService.CascadePostDelete(transaction, ignoreUser: true, ignoreForums: false, ignoreTopics: false, ignoreAttachmentsAndReports: false, actualToDelete);
+                }
+            }
+		}
 
         public async Task<(string? Message, bool IsSuccess, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch? searchParameters)
         {
