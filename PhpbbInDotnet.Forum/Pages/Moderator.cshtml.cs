@@ -1,7 +1,5 @@
 using Dapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -20,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class ModeratorModel : AuthenticatedPageModel
+	public class ModeratorModel : AuthenticatedPageModel
     {
         private readonly IModeratorService _moderatorService;
 		private readonly IPostService _postService;

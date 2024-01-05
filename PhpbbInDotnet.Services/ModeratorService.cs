@@ -416,6 +416,11 @@ namespace PhpbbInDotnet.Services
 
         private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog, bool ignoreTopics, ITransactionalSqlExecuter transaction)
         {
+            if (posts.Count == 0)
+            {
+                return;
+            }
+
             var language = _translationProvider.GetLanguage();
             var postIds = posts.Select(p => p.PostId).DefaultIfEmpty();
             var attachments = (await transaction.QueryAsync<PhpbbAttachments>(
