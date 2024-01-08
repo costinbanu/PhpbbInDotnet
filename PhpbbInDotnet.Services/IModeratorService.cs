@@ -1,13 +1,11 @@
-﻿using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Database.SqlExecuter;
-using PhpbbInDotnet.Domain;
+﻿using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Objects;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public interface IModeratorService
+	public interface IModeratorService
     {
         Task<(string Message, bool? IsSuccess)> ChangeTopicType(int topicId, TopicType topicType, OperationLogDto logDto);
         Task<(string Message, bool? IsSuccess)> CreateShortcut(int topicId, int forumId, OperationLogDto logDto);
@@ -20,9 +18,5 @@ namespace PhpbbInDotnet.Services
         Task<(string Message, bool? IsSuccess)> MoveTopic(int topicId, int destinationForumId, OperationLogDto logDto);
         Task<(string Message, bool? IsSuccess)> RemoveShortcut(int topicId, int forumId, OperationLogDto logDto);
         Task<(string Message, bool? IsSuccess)> SplitPosts(int[] postIds, int? destinationForumId, OperationLogDto logDto);
-        Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic, ITransactionalSqlExecuter transaction);
-        Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, ITransactionalSqlExecuter transaction);
-        Task CascadePostEdit(PhpbbPosts edited, ITransactionalSqlExecuter transaction);
-
     }
 }

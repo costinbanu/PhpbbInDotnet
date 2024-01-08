@@ -1,7 +1,5 @@
 using Dapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -20,10 +18,11 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class ModeratorModel : AuthenticatedPageModel
+	public class ModeratorModel : AuthenticatedPageModel
     {
         private readonly IModeratorService _moderatorService;
-        private readonly IOperationLogService _operationLogService;
+		private readonly IPostService _postService;
+		private readonly IOperationLogService _operationLogService;
         private readonly ILogger _logger;
 
         [BindProperty(SupportsGet = true)]
@@ -58,12 +57,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
-        public ModeratorModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
-            ITranslationProvider translationProvider, IModeratorService moderatorService, 
-            IOperationLogService operationLogService, ILogger logger, IConfiguration configuration)
+        public ModeratorModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IModeratorService moderatorService, 
+            IPostService postService, IOperationLogService operationLogService, ILogger logger, IConfiguration configuration)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _moderatorService = moderatorService;
+            _postService = postService;
             _operationLogService = operationLogService;
             _logger = logger;
         }
@@ -465,7 +464,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            await _moderatorService.CascadePostAdd(toAdd, false, transaction);
+            await _postService.CascadePostAdd(transaction, ignoreUser: false, ignoreForums: false, toAdd);
 
             await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, ForumUser.UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a><br/>Old post id: {dto.PostId}", transaction);
 
