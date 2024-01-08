@@ -14,6 +14,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         Task CallStoredProcedureAsync(string storedProcedureName, object? param = null);
         Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param);
         IDapperProxy WithPagination(int skip, int take);
-        ITransactionalSqlExecuter BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Snapshot);
-    }
+        ITransactionalSqlExecuter BeginTransaction();
+		ITransactionalSqlExecuter BeginTransaction(IsolationLevel isolationLevel);
+	}
 }
