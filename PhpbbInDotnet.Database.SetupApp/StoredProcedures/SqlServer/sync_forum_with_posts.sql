@@ -9,7 +9,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	CREATE TABLE #forum_ids (forum_id int INDEX ix_forum_id CLUSTERED);
-	IF (@forum_ids IS NULL OR @forum_ids = '')
+	IF (@forum_ids IS NULL OR ltrim(rtrim(@forum_ids)) = '')
 		INSERT INTO #forum_ids
 		SELECT forum_id
 		FROM phpbb_forums;
@@ -32,12 +32,12 @@ BEGIN
 		   f.forum_last_poster_id = COALESCE(u.user_id, @anonymous_user_id),
 		   f.forum_last_post_subject = lp.post_subject,
 		   f.forum_last_post_time = lp.post_time,
-		   f.forum_last_poster_name = COALESCE(u.username, @anonymous_username),
+		   f.forum_last_poster_name = COALESCE(u.username, lp.post_username, @anonymous_username),
 		   f.forum_last_poster_colour = COALESCE(u.user_colour, @default_user_colour)
 	  FROM phpbb_forums f
 	  JOIN last_posts lp ON f.forum_id = lp.forum_id
 	  JOIN #forum_ids fi ON f.forum_id = fi.forum_id
-	  LEFT JOIN phpbb_users u ON lp.poster_id = u.user_id
+	  LEFT JOIN phpbb_users u ON lp.poster_id = u.user_id and u.user_id <> @anonymous_user_id
 	 WHERE lp.post_id <> f.forum_last_post_id;
 
 END
