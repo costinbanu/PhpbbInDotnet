@@ -26,7 +26,12 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             throw new NotSupportedException("Transaction already started");
         }
 
-        public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
+		public ITransactionalSqlExecuter BeginTransaction()
+		{
+			throw new NotSupportedException("Transaction already started");
+		}
+
+		public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
             => _implementation.CallMultipleResultsStoredProcedureAsyncImpl(storedProcedureName, param, _transaction);
 
         public IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param = null)

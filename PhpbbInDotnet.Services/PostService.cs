@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    class PostService : IPostService
+	class PostService : IPostService
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IAppCache _cache;
@@ -154,5 +154,122 @@ namespace PhpbbInDotnet.Services
             };
         }
 
-    }
+		public Task CascadePostEdit(PhpbbPosts edited, ITransactionalSqlExecuter transaction)
+			=>  SyncTopicWithPosts(transaction, edited.TopicId);
+
+		public Task CascadePostAdd(ITransactionalSqlExecuter transaction, bool ignoreUser, bool ignoreForums, params PhpbbPosts[] added)
+			=> CascadePostAdd(transaction, ignoreUser, ignoreForums, added.AsEnumerable());
+
+		public async Task CascadePostAdd(ITransactionalSqlExecuter transaction, bool ignoreUser, bool ignoreForums, IEnumerable<PhpbbPosts> added)
+		{
+            if (!added.Any())
+            {
+                return;
+            }
+
+			if (!ignoreForums)
+			{
+				await SyncForumWithPosts(transaction, added.Select(p => p.ForumId));
+			}
+
+			await SyncTopicWithPosts(transaction, added.Select(p => p.TopicId));
+
+			if (!ignoreUser)
+			{
+				await SyncUserPostCount(transaction, added.Select(p => p.PostId), isDeleted: false);
+			}
+		}
+
+		public async Task CascadePostDelete(ITransactionalSqlExecuter transaction, bool ignoreUser, bool ignoreForums, bool ignoreTopics, bool ignoreAttachmentsAndReports, IEnumerable<PhpbbPosts> deleted)
+		{
+            if (!deleted.Any())
+            {
+                return;
+            }
+
+			if (!ignoreTopics)
+			{
+				await SyncTopicWithPosts(transaction, deleted.Select(p => p.TopicId));
+			}
+
+			if (!ignoreForums)
+			{
+				await SyncForumWithPosts(transaction, deleted.Select(p => p.ForumId));
+			}
+
+			if (!ignoreAttachmentsAndReports)
+			{
+				await transaction.ExecuteAsync(
+					"DELETE FROM phpbb_reports WHERE post_id IN @postIds; " +
+					"DELETE FROM phpbb_attachments WHERE post_msg_id IN @postIds",
+					new { postIds = deleted.Select(d => d.PostId) });
+			}
+
+			if (!ignoreUser)
+			{
+                await SyncUserPostCount(transaction, deleted.Select(p => p.PostId), isDeleted: true);
+			}
+		}
+
+		public Task SyncForumWithPosts(ITransactionalSqlExecuter transaction, params int[] forumIds)
+			=> SyncForumWithPosts(transaction, forumIds.AsEnumerable());
+
+        private static async Task SyncForumWithPosts(ITransactionalSqlExecuter transaction, IEnumerable<int> forumIds)
+        {
+            var actualForumIds = forumIds.Distinct();
+            if (!actualForumIds.Any())
+            {
+                return;
+            }
+
+            await transaction.CallStoredProcedureAsync(
+                "sync_forum_with_posts",
+                new
+                {
+                    forumIds = string.Join(",", actualForumIds),
+                    Constants.ANONYMOUS_USER_ID,
+                    Constants.ANONYMOUS_USER_NAME,
+                    Constants.DEFAULT_USER_COLOR
+                });
+        }
+
+		private static Task SyncTopicWithPosts(ITransactionalSqlExecuter transaction, params int[] topicIds)
+	        => SyncTopicWithPosts(transaction, topicIds.AsEnumerable());
+
+        private static async Task SyncTopicWithPosts(ITransactionalSqlExecuter transaction, IEnumerable<int> topicIds)
+        {
+			var actualTopicIds = topicIds.Distinct();
+			if (!actualTopicIds.Any())
+			{
+				return;
+			}
+
+			await transaction.CallStoredProcedureAsync(
+                "sync_topic_with_posts",
+                new
+                {
+                    topicIds = string.Join(',', actualTopicIds),
+                    Constants.ANONYMOUS_USER_ID,
+                    Constants.ANONYMOUS_USER_NAME,
+                    Constants.DEFAULT_USER_COLOR
+                });
+        }
+
+        private static async Task SyncUserPostCount(ITransactionalSqlExecuter transaction, IEnumerable<int> postIds, bool isDeleted)
+        {
+			var actualPostIds = postIds.Distinct();
+			if (!actualPostIds.Any())
+			{
+				return;
+			}
+
+			await transaction.CallStoredProcedureAsync(
+                "adjust_user_post_count",
+                new
+                {
+                    postIds = string.Join(',', actualPostIds),
+                    postOperation = isDeleted ? "delete" : "add"
+                });
+        }
+	}
 }

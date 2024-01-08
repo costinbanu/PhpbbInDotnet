@@ -47,8 +47,25 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public IDapperProxy WithPagination(int skip, int take)
 			=> new PaginatedDapperProxy(this, DatabaseType, skip, take, transaction: null);
 
-        public ITransactionalSqlExecuter BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.Snapshot)
+        public ITransactionalSqlExecuter BeginTransaction()
         {
+            var defaultLevel = DatabaseType switch
+            {
+                DatabaseType.MySql => IsolationLevel.Serializable,
+                DatabaseType.SqlServer => IsolationLevel.Snapshot,
+                _ => throw new ArgumentException("Unknown Database type in configuration.")
+			};
+
+            return BeginTransaction(defaultLevel);
+        }
+
+        public ITransactionalSqlExecuter BeginTransaction(IsolationLevel isolationLevel)
+        {
+            if (isolationLevel == IsolationLevel.Snapshot && DatabaseType != DatabaseType.SqlServer)
+            {
+                throw new ArgumentException("The selected transaction isolation level is not compatible with the selected database type.", nameof(isolationLevel));
+            }
+
             if (Connection.State == ConnectionState.Closed)
             {
                 Connection.Open();
