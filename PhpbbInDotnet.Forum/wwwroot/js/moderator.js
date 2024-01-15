@@ -57,10 +57,10 @@
     deletePost(postId, closestPostId) {
         $("input[name='PostIdsForModerator']").each(function (_, elem) {
             if ($(elem).val() == postId) {
-                $(elem).attr('checked', '');
+                $(elem).prop('checked', true);
             }
             else {
-                $(elem).removeAttr('checked');
+                $(elem).prop('checked', false);
             }
         });
         $('#PostAction').val('DeleteSelectedPosts');
