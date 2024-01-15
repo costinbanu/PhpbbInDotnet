@@ -1,14 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web;
@@ -33,6 +29,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public int? ParentForumId { get; private set; }
         public bool ShouldScrollToBottom { get; private set; }
         public bool IsSubscribed { get; private set; }
+        public bool? SubscriptionToggleWasSuccessful { get; private set; }
+        public string? SubscriptionToggleMessage { get; private set; }
 
 
         [BindProperty(SupportsGet = true)]
@@ -98,7 +96,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostToggleForumSubscription()
             => WithRegisteredUser(curUser => WithValidForum(ForumId, async curForum =>
             {
-                await _notificationService.ToggleForumSubscription(curUser.UserId, curForum.ForumId);
+                (SubscriptionToggleMessage, SubscriptionToggleWasSuccessful) = await _notificationService.ToggleForumSubscription(curUser.UserId, curForum.ForumId);
 
                 ShouldScrollToBottom = true;
 

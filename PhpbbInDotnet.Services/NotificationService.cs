@@ -1,8 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
+using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects.EmailDtos;
+using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,13 +18,15 @@ namespace PhpbbInDotnet.Services
 		private readonly IEmailService _emailService;
 		private readonly ITranslationProvider _translationProvider;
 		private readonly IConfiguration _configuration;
+        private readonly ILogger _logger;
 
-		public NotificationService(ISqlExecuter sqlExecuter, IEmailService emailService, ITranslationProvider translationProvider, IConfiguration configuration)
+        public NotificationService(ISqlExecuter sqlExecuter, IEmailService emailService, ITranslationProvider translationProvider, IConfiguration configuration, ILogger logger)
 		{
 			_sqlExecuter = sqlExecuter;
 			_emailService = emailService;
 			_translationProvider = translationProvider;
 			_configuration = configuration;
+			_logger = logger;
 		}
 
 		public async Task SendNewPostNotification(int authorId, int forumId, int topicId, int postId, string forumPath, string topicTitle)
@@ -84,32 +89,72 @@ namespace PhpbbInDotnet.Services
             topicTransaction.CommitTransaction();
         }
 
-		public async Task ToggleTopicSubscription(int userId, int topicId)
+		public async Task<(string Message, bool IsSuccess)> ToggleTopicSubscription(int userId, int topicId)
 		{
-            var affectedRows = await _sqlExecuter.ExecuteAsync(
-				"DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
-				new { userId, topicId });
+			var lang = _translationProvider.GetLanguage();
+			string message;
 
-            if (affectedRows == 0)
-            {
-                await _sqlExecuter.ExecuteAsync(
-                    "INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@userId, @topicId, 0)",
-                    new { userId, topicId });
+			try
+			{
+				var affectedRows = await _sqlExecuter.ExecuteAsync(
+					"DELETE FROM phpbb_topics_watch WHERE user_id = @userId AND topic_id = @topicId",
+					new { userId, topicId });
+
+				if (affectedRows == 0)
+				{
+					await _sqlExecuter.ExecuteAsync(
+						"INSERT INTO phpbb_topics_watch(user_id, topic_id, notify_status) VALUES (@userId, @topicId, 0)",
+						new { userId, topicId });
+                    message = _translationProvider.BasicText[lang, "SUBSCRIBE_TO_TOPIC_SUCCESS"];
+                }
+                else
+                {
+                    message = _translationProvider.BasicText[lang, "UNSUBSCRIBE_FROM_TOPIC_SUCCESS"];
+                }
+
+				return (message, true);
+            }
+			catch (Exception ex)
+			{
+                var id = _logger.ErrorWithId(ex);
+                message = string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+
+                return (message, false);
             }
         }
 
-		public async Task ToggleForumSubscription(int userId, int forumId)
+		public async Task<(string Message, bool IsSuccess)> ToggleForumSubscription(int userId, int forumId)
 		{
-            var affectedRows = await _sqlExecuter.ExecuteAsync(
-				"DELETE FROM phpbb_forums_watch WHERE user_id = @userId AND forum_id = @forumId",
-				new { userId, forumId });
+			var lang = _translationProvider.GetLanguage();
+			string message;
 
-            if (affectedRows == 0)
-            {
-                await _sqlExecuter.ExecuteAsync(
-                    "INSERT INTO phpbb_forums_watch(user_id, forum_id, notify_status) VALUES (@userId, @forumId, 0)",
-                    new { userId, forumId });
-            }
+			try
+			{
+				var affectedRows = await _sqlExecuter.ExecuteAsync(
+					"DELETE FROM phpbb_forums_watch WHERE user_id = @userId AND forum_id = @forumId",
+					new { userId, forumId });
+
+				if (affectedRows == 0)
+				{
+					await _sqlExecuter.ExecuteAsync(
+						"INSERT INTO phpbb_forums_watch(user_id, forum_id, notify_status) VALUES (@userId, @forumId, 0)",
+						new { userId, forumId });
+					message = _translationProvider.BasicText[lang, "SUBSCRIBE_TO_FORUM_SUCCESS"];
+                }
+				else
+				{
+					message = _translationProvider.BasicText[lang, "UNSUBSCRIBE_FROM_FORUM_SUCCESS"];
+                }
+
+				return (message, true);
+			}
+			catch (Exception ex)
+			{
+				var id = _logger.ErrorWithId(ex);
+				message = string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+
+				return (message, false);
+			}
         }
 
 		public Task StartSendingForumNotifications(int userId, int forumId)

@@ -1,18 +1,20 @@
 ﻿class ViewTopic {
-    constructor(postId, scrollToModPanel, otherReportReasonId) {
+    constructor(postId, scrollToModPanel, scrollToSubscriptionToggle, otherReportReasonId) {
         this.postId = postId;
         this.scrollToModPanel = scrollToModPanel;
+        this.scrollToSubscriptionToggle = scrollToSubscriptionToggle;
         this.otherReportReasonId = otherReportReasonId;
     }
 
     onLoad() {
-        if (this.postId != -1) {
+        if (this.scrollToModPanel) {
+            document.getElementById('moderatorForm').scrollIntoView();
+        } else if (this.scrollToSubscriptionToggle) {
+            document.getElementById('ToggleTopicSubscriptionForm').scrollIntoView();
+        } else if (this.postId != -1) {
             let element = $("#" + this.postId);
             let elementTop = element.offset().top;
             window.scrollTo(0, elementTop - 20);
-        }
-        if (this.scrollToModPanel) {
-            document.getElementById('moderatorForm').scrollIntoView();
         }
     }
 
@@ -30,8 +32,6 @@
         );
         showElement(id2);
     }
-
-    
 
     showMessageDetails(ip, ipWhoIsLink, editTime, timeFormat, editCount, editUser, encodedReports) {
         let content =
@@ -114,5 +114,5 @@
             return confirm(dictionary.ViewTopic['CONFIRM_DELETE_REPORTED_MESSAGE']);
         }
         return true;
-    }   
+    }
 }
