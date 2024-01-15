@@ -45,15 +45,14 @@
     var vt = new ViewTopic(
         @Json.Serialize(Model.PostId ?? -1),
         @Json.Serialize(Model.ScrollToModeratorPanel),
-        @Constants.OTHER_REPORT_REASON_ID
-    );
+        @Json.Serialize(Model.ScrollToSubscriptionToggle),
+        @Constants.OTHER_REPORT_REASON_ID);
 
     var mod = new Moderator(
         '@ModeratorTopicActions.MoveTopic',
         '@ModeratorPostActions.MoveSelectedPosts',
         '@ModeratorPostActions.SplitSelectedPosts',
-        '@ModeratorTopicActions.CreateShortcut',
-    );
+        '@ModeratorTopicActions.CreateShortcut');
 
     $(window).on('load', function () {
         vt.onLoad();
@@ -163,7 +162,7 @@
 @if ((!Model.IsLocked || isMod || isAdmin) && !isCurrentForumReadOnly)
 {
     <p></p>
-    <button onclick="location.href='./Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&pageNum=@Model.PageNum&handler=forumPost'" type="button" class="MyButton">
+    <button onclick="location.href='./Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&pageNum=@Model.PageNum&handler=forumPost'" type="button" class="MyButton SpacedButton">
 
         @if (Model.IsLocked)
         {
@@ -182,7 +181,7 @@
 else if (!isCurrentForumReadOnly)
 {
     <p></p>
-    <button type="button" disabled class="MyButton">&#x1F512;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSED_TOPIC", Casing.FirstUpper])</button>
+    <button type="button" disabled class="MyButton SpacedButton">&#x1F512;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSED_TOPIC", Casing.FirstUpper])</button>
     @if (!currentUser.IsAnonymous)
     {
         <span>&nbsp;&bull;&nbsp;</span>
@@ -194,11 +193,17 @@ else if (!isCurrentForumReadOnly)
     var key = Model.IsSubscribed ? "UNSUBSCRIBE_FROM_TOPIC" : "SUBSCRIBE_TO_TOPIC";
     var emoji = Model.IsSubscribed ? "❌" : "✔️";
 
-    <input type="submit" class="MyButton" value="@emoji @Model.TranslationProvider.BasicText[lang, key]" form="ToggleTopicSubscriptionForm" />
+    <input type="submit" class="MyButton SpacedButton" value="@emoji @Model.TranslationProvider.BasicText[lang, key]" form="ToggleTopicSubscriptionForm" />
     <form method="post" asp-page-handler="ToggleTopicSubscription" id="ToggleTopicSubscriptionForm">
         <input asp-for="TopicId" type="hidden" />
         <input name="LastPostId" value="@Model.Posts!.Last().PostId" type="hidden" />
     </form>
+
+    if (Model.SubscriptionToggleWasSuccessful is not null && !string.IsNullOrWhiteSpace(Model.SubscriptionToggleMessage))
+    {
+        <p></p>
+        <span class="message @(Model.SubscriptionToggleWasSuccessful == true ? "success" : "fail")">@Html.Raw(Model.SubscriptionToggleMessage)</span>
+    }
 }
 
 <p></p>

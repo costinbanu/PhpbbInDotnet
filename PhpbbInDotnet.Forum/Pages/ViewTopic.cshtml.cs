@@ -69,7 +69,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public (string? Message, bool? IsSuccess) ModeratorActionResult { get; private set; }
         public Paginator? Paginator { get; private set; }
         public Guid CorrelationId { get; private set; }
+        public bool ScrollToSubscriptionToggle { get; private set; }
         public bool IsSubscribed { get; private set; }
+        public bool? SubscriptionToggleWasSuccessful { get; private set; }
+        public string? SubscriptionToggleMessage { get; private set; }
 
         public bool ShowTopic => (TopicAction == ModeratorTopicActions.MoveTopic
             || TopicAction == ModeratorTopicActions.CreateShortcut)
@@ -203,9 +206,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostToggleTopicSubscription(int lastPostId)
             => WithRegisteredUser(curUser => WithValidTopic(TopicId ?? 0, async(_, curTopic) =>
             {
-                await _notificationService.ToggleTopicSubscription(curUser.UserId, curTopic.TopicId);
+                (SubscriptionToggleMessage, SubscriptionToggleWasSuccessful) = await _notificationService.ToggleTopicSubscription(curUser.UserId, curTopic.TopicId);
 
                 PostId = lastPostId;
+                ScrollToSubscriptionToggle = true;
 
                 return await OnGetByPostId();
             }));

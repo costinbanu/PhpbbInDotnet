@@ -112,7 +112,7 @@
 @if (!isCurrentForumReadOnly)
 {
     <p></p>
-    <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton">
+    <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButton">
         &#x1F4DD;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "OPEN_NEW_TOPIC"])
     </button>
     @if (!currentUser.IsAnonymous)
@@ -126,10 +126,16 @@
     var key = Model.IsSubscribed ? "UNSUBSCRIBE_FROM_FORUM" : "SUBSCRIBE_TO_FORUM";
     var emoji = Model.IsSubscribed ? "❌" : "✔️";
 
-    <input type="submit" class="MyButton" value="@emoji @Model.TranslationProvider.BasicText[Lang, key]" form="ToggleForumSubscriptionForm" />
+    <input type="submit" class="MyButton SpacedButton" value="@emoji @Model.TranslationProvider.BasicText[Lang, key]" form="ToggleForumSubscriptionForm" />
     <form method="post" asp-page-handler="ToggleForumSubscription" id="ToggleForumSubscriptionForm">
         <input asp-for="ForumId" type="hidden" />
     </form>
+
+    if (Model.SubscriptionToggleWasSuccessful is not null && !string.IsNullOrWhiteSpace(Model.SubscriptionToggleMessage))
+    {
+        <p></p>
+        <span class="message @(Model.SubscriptionToggleWasSuccessful == true ? "success" : "fail")">@Html.Raw(Model.SubscriptionToggleMessage)</span>
+    }
 
     @if (Model.ShouldScrollToBottom)
     {
