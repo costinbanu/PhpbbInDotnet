@@ -1,7 +1,5 @@
 ﻿using Dapper;
 using LazyCache;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -220,12 +218,6 @@ namespace PhpbbInDotnet.Services
             return expanded;
         }
 
-        static Task<T> ValueIfTrue<T>(bool condition, Task<T> factory, T defaultValue)
-            => condition ? factory : Task.FromResult(defaultValue);
-
-        static Task<T> ValueIfTrue<T>(bool condition, Task<T> factory) where T : new()
-            => ValueIfTrue(condition, factory, new());
-
         public async Task<IEnumerable<PhpbbRanks>> GetAllRanks()
             => await _sqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
 
@@ -251,7 +243,7 @@ namespace PhpbbInDotnet.Services
             return DbUserToForumUser(usr);
         }
 
-        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(ForumUserExpanded sender, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
+        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(ForumUserExpanded sender, int receiverId, string subject, string text)
         {
             var language = _translationProvider.GetLanguage();
             try
@@ -267,11 +259,12 @@ namespace PhpbbInDotnet.Services
                 }
 
                 var receiver = await ExpandForumUser(await GetForumUserById(receiverId), ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes);
-                if (!receiver.HasPrivateMessages)
+                var senderIsGlobalModerator = await IsUserModeratorInForum(sender, forumId: 0);
+                if (!receiver.HasPrivateMessages && !senderIsGlobalModerator)
                 {
                     return (_translationProvider.Errors[language, "RECEIVER_CANT_RECEIVE_PMS"], false);
                 }
-                if (receiver.Foes?.Contains(sender.UserId) == true)
+                if (receiver.Foes?.Contains(sender.UserId) == true && !senderIsGlobalModerator)
                 {
                     return (_translationProvider.Errors[language, "ON_RECEIVERS_FOE_LIST"], false);
                 }
@@ -337,12 +330,12 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                var rows = await _sqlExecuter.ExecuteAsync(
-                    @"START TRANSACTION;
-                      DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; 
-                      DELETE t FROM phpbb_privmsgs_to t JOIN phpbb_privmsgs_to tt ON t.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE t.msg_id = @messageId;
-                      COMMIT;",
+                using var transaction = _sqlExecuter.BeginTransaction();
+                var rows = await transaction.ExecuteAsync(
+                    @"DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; 
+                      DELETE t FROM phpbb_privmsgs_to t JOIN phpbb_privmsgs_to tt ON t.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE t.msg_id = @messageId;",
                     new { messageId });
+                transaction.CommitTransaction();
 
                 if (rows == 0)
                 {

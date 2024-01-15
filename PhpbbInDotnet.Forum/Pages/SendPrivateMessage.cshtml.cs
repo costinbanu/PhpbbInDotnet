@@ -48,7 +48,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
 
         public Task<IActionResult> OnGet()
-            => WithRegisteredUser(async (usr) =>
+            => WithUserHavingPM(async (usr) =>
             {
                 if ((PostId ?? 0) > 0)
                 {
@@ -107,7 +107,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnGetEdit()
-            => await WithRegisteredUser(async (user) =>
+            => await WithUserHavingPM(async (user) =>
             {
                 ThrowIfEntireForumIsReadOnly();
 
@@ -128,7 +128,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public Task<IActionResult> OnPostSubmit()
-            => WithRegisteredUser(user => WithValidInput(async () =>
+            => WithUserHavingPM(user => WithValidInput(async () =>
             {
                 var lang = Language;
 
@@ -139,7 +139,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var (Message, IsSuccess) = Action switch
                 {
-                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
+                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText)),
                     PostingActions.EditPrivateMessage => await UserService.EditPrivateMessage(PrivateMessageId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText)),
                     _ => ("Unknown action", false)
                 };
@@ -152,7 +152,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public Task<IActionResult> OnPostPreview()
-            => WithRegisteredUser(user => WithValidInput(async () =>
+            => WithUserHavingPM(user => WithValidInput(async () =>
             {
                 var lang = Language;
                 var newPostText = PostText;
@@ -169,5 +169,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 };
                 return Page();
             }));
-	}
+
+
+        private async Task<IActionResult> WithUserHavingPM(Func<ForumUserExpanded, Task<IActionResult>> toDo)
+            => await WithRegisteredUser(async (user) =>
+            {
+                if (!user.HasPrivateMessagePermissions)
+                {
+                    return Unauthorized();
+                }
+
+                return await toDo(user);
+            });
+    }
 }

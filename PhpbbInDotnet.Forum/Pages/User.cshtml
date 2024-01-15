@@ -24,8 +24,9 @@
     var viewingUser = Model.ForumUser;
     var isSelf = viewingUser.UserId == Model.CurrentUser!.UserId;
     var canEdit = await Model.CanEdit();
-    var isGlobalAdmin = await _userService.IsAdmin(Model.ForumUser);
-    var hasTabs = isSelf || isGlobalAdmin;
+    var viewingUserIsGlobalAdmin = await _userService.IsAdmin(Model.ForumUser);
+    var viewingUserIsGlobalModerator = await _userService.IsUserModeratorInForum(Model.ForumUser, forumId: 0);
+    var hasTabs = isSelf || viewingUserIsGlobalAdmin;
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
     var rankList = await _userService.GetAllRanks();
     var allStyles = (await _sqlExecuter.QueryAsync<(string styleName, int styleId)>("SELECT style_name, style_id FROM phpbb_styles"))
@@ -192,14 +193,14 @@ else
                             @Html.Raw(Model.TranslationProvider.BasicText[Lang, "USERNAME", Casing.Title])
                         </div>
                         <div class="FlexRight PostInputWidth">
-                            @if (!(Model.ViewAsAnother ?? false) && isGlobalAdmin)
+                            @if (!(Model.ViewAsAnother ?? false) && viewingUserIsGlobalAdmin)
                             {
                                 <input asp-for="CurrentUser!.Username" />
                             }
                             else
                             {
                                 var color = string.IsNullOrWhiteSpace(Model.CurrentUser!.UserColour) || Model.CurrentUser.UserColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.CurrentUser.UserColour}";
-                                <span style="font-weight:bold; color:@color" , class="ThemeColor">
+                                <span style="font-weight:bold; color:@color" class="ThemeColor">
                                     @Html.Raw(Model.CurrentUser.Username)
                                 </span>
                                 @if (isSelf && canEdit)
@@ -422,7 +423,7 @@ else
                     </div>
                 </div>
             }
-            @if (!(Model.ViewAsAnother ?? false) && isGlobalAdmin)
+            @if (!(Model.ViewAsAnother ?? false) && viewingUserIsGlobalAdmin)
             {
                 var permissions = new List<SelectListItem>(
                     (await _userService.GetUserRolesLazy()).Select(
@@ -529,14 +530,14 @@ else
                 }
                 else
                 {
-                    var showMail = (Model.CurrentUser!.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || isGlobalAdmin;
+                    var showMail = (Model.CurrentUser!.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || viewingUserIsGlobalAdmin;
                     if (showMail)
                     {
                         <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>
                             &#x2709;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEND_EMAIL"])
                         </button>
                     }
-                    var showPMs = (viewingUser.HasPrivateMessagePermissions && pageUser.HasPrivateMessages && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || (isGlobalAdmin && pageUser.HasPrivateMessagePermissions);
+                    var showPMs = (viewingUser.HasPrivateMessagePermissions && pageUser.HasPrivateMessages && viewingUser.Foes?.Contains(pageUser.UserId) != true && pageUser.Foes?.Contains(viewingUser.UserId) != true) || viewingUserIsGlobalModerator;
                     if (showPMs)
                     {
                         if (showMail)
@@ -672,7 +673,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES_COUNT_FORMAT"], Model.AttachCount))
-                        @if (isSelf || isGlobalAdmin)
+                        @if (isSelf || viewingUserIsGlobalAdmin)
                         {
                             <span>- @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "USED_SPACE_FORMAT"], StringUtility.ReadableFileSize(Model.AttachTotalSize)))</span>
                             if (uploadLimit > 0)
@@ -720,7 +721,7 @@ else
         <p></p>
     </div>
 
-    @if (isGlobalAdmin)
+    @if (viewingUserIsGlobalAdmin)
     {
         <p></p>
         <a asp-page="Admin" asp-route-userId="@pageUser.UserId" asp-page-handler="UserSearch">

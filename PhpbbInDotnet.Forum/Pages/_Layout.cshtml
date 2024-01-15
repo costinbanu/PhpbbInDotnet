@@ -136,15 +136,12 @@
 									@Html.Raw($"{_translationProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper]} [{currentUser.Username}]")
 								</a>
 							</li>
-							if (currentUser.HasPrivateMessagePermissions)
-							{
-								<li>
-									<a asp-page="/PrivateMessages">
-										<span style="width:25px; display:inline-block">&#x1F5E8;</span>
-										@Html.Raw(_translationProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper])
-									</a>
-								</li>
-							}
+							<li>
+								<a asp-page="/PrivateMessages">
+									<span style="width:25px; display:inline-block">&#x1F5E8;</span>
+									@Html.Raw(_translationProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper])
+								</a>
+							</li>
 
 						}
 

@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet()
-            => await WithUserHavingPM(async (user) =>
+            => await WithRegisteredUser(async (user) =>
             {
                 if (Show != PrivateMessagesPages.Message)
                 {
@@ -207,7 +207,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostDeleteMessage()
-            => await WithUserHavingPM(async (user) =>
+            => await WithRegisteredUser(async (user) =>
             {
                 var (Message, IsSuccess) = await UserService.DeletePrivateMessage(MessageId!.Value);
 
@@ -223,7 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostHideMessage()
-            => await WithUserHavingPM(async (user) =>
+            => await WithRegisteredUser(async (user) =>
             {
                 var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, MessageId ?? 0);
 
@@ -239,7 +239,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostMarkAsRead()
-            => await WithUserHavingPM(async (user) =>
+            => await WithRegisteredUser(async (user) =>
             {
                 await SqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", 
@@ -249,7 +249,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task OnPostHideSelectedMessages()
-            => await WithUserHavingPM(async (user) =>
+            => await WithRegisteredUser(async (user) =>
             {
                 var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages!);
 
@@ -258,17 +258,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(nameof(MessageId), Message);
                 }
                 return await OnGet();
-            });
-
-        private async Task<IActionResult> WithUserHavingPM(Func<ForumUserExpanded, Task<IActionResult>> toDo)
-            => await WithRegisteredUser(async (user) =>
-            {
-                if (!user.HasPrivateMessagePermissions)
-                {
-                    return Unauthorized();
-                }
-
-                return await toDo(user);
             });
     }
 }
