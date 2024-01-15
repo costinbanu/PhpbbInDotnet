@@ -172,7 +172,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     UserRegdate = now,
                     UserLastmark = now,
                     UserDateformat = TranslationProvider.GetDefaultDateFormat(Language),
-                    UserLang = Language
+                    UserLang = Language,
+                    UserAllowPm = 1
                 });
 
             var dbChangesTask = _sqlExecuter.ExecuteAsync(
