@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Database.Entities;
+﻿using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Objects;
@@ -29,7 +27,7 @@ namespace PhpbbInDotnet.Services
         Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds);
         Task<bool> IsAdmin(ForumUserExpanded user);
         Task<bool> IsUserModeratorInForum(ForumUserExpanded user, int forumId);
-        Task<(string Message, bool? IsSuccess)> SendPrivateMessage(ForumUserExpanded sender, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext);
+        Task<(string Message, bool? IsSuccess)> SendPrivateMessage(ForumUserExpanded sender, int receiverId, string subject, string text);
         Task<int> GetUnreadPMCount(int userId);
     }
 }
