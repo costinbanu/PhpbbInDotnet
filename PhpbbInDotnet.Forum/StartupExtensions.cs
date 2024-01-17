@@ -113,6 +113,7 @@ namespace PhpbbInDotnet.Forum
                 .UseSerilog((context, config) =>
                 {
                     var format = "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}{NewLine}";
+                    config.Filter.ByExcluding(evt => evt.MessageTemplate.Text.Contains("Any response that uses antiforgery should not be cached", StringComparison.InvariantCultureIgnoreCase));
                     if (context.HostingEnvironment.IsDevelopment())
                     {
                         config.WriteTo.Console(outputTemplate: format);
