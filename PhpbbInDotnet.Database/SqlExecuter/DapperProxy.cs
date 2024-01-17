@@ -36,8 +36,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		public DapperProxy(IConfiguration configuration, IDbConnection dbConnection, ILogger logger)
 		{
 			_logger = logger;
-			_asyncRetryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(DURATIONS, OnRetry);
-			_retryPolicy = Policy.Handle<Exception>().WaitAndRetry(DURATIONS, OnRetry);
+			_asyncRetryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetryAsync(DURATIONS, OnRetry);
+			_retryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetry(DURATIONS, OnRetry);
 
 			DatabaseType = configuration.GetValue<DatabaseType>("Database:DatabaseType");
 			Connection = dbConnection;
@@ -173,5 +173,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			{
 				[nameof(Environment.StackTrace)] = Environment.StackTrace
 			};
+
+        private static bool ExceptionFilter(Exception ex)
+            => !ex.Message.Contains("transaction aborted due to update conflict", StringComparison.InvariantCultureIgnoreCase);
 	}
 }
