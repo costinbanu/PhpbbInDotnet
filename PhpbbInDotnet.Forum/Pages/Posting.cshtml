@@ -155,7 +155,10 @@ else if (Model.Action == PostingActions.NewTopic)
 	{
 		case PostingActions.NewTopic:
 		case PostingActions.NewForumPost:
-			<input type="submit" value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
+			if (Model.ExistingPostDraft is null)
+			{
+				<input type="submit" value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
+			}
 			<input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
 			break;
 		case PostingActions.EditForumPost:
@@ -165,15 +168,38 @@ else if (Model.Action == PostingActions.NewTopic)
 			<span class="validation">@Html.Raw(Model.TranslationProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
 			break;
 	}
+	
 	<b>
 		<span asp-validation-for="PostTitle" class="validation"></span>
 		<span asp-validation-for="PostText" class="validation"></span>
 		<span asp-validation-for="LastPostTime" class="validation"></span>
-		@if (Model.DraftSavedSuccessfully)
-		{
-			<span class="message success">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])</span>
-		}
 	</b>
+	
+	@if (Model.DraftSavedSuccessfully)
+	{
+		<span class="message success">
+			@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])
+			</span>
+	}
+	else if (Model.DeleteDraftSuccess is not null && !string.IsNullOrWhiteSpace(Model.DeleteDraftMessage))
+	{
+		var colorClass = Model.DeleteDraftSuccess == true ? "success" : "fail";
+		<span class="message @colorClass">
+			@Html.Raw(Model.DeleteDraftMessage)
+		</span>
+	}
+
+	@if (Model.ExistingPostDraft is not null)
+	{
+		<p></p>
+		@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED"])
+		<formatted-date date="@Model.ExistingPostDraft.SaveTime.ToUtcTime().ToString("o")" format="@UserDateFormat" />
+		<span>&nbsp;&bull;&nbsp;</span>
+		<input asp-for="ExistingPostDraft!.DraftId" type="hidden" />
+		<input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_DRAFT", Casing.Title])" asp-page-handler="DeleteDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
+		<p></p>
+	}
+
 	@if (CanCreatePoll)
 	{
 		<div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">

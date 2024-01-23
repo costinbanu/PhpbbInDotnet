@@ -6,36 +6,28 @@
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Languages.ITranslationProvider _translationProvider
 
-@if (Model != null)
-{
-    <div style="margin: 20px 0px 20px 0px">
-        @if (StringUtility.IsMimeTypeInline(Model.MimeType))
+<div style="margin: 20px 0px 20px 0px">
+    @if (StringUtility.IsImageMimeType(Model.MimeType))
+    {
+        <img src="@Model.FileUrl" style="width: 100%; height: 100%" />
+    }
+    else if (StringUtility.IsPlayableVideoMimeType(Model.MimeType))
+    {
+        <div style="position: relative; overflow: hidden; width:100%; height:100%">
+			<video src="@Model.FileUrl" style="width:100%; height:100%" preload="none" controls />
+        </div>
+    }
+    else
+    {
+        <a href="@Model.FileUrl">@Model.DisplayName</a>
+    }
+    <div class="Caption" style="clear:both">
+        @if (!string.IsNullOrWhiteSpace(Model.Comment))
         {
-            //if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
-            //{
-            <img src="@(Model.FileUrl)" onload="resizeImage(this)" style="width: 100px; height: 100px" />
-            //}
-            /*else
-            {
-                <div style="display:flex; width:100%; height:100%">
-                    <video style="width:100%; height:100%" controls>
-                        <source src="@(Model.FileUrl)" type="@Model.MimeType" />
-                    </video>
-                </div>
-            }*/
+            @Html.Raw(_renderingService.BbCodeToHtml(Model.Comment, string.Empty))
         }
-        else
-        {
-            <a href="@(Model.FileUrl)">@Model.DisplayName</a>
-        }
-        <div class="Caption" style="clear:both">
-            @if (!string.IsNullOrWhiteSpace(Model.Comment))
-            {
-                @Html.Raw(_renderingService.BbCodeToHtml(Model.Comment, string.Empty))
-            }
-            <div>
-                @Html.Raw($"{Model.DisplayName} ({StringUtility.ReadableFileSize(Model.FileSize)}; {(Model.DownloadCount == 1 ? _translationProvider.BasicText[Model.Language, "DOWNLOADED_ONCE"] : string.Format(_translationProvider.BasicText[Model.Language, "DOWNLOADED_COUNT_FORMAT"], Model.DownloadCount))})")
-            </div>
+        <div>
+            @Html.Raw($"{Model.DisplayName} ({StringUtility.ReadableFileSize(Model.FileSize)}; {(Model.DownloadCount == 1 ? _translationProvider.BasicText[Model.Language, "DOWNLOADED_ONCE"] : string.Format(_translationProvider.BasicText[Model.Language, "DOWNLOADED_COUNT_FORMAT"], Model.DownloadCount))})")
         </div>
     </div>
-}
+</div>

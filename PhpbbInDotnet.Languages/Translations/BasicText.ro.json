@@ -209,6 +209,9 @@
     "DRAFT_SAVED_SUCCESSFULLY": "Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.",
     "CLOSED_TOPIC_CAPTION": "Subiectul este închis, nu se mai pot trimite răspunsuri.",
     "PREVIOUS_POSTS": "Mesaje precedente",
+    "DRAFT_SAVED": "Mesaj în lucru salvat",
+    "DELETE_DRAFT": "Șterge mesajul în lucru",
+    "DRAFT_DELETED_SUCCESSFULLY": "Mesajul în lucru a fost șters!",
 
     //post reporting
     "REPORT": "raport",

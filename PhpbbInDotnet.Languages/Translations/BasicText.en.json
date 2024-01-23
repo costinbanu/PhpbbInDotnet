@@ -95,7 +95,7 @@
     "UNREAD_MESSAGE": "unread message",
     "UNREAD_MESSAGES": "unread messages",
     "SEARCH_IN_FORMAT": "Search in {0}",
-    "TERMS": "terms of use",
+    "TERMS": "the terms of use",
 
     //cookies warning box
     "COOKIES_BOX_MESSAGE": "This website uses cookies for content personalization, authentication and others. You consent to our cookies if you continue to use our website.",
@@ -209,6 +209,9 @@
     "DRAFT_SAVED_SUCCESSFULLY": "The post has been successfuly saved as a draft. You can resume working on it later.",
     "CLOSED_TOPIC_CAPTION": "The topic is locked, replies can no longer be submitted",
     "PREVIOUS_POSTS": "Previous posts",
+    "DRAFT_SAVED": "Post draft saved",
+    "DELETE_DRAFT": "Delete draft",
+    "DRAFT_DELETED_SUCCESSFULLY": "The draft was deleted!",
 
     //post reporting
     "REPORT": "report",

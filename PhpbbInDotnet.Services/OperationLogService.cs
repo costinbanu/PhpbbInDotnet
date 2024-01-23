@@ -31,7 +31,7 @@ namespace PhpbbInDotnet.Services
         public async Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string? authorName = null, int page = 1)
             => await WithErrorHandling(async () =>
             {
-                var logTask = _sqlExecuter.WithPagination(LogPageSize * (page - 1), LogPageSize).QueryAsync<OperationLogSummary>(
+                var logs = await _sqlExecuter.WithPagination(LogPageSize * (page - 1), LogPageSize).QueryAsync<OperationLogSummary>(
                     @"SELECT l.user_id, u.username, l.forum_id, f.forum_name, l.topic_id, t.topic_title, l.log_type, l.log_operation, l.log_data, l.log_time
                         FROM phpbb_log l
                         LEFT JOIN phpbb_users u ON l.user_id = u.user_id
@@ -45,7 +45,7 @@ namespace PhpbbInDotnet.Services
                         logType,
                         authorName = StringUtility.CleanString(authorName)
                     });
-                var countTask = _sqlExecuter.ExecuteScalarAsync<int>(
+                var count = await _sqlExecuter.ExecuteScalarAsync<int>(
                     @"SELECT count(*)
                         FROM phpbb_log l
                         LEFT JOIN phpbb_users u ON l.user_id = u.user_id
@@ -56,7 +56,7 @@ namespace PhpbbInDotnet.Services
                         logType,
                         authorName = StringUtility.CleanString(authorName)
                     });
-                return ((await logTask).AsList(), await countTask);
+                return (logs.AsList(), count);
             });
 
         public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string? additionalData = null)
