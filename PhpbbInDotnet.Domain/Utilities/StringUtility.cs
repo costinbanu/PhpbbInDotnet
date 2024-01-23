@@ -58,14 +58,18 @@ namespace PhpbbInDotnet.Domain.Utilities
         }
 
         public static bool IsMimeTypeInline(string? mimeType)
-            => IsImageMimeType(mimeType) /*||
-                mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase) ||
-                mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase)*/;
+            => IsImageMimeType(mimeType) || IsPlayableVideoMimeType(mimeType);
+                //|| mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase)
 
         public static bool IsImageMimeType(string? mimeType)
             => mimeType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
 
-        public static HashSet<int> ToIntHashSet(string? list)
+		public static bool IsPlayableVideoMimeType(string? mimeType)
+			=> mimeType?.Equals("video/mp4", StringComparison.OrdinalIgnoreCase) == true ||
+			   mimeType?.Equals("video/webm", StringComparison.OrdinalIgnoreCase) == true ||
+			   mimeType?.Equals("video/ogg", StringComparison.OrdinalIgnoreCase) == true;
+
+		public static HashSet<int> ToIntHashSet(string? list)
         {
             if (string.IsNullOrWhiteSpace(list))
             {

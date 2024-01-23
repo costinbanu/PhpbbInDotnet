@@ -82,13 +82,19 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string? ReturnUrl { get; set; }
 
-        public PostDto? PreviewablePost { get; private set; }
+		[BindProperty]
+		public PhpbbDrafts? ExistingPostDraft { get; set; }
+
+		public PostDto? PreviewablePost { get; private set; }
         public PollDto? PreviewablePoll { get; private set; }
         public bool ShowAttach { get; private set; } = false;
         public bool ShowPoll { get; private set; } = false;
         public PhpbbForums? CurrentForum { get; private set; }
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
+        public string? DeleteDraftMessage { get; private set; }
+		public bool? DeleteDraftSuccess { get; private set; }
+
 		private string CookieBackupKey 
             => $"{nameof(PostingBackup)}_{ForumUser.UserId}_{ForumId}_{(Action == PostingActions.NewTopic ? 0 : (TopicId ?? 0))}_{PostId ?? 0}";
 		private IEnumerable<string> PollOptionsEnumerable 

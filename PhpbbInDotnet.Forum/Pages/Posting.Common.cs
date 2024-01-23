@@ -91,6 +91,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 ShowPoll = true;
                 return null;
             }
+
+            var isNewPost = post is null;
+
             await Policy.Handle<Exception>()
                 .RetryAsync((ex, _) => _logger.Warning(ex, "Error while posting, will retry once."))
                 .ExecuteAsync(async () =>
@@ -110,7 +113,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                     var hasAttachments = Attachments?.Any() == true;
                     var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText?.Trim()));
-                    if (post == null)
+                    if (isNewPost)
                     {
                         post = await transaction.QuerySingleAsync<PhpbbPosts>(
                             @$"INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) 
@@ -149,7 +152,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 textForSaving,
                                 checksum = HashUtility.ComputeMD5Hash(textForSaving),
                                 attachment = hasAttachments.ToByte(),
-                                post.PostId,
+                                post!.PostId,
                                 now = DateTime.UtcNow.ToUnixTimestamp(),
                                 reason = HttpUtility.HtmlEncode(EditReason ?? string.Empty),
                                 usr.UserId

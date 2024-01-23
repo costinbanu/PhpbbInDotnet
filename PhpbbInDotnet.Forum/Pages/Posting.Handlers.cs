@@ -28,17 +28,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
-                var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId ?? 0 });
-                if (draft != null)
+                ExistingPostDraft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId ?? 0 });
+                if (ExistingPostDraft != null)
                 {
-                    PostTitle = HttpUtility.HtmlDecode(draft.DraftSubject);
-                    PostText = HttpUtility.HtmlDecode(draft.DraftMessage);
+                    PostTitle = HttpUtility.HtmlDecode(ExistingPostDraft.DraftSubject);
+                    PostText = HttpUtility.HtmlDecode(ExistingPostDraft.DraftMessage);
                 }
                 else
                 {
                     PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
                 }
-                await RestoreBackupIfAny(draft?.SaveTime.ToUtcTime());
+                await RestoreBackupIfAny(ExistingPostDraft?.SaveTime.ToUtcTime());
                 ShowAttach = Attachments?.Any() == true;
                 return Page();
             }));
@@ -364,7 +364,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }), ReturnUrl)));
 
-        public Task<IActionResult> OnPostSaveDraft()
+		#endregion POST Message
+
+		#region POST Draft
+
+		public Task<IActionResult> OnPostSaveDraft()
             => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 var lang = Language;
@@ -400,11 +404,39 @@ namespace PhpbbInDotnet.Forum.Pages
                 else return RedirectToPage("Index");
             })), ReturnUrl));
 
-        #endregion POST Message
+        public Task<IActionResult> OnPostDeleteDraft()
+            => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>
+            {
+                try
+                {
+					await SqlExecuter.ExecuteAsync(
+						"DELETE FROM phpbb_drafts WHERE draft_id = @draftId",
+						new { ExistingPostDraft!.DraftId });
 
-        #region POST Poll
+					Response.Cookies.DeleteObject(CookieBackupKey);
+					ModelState.Clear();
 
-        public async Task<IActionResult> OnPostDeletePoll()
+					PostText = null;
+					PostTitle = null;
+					ExistingPostDraft = null;
+
+					DeleteDraftMessage = TranslationProvider.BasicText[Language, "DRAFT_DELETED_SUCCESSFULLY"];
+					DeleteDraftSuccess = true;
+				}
+                catch (Exception ex)
+                {
+                    var id = _logger.ErrorWithId(ex);
+                    DeleteDraftMessage = string.Format(TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+                    DeleteDraftSuccess = false;
+                }
+                return await OnGetForumPost();
+			}));
+
+		#endregion POST Draft
+
+		#region POST Poll
+
+		public async Task<IActionResult> OnPostDeletePoll()
             => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
