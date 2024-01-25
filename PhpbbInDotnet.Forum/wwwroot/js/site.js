@@ -11,13 +11,10 @@ function resizeImage(img, customMaxWidth, customMaxHeight) {
         ratio = Math.min(actualParentHeight / originalHeight, actualParentWidth / originalWidth);
     if (ratio < 1) {
         $(img).css({ 'width': roundToNextEvenNumber(originalWidth * ratio) + 'px', 'height': roundToNextEvenNumber(originalHeight * ratio) + 'px' });
-        if (!$(img).parent().is('a')) {
-            $(img).attr({ 'onclick': 'window.open(this.src);', 'title': clickToEnlarge });
-            $(img).css('cursor', 'pointer');
-        }
     } else {
         $(img).css({ 'width': 'auto', 'height': 'auto' });
     }
+    openImageInNewWindowOnClick(img);
 }
 
 function resizeIFrame(frame, customMaxWidth, customMaxHeight) {
@@ -29,6 +26,13 @@ function resizeIFrame(frame, customMaxWidth, customMaxHeight) {
     let src = $(frame).attr('src');
     if (src.indexOf('imgur') !== -1) {
         $(frame).attr('src', src + '?w=' + actualParentWidth)
+    }
+}
+
+function openImageInNewWindowOnClick(img) {
+    if (!$(img).parent().is('a')) {
+        $(img).attr({ 'onclick': 'window.open(this.src);', 'title': clickToEnlarge });
+        $(img).css('cursor', 'pointer');
     }
 }
 

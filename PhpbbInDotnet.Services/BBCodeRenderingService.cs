@@ -419,7 +419,7 @@ namespace PhpbbInDotnet.Services
                         ["img"] = (
                             Tag: new BBTag(
                                 name: "img",
-                                openTagTemplate: "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>",
+                                openTagTemplate: $"<br/><img src=\"${{content}}\" class=\"ImageSize\" onload=\"openImageInNewWindowOnClick(this)\" /><br/>",
                                 closeTagTemplate: string.Empty, 
                                 id: maxId + 7, 
                                 autoRenderContent: false,

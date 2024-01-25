@@ -189,11 +189,11 @@ else if (Model.Action == PostingActions.NewTopic)
 		</span>
 	}
 
-	@if (Model.ExistingPostDraft is not null)
+	@if ((Model.ExistingPostDraft?.DraftId ?? 0) > 0)
 	{
 		<p></p>
 		@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED"])
-		<formatted-date date="@Model.ExistingPostDraft.SaveTime.ToUtcTime().ToString("o")" format="@UserDateFormat" />
+		<formatted-date date="@Model.ExistingPostDraft!.SaveTime.ToUtcTime().ToString("o")" format="@UserDateFormat" />
 		<span>&nbsp;&bull;&nbsp;</span>
 		<input asp-for="ExistingPostDraft!.DraftId" type="hidden" />
 		<input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_DRAFT", Casing.Title])" asp-page-handler="DeleteDraft" class="PostingButton MyButton SpacedButton" formnovalidate />

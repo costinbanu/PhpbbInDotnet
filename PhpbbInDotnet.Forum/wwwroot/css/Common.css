@@ -85,6 +85,11 @@ select, input:not([type=checkbox]):not([type=radio]), button {
     color: white;
 }
 
+.ImageSize {
+    max-width: 100%;
+    max-height: 95vh;
+}
+
 .MyMiniButton {
     font-size: 1em !important;
     padding: 2px 2px !important;

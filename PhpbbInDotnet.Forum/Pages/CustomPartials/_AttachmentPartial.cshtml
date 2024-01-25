@@ -9,7 +9,7 @@
 <div style="margin: 20px 0px 20px 0px">
     @if (StringUtility.IsImageMimeType(Model.MimeType))
     {
-        <img src="@Model.FileUrl" style="width: 100%; height: 100%" />
+        <img src="@Model.FileUrl" class="ImageSize" onload="openImageInNewWindowOnClick(this)" />
     }
     else if (StringUtility.IsPlayableVideoMimeType(Model.MimeType))
     {
