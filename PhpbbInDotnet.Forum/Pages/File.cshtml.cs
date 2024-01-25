@@ -68,10 +68,17 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (!correlationId.HasValue)
             {
-                await SqlExecuter.ExecuteAsyncWithoutResiliency(
-                    "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id",
-                    new { id },
-                    commandTimeout: 10);
+                try
+                {
+                    await SqlExecuter.ExecuteAsyncWithoutResiliency(
+                        "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id",
+                        new { id },
+                        commandTimeout: 10);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Failed to increment attachment download count for attach ID {id}", id);
+                }
             }
 
             return await WithValidForum(
