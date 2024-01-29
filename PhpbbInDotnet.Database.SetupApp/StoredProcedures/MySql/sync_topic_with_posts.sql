@@ -69,7 +69,7 @@ BEGIN
 
 	 DELETE t
        FROM phpbb_topics t
-	   LEFT JOIN post_counts pc ON t.topic_id = pc.topic_id
-	  WHERE pc.post_count is null or pc.post_count = 0;
+	   JOIN post_counts pc ON t.topic_id = pc.topic_id
+	  WHERE pc.post_count = 0;
 
 END
