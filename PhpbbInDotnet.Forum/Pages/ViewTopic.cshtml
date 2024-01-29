@@ -188,7 +188,7 @@ else if (!isCurrentForumReadOnly)
     }
 }
 
-@if (!currentUser.IsAnonymous)
+@if (!currentUser.IsAnonymous && Model.Posts?.Any() == true)
 {
     var key = Model.IsSubscribed ? "UNSUBSCRIBE_FROM_TOPIC" : "SUBSCRIBE_TO_TOPIC";
     var emoji = Model.IsSubscribed ? "❌" : "✔️";
@@ -196,7 +196,7 @@ else if (!isCurrentForumReadOnly)
     <input type="submit" class="MyButton SpacedButton" value="@emoji @Model.TranslationProvider.BasicText[lang, key]" form="ToggleTopicSubscriptionForm" />
     <form method="post" asp-page-handler="ToggleTopicSubscription" id="ToggleTopicSubscriptionForm">
         <input asp-for="TopicId" type="hidden" />
-        <input name="LastPostId" value="@Model.Posts!.Last().PostId" type="hidden" />
+        <input name="LastPostId" value="@Model.Posts.Last().PostId" type="hidden" />
     </form>
 
     if (Model.SubscriptionToggleWasSuccessful is not null && !string.IsNullOrWhiteSpace(Model.SubscriptionToggleMessage))

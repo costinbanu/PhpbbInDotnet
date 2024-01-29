@@ -261,22 +261,6 @@
         );
     }
 
-    show_hidden_smilies() {
-        showElement(
-            "hiddenSmilies",
-            function () {
-                $("#showHiddenSmiliesButton").text(dictionary.Posting['SHOW_MORE']);
-            },
-            function () {
-                $('#hiddenSmilies').find('img').each((index, element) => {
-                    resizeImage(element, $('#hiddenSmilies').parent()[0].offsetWidth, $('#hiddenSmilies').parent()[0].offsetHeight);
-                });
-                $("#showHiddenSmiliesButton").text(dictionary.Posting['SHOW_LESS']);
-            },
-            false
-        )
-    }
-
     censor() {
         var textinput = document.getElementById("message");
         if (textinput) {
