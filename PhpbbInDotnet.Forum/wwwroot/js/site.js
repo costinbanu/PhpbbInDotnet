@@ -1,22 +1,6 @@
 ﻿var maxWidth, maxHeight;
 var quoteWidthBleed, quoteHeightBleed;
 
-function resizeImage(img, customMaxWidth, customMaxHeight) {
-    lazyInit(customMaxWidth, customMaxHeight);
-    let quotes = $(img).parents("blockquote").length;
-    let actualParentWidth = maxWidth - quotes * quoteWidthBleed,
-        actualParentHeight = maxHeight - quotes * quoteHeightBleed;
-    let originalWidth = img.naturalWidth,
-        originalHeight = img.naturalHeight,
-        ratio = Math.min(actualParentHeight / originalHeight, actualParentWidth / originalWidth);
-    if (ratio < 1) {
-        $(img).css({ 'width': roundToNextEvenNumber(originalWidth * ratio) + 'px', 'height': roundToNextEvenNumber(originalHeight * ratio) + 'px' });
-    } else {
-        $(img).css({ 'width': 'auto', 'height': 'auto' });
-    }
-    openImageInNewWindowOnClick(img);
-}
-
 function resizeIFrame(frame, customMaxWidth, customMaxHeight) {
     lazyInit(customMaxWidth, customMaxHeight);
     let quotes = $(frame).parents("blockquote").length;

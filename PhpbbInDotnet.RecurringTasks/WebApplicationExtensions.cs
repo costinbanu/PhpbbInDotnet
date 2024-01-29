@@ -27,10 +27,10 @@ namespace Microsoft.AspNetCore.Builder
             app.Services.UseScheduler(scheduler =>
             {
                 var config = scheduler.Schedule<Orchestrator>().DailyAt(hour, minute);
-                //if (app.Environment.IsDevelopment())
-                //{
-                //    config.RunOnceAtStart();
-                //}
+                if (app.Environment.IsDevelopment())
+                {
+                    config.RunOnceAtStart();
+                }
             });
 
             return app;
