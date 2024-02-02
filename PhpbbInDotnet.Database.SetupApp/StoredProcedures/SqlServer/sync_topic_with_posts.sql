@@ -18,11 +18,16 @@ BEGIN
 		SELECT value FROM string_split(@topic_ids, ',');
 
 	CREATE TABLE #post_counts (topic_id int INDEX ix_topic_id CLUSTERED, post_count int);
+	WITH counts AS (
+		SELECT t.topic_id, count(p.post_id) AS post_count
+		  FROM phpbb_topics t
+		  LEFT JOIN phpbb_posts p ON t.topic_id = p.topic_id
+		 GROUP BY t.topic_id
+	)
 	INSERT INTO #post_counts
-	SELECT p.topic_id, count(p.post_id) as post_count
-	  FROM phpbb_posts p
-	  JOIN #topic_ids ti on p.topic_id = ti.topic_id
-     GROUP BY p.topic_id;
+	SELECT c.topic_id, c.post_count
+	  FROM counts c
+	  JOIN #topic_ids ti ON c.topic_id = ti.topic_id;
 
 	WITH maxes AS (
 		SELECT topic_id, MAX(post_time) AS post_time
