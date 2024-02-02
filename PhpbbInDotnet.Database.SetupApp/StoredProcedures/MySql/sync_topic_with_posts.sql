@@ -13,10 +13,15 @@ BEGIN
     
     DROP TEMPORARY TABLE IF EXISTS post_counts;
     CREATE TEMPORARY TABLE post_counts (INDEX (topic_id)) AS
-	SELECT p.topic_id, count(p.post_id) as post_count
-	  FROM phpbb_posts p
-	  JOIN topic_ids_tmp tit on p.topic_id = tit.topic_id
-     GROUP BY p.topic_id;
+	WITH counts AS (
+		SELECT t.topic_id, count(p.post_id) AS post_count
+		  FROM phpbb_topics t
+		  LEFT JOIN phpbb_posts p ON t.topic_id = p.topic_id
+		 GROUP BY t.topic_id
+	)
+	SELECT c.topic_id, c.post_count
+	  FROM counts c
+	  JOIN topic_ids_tmp tit on c.topic_id = tit.topic_id;
      
 	DROP TEMPORARY TABLE IF EXISTS last_posts;
     CREATE TEMPORARY TABLE last_posts (INDEX (post_id)) AS
