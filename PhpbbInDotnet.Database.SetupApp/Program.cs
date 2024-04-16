@@ -69,7 +69,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                     Console.WriteLine();
                 }
 
-                await connection.ChangeDataBaseAsync(dbName);
+                await connection.ChangeDatabaseAsync(dbName);
 
                 Console.WriteLine($"{(newInstall ? "Creating" : "Updating")} tables...");
                 string path;

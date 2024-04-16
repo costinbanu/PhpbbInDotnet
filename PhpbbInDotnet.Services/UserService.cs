@@ -227,19 +227,16 @@ namespace PhpbbInDotnet.Services
             return await _sqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
-        public async Task<PhpbbGroups> GetUserGroup(int userId)
-        {
-            return await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbGroups>(
+        public Task<PhpbbGroups?> GetUserGroup(int userId)
+            => _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbGroups>(
                 @"SELECT g.* FROM phpbb_groups g 
                     JOIN phpbb_user_group ug ON g.group_id = ug.group_id 
                    WHERE ug.user_id = @userId",
-                new { userId }
-            );
-        }
+                new { userId });
 
         public async Task<ForumUser> GetForumUserById(int userId, ITransactionalSqlExecuter? transaction = null)
         {
-            var usr = await (transaction ?? _sqlExecuter).QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            var usr = await (transaction ?? _sqlExecuter).QuerySingleAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return DbUserToForumUser(usr);
         }
 
@@ -406,7 +403,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
-            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl").TrimEnd('/')}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
+            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")!.TrimEnd('/')}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
         private Task<IEnumerable<PhpbbAclRoles>> GetModRolesLazy()
             => _cache.GetOrAddAsync(

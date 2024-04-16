@@ -88,7 +88,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGetAvatar(int userId, Guid? correlationId = null)
         {
-            string file;
+            string? file;
             string getActualFileName(string fileName)
                 => $"{Configuration.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
 

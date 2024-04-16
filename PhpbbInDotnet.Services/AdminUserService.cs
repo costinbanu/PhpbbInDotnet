@@ -537,7 +537,7 @@ namespace PhpbbInDotnet.Services
                     action = AdminRankActions.Update;
                 }
 
-                await _operationLogService.LogAdminRankAction(action, adminUserId, actual);
+                await _operationLogService.LogAdminRankAction(action, adminUserId, actual!);
 
                 return (_translationProvider.Admin[lang, "RANK_UPDATED_SUCCESSFULLY"], true);
             }

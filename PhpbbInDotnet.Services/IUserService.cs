@@ -19,7 +19,7 @@ namespace PhpbbInDotnet.Services
         Task<ForumUser> GetForumUserById(int userId, ITransactionalSqlExecuter? transaction = null);
         Task<IEnumerable<PhpbbGroups>> GetAllGroups();
         Task<IEnumerable<PhpbbRanks>> GetAllRanks();
-        Task<PhpbbGroups> GetUserGroup(int userId);
+        Task<PhpbbGroups?> GetUserGroup(int userId);
         Task<List<KeyValuePair<string, int>>> GetUserMap();
         Task<int?> GetUserRole(ForumUserExpanded user);
         Task<IEnumerable<KeyValuePair<string, string>>> GetUsers();

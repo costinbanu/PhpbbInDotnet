@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var retention = _config.GetObject<TimeSpan?>("OperationLogsRetentionTime") ?? TimeSpan.FromDays(365);
+            var retention = _config.GetObjectOrDefault<TimeSpan?>("OperationLogsRetentionTime") ?? TimeSpan.FromDays(365);
 
             if (retention == TimeSpan.Zero)
             {

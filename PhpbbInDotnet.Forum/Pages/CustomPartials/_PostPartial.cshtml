@@ -175,7 +175,7 @@
                         @if (Model.IsCurrentUserMod)
                         {
                             var reports = Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(Model.Post!.Reports?.Select(ReportDto.HtmlEncode))));
-                            var ipWhoIsLink = string.Format(_config.GetValue<string>("IpWhoIsUrlFormat"), Model.Post.IP);
+                            var ipWhoIsLink = string.Format(_config.GetValue<string>("IpWhoIsUrlFormat")!, Model.Post.IP);
                             <span>
                                 <a href="javascript:vt.showMessageDetails('@Model.Post!.IP', '@ipWhoIsLink', '@Model.Post.PostEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.PostEditCount, '@Model.Post.PostEditUser', '@reports');">
                                     &#x2753; @Html.Raw(_translationProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])

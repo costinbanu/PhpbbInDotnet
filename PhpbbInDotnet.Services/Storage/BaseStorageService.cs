@@ -84,7 +84,7 @@ namespace PhpbbInDotnet.Services.Storage
         public abstract Task<List<(DateTime LogDate, string? LogPath)>?> GetSystemLogs();
 
         protected Task<PhpbbAttachments> AddToDatabase(string uploadedFileName, string physicalFileName, long fileSize, string mimeType, int posterId)
-			=> _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
+			=> _sqlExecuter.QuerySingleAsync<PhpbbAttachments>(
 				@$"INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) 
 				   VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId);
 				   SELECT * FROM phpbb_attachments WHERE attach_id = {_sqlExecuter.LastInsertedItemId}",

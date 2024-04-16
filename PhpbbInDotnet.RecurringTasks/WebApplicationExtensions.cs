@@ -11,7 +11,7 @@ namespace Microsoft.AspNetCore.Builder
         public static WebApplication AddRecurringTasksScheduler(this WebApplication app)
         {
             const string key = "RecurringTasksTimeToRun";
-            var timeToRun = app.Configuration.GetValue<string>(key);
+            var timeToRun = app.Configuration.GetValue<string>(key)!;
             int hour, minute;
             try
             {

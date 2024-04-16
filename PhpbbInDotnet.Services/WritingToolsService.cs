@@ -187,7 +187,7 @@ namespace PhpbbInDotnet.Services
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
             var language = _translationProvider.GetLanguage();
-            var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
+            var retention = _config.GetObjectOrDefault<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
             var files = await _sqlExecuter.QueryAsync<PhpbbAttachments>(
                 "SELECT * FROM phpbb_attachments WHERE is_orphan = 1 AND @now - filetime > @retention",
                 new

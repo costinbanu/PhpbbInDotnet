@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
             }
 
             ForumUser baseUser;
-            PhpbbUsers dbUser;
+            PhpbbUsers? dbUser;
             if (hasUserId)
             {
                 dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(

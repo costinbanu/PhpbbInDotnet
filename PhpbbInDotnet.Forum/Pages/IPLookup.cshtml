@@ -22,7 +22,7 @@
 </environment>
 
 <h3>@Html.Raw(string.Format(Model.TranslationProvider.Moderator[Lang, "IP_SEARCH_RESULTS_FORMAT"], Model.IP))</h3>
-<a href="@string.Format(_config.GetValue<string>("IpWhoIsUrlFormat"), Model.IP)" target="_blank">
+<a href="@string.Format(_config.GetValue<string>("IpWhoIsUrlFormat")!, Model.IP)" target="_blank">
     @Html.Raw(Model.TranslationProvider.Moderator[Lang, "IP_MORE_INFO"])
 </a>
 

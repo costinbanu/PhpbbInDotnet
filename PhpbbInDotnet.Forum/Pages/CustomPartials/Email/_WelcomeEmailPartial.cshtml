@@ -10,8 +10,8 @@
 
 @{
     var culture = new System.Globalization.CultureInfo(Model.Language);
-    var baseUrl = _config.GetValue<string>("BaseUrl");
-    var forumName = _config.GetValue<string>("ForumName");
+    var baseUrl = _config.GetValue<string>("BaseUrl")!;
+    var forumName = _config.GetValue<string>("ForumName")!;
 }
 
 <h3>@Html.Raw(Model.Subject)</h3>
