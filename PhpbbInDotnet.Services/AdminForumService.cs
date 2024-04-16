@@ -52,7 +52,7 @@ namespace PhpbbInDotnet.Services
                         message: string.Format(_translationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")));
                 }
 
-                var actual = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                var actual = await _sqlExecuter.QuerySingleAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
                     new
                     {
@@ -76,7 +76,7 @@ namespace PhpbbInDotnet.Services
                     actual = new PhpbbForums();
                     isNewForum = true;
                 }
-                actual!.ForumName = dto.ForumName;
+                actual.ForumName = dto.ForumName;
                 actual.ForumDesc = dto.ForumDesc ?? string.Empty;
                 if (dto.HasPassword.HasValue && !dto.HasPassword.Value)
                 {
@@ -92,7 +92,7 @@ namespace PhpbbInDotnet.Services
                 actual.ForumRulesLink = HttpUtility.HtmlEncode(dto.ForumRulesLink ?? actual.ForumRules ?? string.Empty);
                 if (isNewForum)
                 {
-                    actual = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                    actual = await _sqlExecuter.QuerySingleAsync<PhpbbForums>(
 						@$"INSERT INTO phpbb_forums 
                                  VALUES (@ParentId, @LeftId, @RightId, @ForumParents, @ForumName, @ForumDesc, @ForumDescBitfield, @ForumDescOptions, @ForumDescUid, @ForumLink, @ForumPassword, @ForumStyle, @ForumImage, @ForumRules, @ForumRulesLink, @ForumRulesBitfield, @ForumRulesOptions, @ForumRulesUid, @ForumTopicsPerPage, @ForumType, @ForumStatus, @ForumPosts, @ForumTopics, @ForumTopicsReal, @ForumLastPostId, @ForumLastPosterId, @ForumLastPostSubject, @ForumLastPostTime, @ForumLastPosterName, @ForumLastPosterColour, @ForumFlags, @ForumOptions, @DisplaySubforumList, @DisplayOnIndex, @EnableIndexing, @EnableIcons, @EnablePrune, @PruneNext, @PruneDays, @PruneViewed, @PruneFreq, @ForumEditTime);
                           SELECT * 
@@ -291,7 +291,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(PhpbbForums Forum, List<PhpbbForums> Children)> ShowForum(int forumId)
+        public async Task<(PhpbbForums? Forum, List<PhpbbForums> Children)> ShowForum(int forumId)
         {
             var forum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
                 "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",

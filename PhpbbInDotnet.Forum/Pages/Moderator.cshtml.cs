@@ -423,7 +423,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return false;
             }
 
-            var toAdd = await transaction.QueryFirstOrDefaultAsync<PhpbbPosts>(
+            var toAdd = await transaction.QuerySingleAsync<PhpbbPosts>(
 				$@"INSERT INTO phpbb_posts(topic_id, forum_id, poster_id, icon_id, poster_ip, post_time, post_approved, post_reported, enable_bbcode, enable_smilies, enable_magic_url, enable_sig, post_username, post_subject, post_text, post_checksum, post_attachment, bbcode_bitfield, bbcode_uid, post_postcount, post_edit_time, post_edit_reason, post_edit_user, post_edit_count, post_edit_locked)
                    VALUES (@TopicId, @ForumId, @PosterId, @IconId, @PosterIp, @PostTime, @PostApproved, @PostReported, @EnableBbcode, @EnableSmilies, @EnableMagicUrl, @EnableSig, @PostUsername, @PostSubject, @PostText, @PostChecksum, @PostAttachment, @BbcodeBitfield, @BbcodeUid, @PostPostcount, @PostEditTime, @PostEditReason, @PostEditUser, @PostEditCount, @PostEditLocked);
                    SELECT * FROM phpbb_posts WHERE post_id = {SqlExecuter.LastInsertedItemId};",

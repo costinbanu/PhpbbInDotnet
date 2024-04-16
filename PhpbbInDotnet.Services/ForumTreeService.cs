@@ -346,15 +346,15 @@ namespace PhpbbInDotnet.Services
                 {
                     continue;
                 }
-                yield return (node?.ForumId ?? 0, HttpUtility.HtmlDecode(node?.ForumName ?? _config.GetValue<string>("ForumName")));
+                yield return (node?.ForumId ?? 0, HttpUtility.HtmlDecode(node?.ForumName ?? _config.GetValue<string>("ForumName")!));
             }
         }
 
         public string GetAbsoluteUrlToForum(int forumId)
-            => ForumLinkUtility.GetAbsoluteUrlToForum(_config.GetValue<string>("BaseUrl"), forumId);
+            => ForumLinkUtility.GetAbsoluteUrlToForum(_config.GetValue<string>("BaseUrl")!, forumId);
 
         public string GetAbsoluteUrlToTopic(int topicId, int pageNum)
-            => ForumLinkUtility.GetAbsoluteUrlToTopic(_config.GetValue<string>("BaseUrl"), topicId, pageNum);
+            => ForumLinkUtility.GetAbsoluteUrlToTopic(_config.GetValue<string>("BaseUrl")!, topicId, pageNum);
 
         public BreadCrumbs GetBreadCrumbs(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null)
         {
@@ -363,8 +363,8 @@ namespace PhpbbInDotnet.Services
                 new ListItemJSLD
                 {
                     Position = 1,
-                    Name = _config.GetValue<string>("ForumName"),
-                    Item = _config.GetValue<string>("BaseUrl")
+                    Name = _config.GetValue<string>("ForumName")!,
+                    Item = _config.GetValue<string>("BaseUrl")!
                 }
             };
 

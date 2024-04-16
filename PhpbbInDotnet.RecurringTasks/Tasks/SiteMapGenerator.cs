@@ -69,7 +69,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                 using var sitemapStream = new FileStream(sitemapPath, FileMode.Create);
                 sitemap.Serialize(sitemapStream, serializeOptions);
                 sitemapInfos.Add(new SitemapInfo(
-                    location: new Uri(new Uri(_config.GetValue<string>("BaseUrl")), sitemapName).ToString(),
+                    location: new Uri(new Uri(_config.GetValue<string>("BaseUrl")!), sitemapName).ToString(),
                     modifiedAt: DateTimeOffset.UtcNow));
             }
 
@@ -110,7 +110,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
             }
 
             yield return new SitemapUrl(
-                location: _config.GetValue<string>("BaseUrl"),
+                location: _config.GetValue<string>("BaseUrl")!,
                 modifiedAt: maxTime,
                 frequency: GetChangeFrequency(maxTime),
                 priority: GetForumPriority(0));

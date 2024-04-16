@@ -29,7 +29,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
+            var retention = _config.GetObjectOrDefault<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
             stoppingToken.ThrowIfCancellationRequested();
 

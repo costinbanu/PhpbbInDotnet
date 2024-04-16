@@ -25,7 +25,7 @@ namespace PhpbbInDotnet.Services
 			_razorViewService = razorViewService;
             _environment = environment;
             _smtpConfig = config.GetObject<SmtpConfig>("Smtp");
-            _adminEmail = config.GetValue<string>("AdminEmail");
+            _adminEmail = config.GetValue<string>("AdminEmail")!;
             _logger = logger;
 		}
 

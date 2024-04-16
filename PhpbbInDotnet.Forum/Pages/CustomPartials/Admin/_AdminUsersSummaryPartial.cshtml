@@ -10,8 +10,8 @@
 
 @foreach (var user in Model.Users.EmptyIfNull())
 {
-    var emailSearchLink = string.Format(_config.GetValue<string>("InternetSearchUrlFormat"), HttpUtility.UrlEncode($"\"{user.UserEmail}\""));
-    var ipWhoIsLink = string.Format(_config.GetValue<string>("IpWhoIsUrlFormat"), user.UserIp);
+    var emailSearchLink = string.Format(_config.GetValue<string>("InternetSearchUrlFormat")!, HttpUtility.UrlEncode($"\"{user.UserEmail}\""));
+    var ipWhoIsLink = string.Format(_config.GetValue<string>("IpWhoIsUrlFormat")!, user.UserIp);
     <button type="button" class="collapsible">@user.Username</button>
     <div class="content">
         @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)

@@ -92,7 +92,7 @@ namespace PhpbbInDotnet.Forum.Pages
              var subject = string.Format(TranslationProvider.BasicText[Language, "VERIFY_EMAIL_ADDRESS_FORMAT"], Configuration.GetValue<string>("ForumName"));
              var registrationCode = Guid.NewGuid().ToString("n");
              var emailAddress = user.EmailAddress!;
-             var dbUser = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+             var dbUser = await SqlExecuter.QuerySingleAsync<PhpbbUsers>(
                  "SELECT * FROM phpbb_users WHERE user_id = @userId",
                  new { user.UserId });
 

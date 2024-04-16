@@ -294,7 +294,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return NotFound();
                 }
 
-                var lastPost = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                var lastPost = await SqlExecuter.QuerySingleAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC",
                     new { toDelete.TopicId });
 

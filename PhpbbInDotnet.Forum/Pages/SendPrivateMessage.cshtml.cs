@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
-                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}\n[/quote]\n[url={_config.GetValue<string>("BaseUrl").Trim('/')}/ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]\n";
+                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}\n[/quote]\n[url={_config.GetValue<string>("BaseUrl")!.Trim('/')}/ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]\n";
                             ReceiverId = author!.UserId;
                             ReceiverName = author.Username;
                         }
@@ -111,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 ThrowIfEntireForumIsReadOnly();
 
-                var pm = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>(
+                var pm = await SqlExecuter.QuerySingleAsync<PhpbbPrivmsgs>(
                     "SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", 
                     new { PrivateMessageId });
                 PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);

@@ -409,7 +409,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         dbUser.UserId
                     });
 
-                var group = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbGroups>(
+                var group = await SqlExecuter.QuerySingleAsync<PhpbbGroups>(
                     "SELECT * FROM phpbb_groups WHERE group_id = @groupId",
                     new { GroupId });
                 await SqlExecuter.ExecuteAsync(

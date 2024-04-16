@@ -9,8 +9,8 @@
 @inject Languages.ITranslationProvider _translationProvider
 
 @{
-	var baseUrl = _config.GetValue<string>("BaseUrl");
-	var forumName = _config.GetValue<string>("ForumName");
+	var baseUrl = _config.GetValue<string>("BaseUrl")!;
+	var forumName = _config.GetValue<string>("ForumName")!;
 	string bodyTranslationKey, disclaimerTranslationKey, linkToItem, linkToUnsubscribePage;
 
 	if (Model.IsTopicNotification)

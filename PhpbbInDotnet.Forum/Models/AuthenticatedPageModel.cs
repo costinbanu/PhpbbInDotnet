@@ -62,13 +62,13 @@ namespace PhpbbInDotnet.Forum.Models
                 "SELECT * FROM phpbb_forums WHERE forum_id = @forumId", 
                 new { forumId });
 
+            if (curForum == null)
+            {
+                return NotFound();
+            }
+
             if (!overrideCheck)
             {
-                if (curForum == null)
-                {
-                    return NotFound();
-                }
-
                 var restrictedForums = await ForumService.GetRestrictedForumList(ForumUser, true);
                 var tree = await ForumService.GetForumTree(ForumUser, false, false);
                 var forumPath = new List<int>();

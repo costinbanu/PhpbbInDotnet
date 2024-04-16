@@ -13,7 +13,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests.Utils
 
         internal static IConfiguration GetAppConfiguration(Action<AppSettingsObject>? setup = null)
         {
-            var obj = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().Get<AppSettingsObject>();
+            var obj = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().Get<AppSettingsObject>()!;
             setup?.Invoke(obj);
 
             using var stream = new MemoryStream();
