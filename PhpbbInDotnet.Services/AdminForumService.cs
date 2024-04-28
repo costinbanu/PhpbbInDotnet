@@ -52,7 +52,7 @@ namespace PhpbbInDotnet.Services
                         message: string.Format(_translationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")));
                 }
 
-                var actual = await _sqlExecuter.QuerySingleAsync<PhpbbForums>(
+                var actual = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
                     new
                     {
@@ -76,7 +76,7 @@ namespace PhpbbInDotnet.Services
                     actual = new PhpbbForums();
                     isNewForum = true;
                 }
-                actual.ForumName = dto.ForumName;
+                actual!.ForumName = dto.ForumName;
                 actual.ForumDesc = dto.ForumDesc ?? string.Empty;
                 if (dto.HasPassword.HasValue && !dto.HasPassword.Value)
                 {

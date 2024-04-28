@@ -294,12 +294,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     return NotFound();
                 }
 
-                var lastPost = await SqlExecuter.QuerySingleAsync<PhpbbPosts>(
+                var lastPost = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC",
                     new { toDelete.TopicId });
 
                 var errorMessage = "&#x274C;&nbsp;{0}";
-                if (toDelete.PostTime < lastPost.PostTime)
+                if (lastPost is not null && toDelete.PostTime < lastPost.PostTime)
                 {
                     ModeratorActionResult = (string.Format(errorMessage, TranslationProvider.Errors[lang, "POST_NO_LONGER_LAST"]), false);
                     PostId = postIds[0];
