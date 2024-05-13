@@ -2,15 +2,19 @@
 @model PhpbbInDotnet.Forum.Pages.SubscriptionsModel
 
 @using Domain
+@using Domain.Extensions
 @using Objects
 @using CustomPartials
+@using Services
+
+@inject IBBCodeRenderingService _renderingService;
+@inject IForumTreeService _forumService;
+
 
 @{
     var DocumentTitle = Model.TranslationProvider.BasicText[Model.Language, "SUBSCRIPTIONS", Casing.FirstUpper];
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
-
-    bool showForums = false, showTopics = false;
 }
 
 @await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Model.Language, Model.ForumUser.IsAnonymous), ViewData)
@@ -19,25 +23,50 @@
 
 @if (Model.ForumSubscriptions.Count > 0)
 {
-    showForums = true;
     <p>&nbsp;</p>
     <h3 style="float:left">
         @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "FORUMS", Casing.FirstUpper])
     </h3>
-@*     @await Html.PartialAsync(
-        "_ForumDisplayPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Forums!, userDateFormat, true, currentUser, true, Lang),
-        ViewData) *@
+
+    var isFirst = true;
+    @foreach (var forum in Model.ForumSubscriptions)
+    {
+        if (!isFirst)
+        {
+            <hr class="BoxSeparator" />
+        }
+
+        <div class="FlexRow RowMargin">
+            <span class="ForumContent">
+                <span class="Caption">
+                    @Html.Raw(_forumService.GetPathText(await _forumService.GetForumTree(Model.ForumUser, false, false), forum.ForumId!.Value))
+                </span>
+                <br/>
+                <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="nav-link" style="font-weight:bold">@Html.Raw(forum.ForumName)</a>
+                <br />
+                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
+            </span>
+            @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                authorId: forum.ForumLastPosterId,
+                authorName: forum.ForumLastPosterName!,
+                authorColor: forum.ForumLastPosterColour!,
+                creationTime: forum.ForumLastPostTime.ToUtcTime(),
+                assetId: forum.ForumId!.Value,
+                dateFormat: Model.ForumUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Model.Language),
+                language: Model.Language,
+                authorOnFoeList: Model.ForumUser.Foes?.Contains(forum.ForumLastPosterId) == true)
+                {
+                    IsLastPostSummary = true,
+                })
+        </div>
+        isFirst = false;
+    }
+
 }
 
 
 @if (Model.TopicSubscriptions.Count > 0)
 {
-    showTopics = true;
-    if (showForums)
-    {
-        <hr class="BoxSeparator" />
-    }
     <p>&nbsp;</p>
     <h3 style="float:left">
         @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])
@@ -45,10 +74,13 @@
 
     @await Html.PartialAsync(
         "_TopicDisplayPartial",
-        new _TopicDisplayPartialModel(Model.ForumUser, Model.Language, Model.TopicSubscriptions));
+        new _TopicDisplayPartialModel(Model.ForumUser, Model.Language, Model.TopicSubscriptions)
+        {
+            ShowPath = true
+        });
 }
 
-@if (!showForums && !showTopics)
+@if (Model.ForumSubscriptions.Count == 0 && Model.TopicSubscriptions.Count == 0)
 {
     @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "NO_SUBSCRIPTIONS", Casing.FirstUpper])
 }
