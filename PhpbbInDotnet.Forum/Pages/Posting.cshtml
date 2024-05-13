@@ -155,10 +155,7 @@ else if (Model.Action == PostingActions.NewTopic)
 	{
 		case PostingActions.NewTopic:
 		case PostingActions.NewForumPost:
-			if (Model.ExistingPostDraft is null)
-			{
-				<input type="submit" value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
-			}
+			<input type="submit" value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
 			<input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
 			break;
 		case PostingActions.EditForumPost:
@@ -175,11 +172,12 @@ else if (Model.Action == PostingActions.NewTopic)
 		<span asp-validation-for="LastPostTime" class="validation"></span>
 	</b>
 	
-	@if (Model.DraftSavedSuccessfully)
+	@if (Model.SaveDraftSuccess is not null && !string.IsNullOrWhiteSpace(Model.SaveDraftMessage))
 	{
-		<span class="message success">
-			@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])
-			</span>
+		var colorClass = Model.SaveDraftSuccess == true ? "success" : "fail";
+		<span class="message @colorClass">
+			@Html.Raw(Model.SaveDraftMessage)
+		</span>
 	}
 	else if (Model.DeleteDraftSuccess is not null && !string.IsNullOrWhiteSpace(Model.DeleteDraftMessage))
 	{
@@ -189,13 +187,14 @@ else if (Model.Action == PostingActions.NewTopic)
 		</span>
 	}
 
-	@if ((Model.ExistingPostDraft?.DraftId ?? 0) > 0)
+	@if (Model.ExistingPostDraft?.DraftId > 0)
 	{
 		<p></p>
 		@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED"])
-		<formatted-date date="@Model.ExistingPostDraft!.SaveTime.ToUtcTime().ToString("o")" format="@UserDateFormat" />
+		<formatted-date date="@Model.ExistingPostDraft.SaveTime.ToUtcTime().ToString("o")" format="@UserDateFormat" />
 		<span>&nbsp;&bull;&nbsp;</span>
 		<input asp-for="ExistingPostDraft!.DraftId" type="hidden" />
+		<input asp-for="ExistingPostDraft!.SaveTime" type="hidden" />
 		<input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_DRAFT", Casing.Title])" asp-page-handler="DeleteDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
 		<p></p>
 	}

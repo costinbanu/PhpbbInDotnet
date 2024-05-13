@@ -90,7 +90,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShowAttach { get; private set; } = false;
         public bool ShowPoll { get; private set; } = false;
         public PhpbbForums? CurrentForum { get; private set; }
-        public bool DraftSavedSuccessfully { get; private set; } = false;
+        public bool? SaveDraftSuccess { get; private set; }
+        public string? SaveDraftMessage { get; private set; }
         public Guid? PreviewCorrelationId { get; private set; }
         public string? DeleteDraftMessage { get; private set; }
 		public bool? DeleteDraftSuccess { get; private set; }

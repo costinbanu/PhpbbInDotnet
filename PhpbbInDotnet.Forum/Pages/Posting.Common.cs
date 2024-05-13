@@ -315,5 +315,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
         }
+
+        private void RemoveDraftFromModelState()
+        {
+			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(ExistingPostDraft))).ToList();
+			foreach (var keyToRemove in keysToRemove)
+			{
+				ModelState.Remove(keyToRemove);
+			}
+		}
     }
 }
