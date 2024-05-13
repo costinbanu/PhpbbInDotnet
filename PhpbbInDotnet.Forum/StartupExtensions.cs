@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Forum
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
 
             var recaptchaOptions = config.GetObject<Recaptcha>();
-            services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));
+            services.AddHttpClient(recaptchaOptions.ClientName!, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));
 
             services.AddSqlExecuter();
 
@@ -177,11 +177,8 @@ namespace PhpbbInDotnet.Forum
             webApplication.UseAuthentication();
             webApplication.UseSession();
             webApplication.UseMiddleware<AuthenticationMiddleware>();
-            webApplication.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-                endpoints.MapRazorPages();
-            });
+            webApplication.MapControllers();
+            webApplication.MapRazorPages();
 
             webApplication.AddRecurringTasksScheduler();
 
