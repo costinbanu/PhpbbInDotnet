@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -28,7 +31,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
-                ExistingPostDraft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId ?? 0 });
+                ExistingPostDraft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>(
+                    "SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", 
+                    new { user.UserId, ForumId, topicId = TopicId ?? 0 });
                 if (ExistingPostDraft != null)
                 {
                     PostTitle = HttpUtility.HtmlDecode(ExistingPostDraft.DraftSubject);
@@ -39,7 +44,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
                 }
                 await RestoreBackupIfAny(ExistingPostDraft?.SaveTime.ToUtcTime());
-                ShowAttach = Attachments?.Any() == true;
+                ShowAttach = Attachments?.Count > 0;
                 return Page();
             }));
 
@@ -73,7 +78,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 PostText = $"[quote=\"{curAuthor}\",{PostId}]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]\n";
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                 await RestoreBackupIfAny();
-                ShowAttach = Attachments?.Any() == true;
+                ShowAttach = Attachments?.Count > 0;
                 return Page();
             }
         }
@@ -86,14 +91,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewTopic;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
-                var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
-                if (draft != null)
+                ExistingPostDraft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
+                if (ExistingPostDraft != null)
                 {
-                    PostTitle = HttpUtility.HtmlDecode(draft.DraftSubject);
-                    PostText = HttpUtility.HtmlDecode(draft.DraftMessage);
+                    PostTitle = HttpUtility.HtmlDecode(ExistingPostDraft.DraftSubject);
+                    PostText = HttpUtility.HtmlDecode(ExistingPostDraft.DraftMessage);
                 }
-                await RestoreBackupIfAny(draft?.SaveTime.ToUtcTime());
-                ShowAttach = Attachments?.Any() == true;
+                await RestoreBackupIfAny(ExistingPostDraft?.SaveTime.ToUtcTime());
+                ShowAttach = Attachments?.Count > 0;
                 return Page();
             }));
 
@@ -131,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostTime = curPost.PostTime;
                 await RestoreBackupIfAny();
-                ShowAttach = Attachments?.Any() == true;
+                ShowAttach = Attachments?.Count > 0;
                 return Page();
             }));
 
@@ -238,7 +243,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
-                ShowAttach = Attachments?.Any() == true;
+                ShowAttach = Attachments?.Count > 0;
                 ModelState.Clear();
 
                 return Page();
@@ -371,57 +376,63 @@ namespace PhpbbInDotnet.Forum.Pages
 		public Task<IActionResult> OnPostSaveDraft()
             => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
-                var lang = Language;
-                var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
-                var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
+                try
+                {
+                    var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
+                    var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>(
+                        "SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
+                        new { user.UserId, ForumId, topicId });
 
-                if (draft == null)
-                {
-                    await SqlExecuter.ExecuteAsync(
-                        "INSERT INTO phpbb_drafts (draft_message, draft_subject, forum_id, topic_id, user_id, save_time) VALUES (@message, @subject, @forumId, @topicId, @userId, @now)",
-                        new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), ForumId, topicId = TopicId ?? 0, user.UserId, now = DateTime.UtcNow.ToUnixTimestamp() }
-                    );
-                }
-                else
-                {
-                    await SqlExecuter.ExecuteAsync(
-                        "UPDATE phpbb_drafts SET draft_message = @message, draft_subject = @subject, save_time = @now WHERE draft_id = @draftId",
-                        new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
-                    );
-                }
-                
-                DraftSavedSuccessfully = true;
-                Response.Cookies.DeleteObject(CookieBackupKey);
+                    if (draft == null)
+                    {
+                        await SqlExecuter.ExecuteAsync(
+                            "INSERT INTO phpbb_drafts (draft_message, draft_subject, forum_id, topic_id, user_id, save_time) VALUES (@message, @subject, @forumId, @topicId, @userId, @now)",
+                            new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), ForumId, topicId = TopicId ?? 0, user.UserId, now = DateTime.UtcNow.ToUnixTimestamp() });
+                    }
+                    else
+                    {
+                        var now = DateTime.UtcNow.ToUnixTimestamp();
+                        await SqlExecuter.ExecuteAsync(
+                            "UPDATE phpbb_drafts SET draft_message = @message, draft_subject = @subject, save_time = @now WHERE draft_id = @draftId",
+                            new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now, draft.DraftId });
+                    }
 
-                if (Action == PostingActions.NewForumPost)
-                {
-                    return await OnGetForumPost();
+                    SaveDraftMessage = TranslationProvider.BasicText[Language, "DRAFT_SAVED_SUCCESSFULLY"];
+					SaveDraftSuccess = true;
+                    Response.Cookies.DeleteObject(CookieBackupKey);
+
+                    RemoveDraftFromModelState();
                 }
-                else if (Action == PostingActions.NewTopic)
+                catch (Exception ex)
                 {
-                    return await OnGetNewTopic();
-                }
-                else return RedirectToPage("Index");
-            })), ReturnUrl));
+					var id = _logger.ErrorWithId(ex);
+					SaveDraftMessage = string.Format(TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+					SaveDraftSuccess = false;
+				}
+
+                return Action switch
+				{
+					PostingActions.NewForumPost => await OnGetForumPost(),
+					PostingActions.NewTopic => await OnGetNewTopic(),
+					_ => RedirectToPage("Index")
+				};
+			})), ReturnUrl));
 
         public Task<IActionResult> OnPostDeleteDraft()
-            => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>
+            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>
             {
                 try
                 {
 					await SqlExecuter.ExecuteAsync(
 						"DELETE FROM phpbb_drafts WHERE draft_id = @draftId",
 						new { ExistingPostDraft!.DraftId });
-
-					Response.Cookies.DeleteObject(CookieBackupKey);
-					ModelState.Clear();
-
-					PostText = null;
-					PostTitle = null;
-					ExistingPostDraft = null;
+					
+                    ExistingPostDraft = null;
 
 					DeleteDraftMessage = TranslationProvider.BasicText[Language, "DRAFT_DELETED_SUCCESSFULLY"];
 					DeleteDraftSuccess = true;
+
+                    RemoveDraftFromModelState();
 				}
                 catch (Exception ex)
                 {
@@ -429,8 +440,14 @@ namespace PhpbbInDotnet.Forum.Pages
                     DeleteDraftMessage = string.Format(TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
                     DeleteDraftSuccess = false;
                 }
-                return await OnGetForumPost();
-			}));
+
+				return Action switch
+				{
+					PostingActions.NewForumPost => await OnGetForumPost(),
+					PostingActions.NewTopic => await OnGetNewTopic(),
+					_ => RedirectToPage("Index")
+				};
+			})));
 
 		#endregion POST Draft
 
