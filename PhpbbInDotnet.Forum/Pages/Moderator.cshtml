@@ -138,7 +138,7 @@
                     inputValueFactory: topic => topic.TopicId!.Value.ToString())
                     {
                         SelectedTopicIds = Model.GetTopicIds(),
-                        OnChange = "mod.appendToStringList(this, 'selectedTopicIds')"
+                        OnChange = "appendToStringList(this, 'selectedTopicIds')"
                     }
             })
         <hr class="BoxSeparator" />
