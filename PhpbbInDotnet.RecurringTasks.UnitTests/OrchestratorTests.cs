@@ -40,7 +40,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
             services.AddScoped(_ => _mockTimeService.Object);
             services.AddScoped<Orchestrator>();
 
-            var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string> { ["COMPUTERNAME"] = _computerName }).Build();
+            var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["COMPUTERNAME"] = _computerName }).Build();
             services.AddSingleton<IConfiguration>(_ => config);
 
             return services;

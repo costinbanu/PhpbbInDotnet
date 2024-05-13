@@ -138,8 +138,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     FileName = HttpUtility.UrlEncode(realFileName),
                     Inline = StringUtility.IsMimeTypeInline(mimeType)
                 };
-                Response.Headers.Add("Content-Disposition", cd.ToString());
-                Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                Response.Headers.ContentDisposition = cd.ToString();
+                Response.Headers.XContentTypeOptions = "nosniff";
                 return File(stream, mimeType);
             }
             else
