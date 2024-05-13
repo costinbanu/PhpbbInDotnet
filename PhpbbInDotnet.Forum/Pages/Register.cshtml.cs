@@ -55,7 +55,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             _sqlExecuter = sqlExecuter;
             _recaptchaOptions = Configuration.GetObject<Recaptcha>();
-            _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
+            _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName!);
             _logger = logger;
             _emailService = emailService;
             _validationService = validationService;

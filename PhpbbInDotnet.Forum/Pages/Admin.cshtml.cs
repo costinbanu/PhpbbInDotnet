@@ -281,18 +281,6 @@ namespace PhpbbInDotnet.Forum.Pages
             return await WithAdmin(async () =>
             {
                 var originalFileName = Path.GetFileName(SystemLogPath)!;
-                //var filePattern = $"{Path.GetFileNameWithoutExtension(originalFileName)}*";
-                //var directory = Path.GetDirectoryName(SystemLogPath)!;
-
-                //var toReturn = new MemoryStream();
-                //foreach (var file in Directory.EnumerateFiles(directory, filePattern))
-                //{
-                //    using var fileStream = IOFile.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                //    await fileStream.CopyToAsync(toReturn);
-                //}
-                //await toReturn.FlushAsync();
-                //toReturn.Seek(0, SeekOrigin.Begin);
-
                 var toReturn = await _storageService.GetFileStream(SystemLogPath, FileType.Log);
                 if (toReturn is null)
                 {
@@ -304,8 +292,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     FileName = HttpUtility.UrlEncode(originalFileName),
                     Inline = false
                 };
-                Response.Headers.Add("Content-Disposition", cd.ToString());
-                Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                Response.Headers.ContentDisposition = cd.ToString();
+                Response.Headers.XContentTypeOptions = "nosniff";
 
                 return File(toReturn, "text/plain");
             });
