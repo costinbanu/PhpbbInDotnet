@@ -62,6 +62,8 @@
     "ANONYMOUS": "anonim",
 
     //new post subscriptions
+    "SUBSCRIPTIONS": "Abonamente",
+    "NO_SUBSCRIPTIONS": "Nici un abonament",
     "SUBSCRIBE_TO_TOPIC": "Abonare subiect",
     "SUBSCRIBE_TO_TOPIC_SUCCESS": "Ai fost abonat cu succes la subiect!",
     "UNSUBSCRIBE_FROM_TOPIC": "Dezabonare subiect",

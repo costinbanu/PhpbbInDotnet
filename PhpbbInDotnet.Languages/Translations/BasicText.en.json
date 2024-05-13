@@ -62,6 +62,8 @@
     "ANONYMOUS": "anonymous",
 
     //new post subscriptions
+    "SUBSCRIPTIONS": "Subscriptions",
+    "NO_SUBSCRIPTIONS": "No subscriptions",
     "SUBSCRIBE_TO_TOPIC": "Subscribe to topic",
     "SUBSCRIBE_TO_TOPIC_SUCCESS": "You have successfully subscribed to the topic!",
     "UNSUBSCRIBE_FROM_TOPIC": "Unsubscribe from topic",

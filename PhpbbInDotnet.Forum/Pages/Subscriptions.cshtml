@@ -1,0 +1,54 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.SubscriptionsModel
+
+@using Domain
+@using Objects
+@using CustomPartials
+
+@{
+    var DocumentTitle = Model.TranslationProvider.BasicText[Model.Language, "SUBSCRIPTIONS", Casing.FirstUpper];
+    ViewData["Title"] = DocumentTitle;
+    Layout = "~/Pages/_Layout.cshtml";
+
+    bool showForums = false, showTopics = false;
+}
+
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Model.Language, Model.ForumUser.IsAnonymous), ViewData)
+
+<h2>@Html.Raw(DocumentTitle)</h2>
+
+@if (Model.ForumSubscriptions.Count > 0)
+{
+    showForums = true;
+    <p>&nbsp;</p>
+    <h3 style="float:left">
+        @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "FORUMS", Casing.FirstUpper])
+    </h3>
+@*     @await Html.PartialAsync(
+        "_ForumDisplayPartial",
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Forums!, userDateFormat, true, currentUser, true, Lang),
+        ViewData) *@
+}
+
+
+@if (Model.TopicSubscriptions.Count > 0)
+{
+    showTopics = true;
+    if (showForums)
+    {
+        <hr class="BoxSeparator" />
+    }
+    <p>&nbsp;</p>
+    <h3 style="float:left">
+        @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])
+    </h3>
+
+    @await Html.PartialAsync(
+        "_TopicDisplayPartial",
+        new _TopicDisplayPartialModel(Model.ForumUser, Model.Language, Model.TopicSubscriptions));
+}
+
+@if (!showForums && !showTopics)
+{
+    @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "NO_SUBSCRIPTIONS", Casing.FirstUpper])
+}

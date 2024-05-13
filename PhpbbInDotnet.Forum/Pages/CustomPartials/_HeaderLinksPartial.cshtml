@@ -68,6 +68,10 @@ else if (!isIndex)
             <span> &nbsp;</span>
             <a asp-page="/MemberList">@Html.Raw(_translationProvider.BasicText[Model.Language, "FORUM_MEMBERS", Casing.Title])</a>
         </li>
+        <li>
+            <span> &nbsp;</span>
+            <a asp-page="/Subscriptions">@Html.Raw(_translationProvider.BasicText[Model.Language, "SUBSCRIPTIONS", Casing.Title])</a>
+        </li>
 
         @foreach (var elem in Model.ExtraElements.Where(elem => !string.IsNullOrWhiteSpace(elem)))
         {
