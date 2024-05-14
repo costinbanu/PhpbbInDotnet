@@ -70,6 +70,9 @@
     "CANT_EDIT_ALREADY_READ": "Mesajul a fost deja citit și nu mai poate fi actualizat.",
     "CANT_DELETE_ALREADY_READ_OR_NONEXISTING": "Mesajul nu există sau a fost deja citit. Drept urmare nu mai poate fi șters.",
     "SOME_MESSAGES_MISSING_FORMAT": "{0} mesaje au fost șterse cu succes, însă {1} nu au fost găsite.",
-    "PM_DOESNT_EXIST": "Mesajul ales nu există"
+    "PM_DOESNT_EXIST": "Mesajul ales nu există",
 
+    //subscriptions
+    "NO_VALID_FORUMS_SELECTED": "Nu a fost selectat nici un forum valid.",
+    "NO_VALID_TOPICS_SELECTED": "Nu a fost selectat nici un subiect valid."
 }

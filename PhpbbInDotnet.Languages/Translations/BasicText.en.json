@@ -60,8 +60,12 @@
     "WROTE_FORMAT": "<b>{0}</b> wrote",
     "HERE": "here",
     "ANONYMOUS": "anonymous",
+    "SELECT_ALL_FORUMS": "Select all forums",
+    "SELECT_ALL_TOPICS": "Select all topics",
 
     //new post subscriptions
+    "SUBSCRIPTIONS": "Subscriptions",
+    "NO_SUBSCRIPTIONS": "No subscriptions",
     "SUBSCRIBE_TO_TOPIC": "Subscribe to topic",
     "SUBSCRIBE_TO_TOPIC_SUCCESS": "You have successfully subscribed to the topic!",
     "UNSUBSCRIBE_FROM_TOPIC": "Unsubscribe from topic",
@@ -74,6 +78,12 @@
     "UNSUBSCRIBE_FROM_FORUM_SUBSCRIPTION_NOT_FOUND_FORMAT": "No subscription to the forum <a href=\"{0}\">{1}</a> was found.",
     "UNSUBSCRIBE_FROM_FORUM_SUCCESS": "You have successfully unsubscribed from the forum!",
     "UNSUBSCRIBE_FROM_FORUM_SUCCESS_FORMAT": "You have successfully unsubscribed from the forum <a href=\"{0}\">{1}</a>.",
+    "SUCESSFULLY_UNSUBSCRIBED_FROM_FORUMS_FORMAT": "You have been successfully unsubscribed from {0} forums!",
+    "SUCESSFULLY_UNSUBSCRIBED_FROM_TOPICS_FORMAT": "You have been successfully unsubscribed from {0} forums!",
+    "UNSUBSCRIBE_FROM_SELECTED_FORUMS": "Unsubscribe from the selected forums",
+    "UNSUBSCRIBE_FROM_SELECTED_TOPICS": "Unsubscribe from the selected topics",
+    "CONFIRM_UNSUBSCRIBE_FORUMS": "Are you sure you want to subscribe from the selected forums?",
+    "CONFIRM_UNSUBSCRIBE_TOPICS": "Are you sure you want to subscribe from the selected topics?",
 
     //post/topic/forum summary
     "LAST_POST_TEXT": "Last post by",

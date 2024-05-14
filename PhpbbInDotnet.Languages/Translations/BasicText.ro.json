@@ -60,8 +60,13 @@
     "WROTE_FORMAT": "<b>{0}</b> a scris",
     "HERE": "aici",
     "ANONYMOUS": "anonim",
+    "SELECT_ALL_FORUMS": "Selectează toate forumurile",
+    "SELECT_ALL_TOPICS": "Selectează toate subiectele",
+
 
     //new post subscriptions
+    "SUBSCRIPTIONS": "Abonamente",
+    "NO_SUBSCRIPTIONS": "Nici un abonament",
     "SUBSCRIBE_TO_TOPIC": "Abonare subiect",
     "SUBSCRIBE_TO_TOPIC_SUCCESS": "Ai fost abonat cu succes la subiect!",
     "UNSUBSCRIBE_FROM_TOPIC": "Dezabonare subiect",
@@ -74,6 +79,12 @@
     "UNSUBSCRIBE_FROM_FORUM_SUBSCRIPTION_NOT_FOUND_FORMAT": "Nu a fost găsit un abonament la forumul <a href=\"{0}\">{1}</a>.",
     "UNSUBSCRIBE_FROM_FORUM_SUCCESS": "Ai fost dezabonat cu succes de la forum!",
     "UNSUBSCRIBE_FROM_FORUM_SUCCESS_FORMAT": "Ai fost dezabonat cu succes de la forumul <a href=\"{0}\">{1}</a>.",
+    "SUCESSFULLY_UNSUBSCRIBED_FROM_FORUMS_FORMAT": "Ai fost dezabonat cu succes de la {0} forumuri!",
+    "SUCESSFULLY_UNSUBSCRIBED_FROM_TOPICS_FORMAT": "Ai fost dezabonat cu succes de la {0} subiecte!",
+    "UNSUBSCRIBE_FROM_SELECTED_FORUMS": "Dezabonează-te de la forumurile selectate",
+    "UNSUBSCRIBE_FROM_SELECTED_TOPICS": "Dezabonează-te de la subiectele selectate",
+    "CONFIRM_UNSUBSCRIBE_FORUMS": "Ești sigur că vrei să te dezabonezi de la forumurile selectate?",
+    "CONFIRM_UNSUBSCRIBE_TOPICS": "Ești sigur că vrei să te dezabonezi de la subiectele selectate?",
 
     //post/topic/forum summary
     "LAST_POST_TEXT": "Ultimul mesaj de",

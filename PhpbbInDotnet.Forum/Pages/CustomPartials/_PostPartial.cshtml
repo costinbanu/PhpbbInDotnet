@@ -184,7 +184,7 @@
                             <span>
                                 <label>
                                     @Html.Raw(_translationProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator?.Contains(Model.Post.PostId) == true ? "checked" : "") />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator?.Contains(Model.Post.PostId) == true ? "checked" : "") />
                                 </label>
                             </span>
                             <span>
@@ -204,7 +204,7 @@
                             {
                                 if (!Model.IsCurrentUserMod)
                                 {
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator?.Contains(Model.Post.PostId) == true ? "checked" : "") style="display:none" />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator?.Contains(Model.Post.PostId) == true ? "checked" : "") style="display:none" />
                                 }
                                 <span>
                                     <a href="javascript:mod.deletePost(@Model.Post.PostId, @Model.ClosestPostId)">
