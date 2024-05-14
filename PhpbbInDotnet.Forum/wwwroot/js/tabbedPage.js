@@ -11,3 +11,8 @@
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
 }
+
+function setMode(inputId, forumId, value) {
+    $(`#${inputId}`).val(value);
+    $(`#${forumId}`).submit();
+}

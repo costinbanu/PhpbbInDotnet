@@ -27,29 +27,22 @@
 	<link rel="stylesheet" href="~/css/tabbedPage.css" />
 </environment>
 
-<script>
-    function setMode(value) {
-        $('#modeInput').val(value);
-        $('#modeForm').submit();
-    }
-</script>
-
 <form method="get" id="modeForm">
     <input type="hidden" asp-for="Mode" id="modeInput" />
     <input type="hidden" name="handler" value="setMode" />
 </form>
 
 <div class="tab">
-    <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="setMode('AllUsers')">
+    <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="setMode('modeInput', 'modeForm', 'AllUsers')">
         @Model.TranslationProvider.BasicText[Lang, "ALL_USERS", Casing.Title]
     </button>
-    <button class="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "tablinks active" : "tablinks")" onclick="setMode('ActiveUsers')">
+    <button class="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "tablinks active" : "tablinks")" onclick="setMode('modeInput', 'modeForm', 'ActiveUsers')">
         @Model.TranslationProvider.BasicText[Lang, "ACTIVE_USERS", Casing.Title]
     </button>
-    <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="setMode('SearchUsers')">
+    <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="setMode('modeInput', 'modeForm', 'SearchUsers')">
         @Model.TranslationProvider.BasicText[Lang, "SEARCH_FOR_USER", Casing.Title]
     </button>
-    <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="setMode('Groups')">
+    <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="setMode('modeInput', 'modeForm', 'Groups')">
         @Model.TranslationProvider.BasicText[Lang, "FORUM_GROUPS", Casing.Title]
     </button>
 </div>
