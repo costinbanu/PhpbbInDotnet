@@ -70,5 +70,9 @@
     "CANT_EDIT_ALREADY_READ": "The message was already read, therefore it can't be updated.",
     "CANT_DELETE_ALREADY_READ_OR_NONEXISTING": "The message doesn't exist or has been already read, therefore it can't be deleted.",
     "SOME_MESSAGES_MISSING_FORMAT": "{0} have been successfully deleted, but {1} have not been found.",
-    "PM_DOESNT_EXIST": "The selected message does not exist"
+    "PM_DOESNT_EXIST": "The selected message does not exist",
+
+    //subscriptions
+    "NO_VALID_FORUMS_SELECTED": "No valid forums have been selected.",
+    "NO_VALID_TOPICS_SELECTED":  "No valid topics have been selected."
 }

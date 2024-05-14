@@ -3,84 +3,164 @@
 
 @using Domain
 @using Domain.Extensions
-@using Objects
 @using CustomPartials
 @using Services
+@using Microsoft.AspNetCore.Http.Extensions
 
-@inject IBBCodeRenderingService _renderingService;
-@inject IForumTreeService _forumService;
-
+@inject IBBCodeRenderingService _renderingService
+@inject IForumTreeService _forumService
 
 @{
-    var DocumentTitle = Model.TranslationProvider.BasicText[Model.Language, "SUBSCRIPTIONS", Casing.FirstUpper];
-    ViewData["Title"] = DocumentTitle;
-    Layout = "~/Pages/_Layout.cshtml";
+	var DocumentTitle = Model.TranslationProvider.BasicText[Model.Language, "SUBSCRIPTIONS", Casing.FirstUpper];
+	ViewData["Title"] = DocumentTitle;
+	Layout = "~/Pages/_Layout.cshtml";
 }
 
 @await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Model.Language, Model.ForumUser.IsAnonymous), ViewData)
 
+<environment include="Development">
+	<script src="~/js/tabbedPage.js"></script>
+	<link rel="stylesheet" href="~/css/admin.css" />
+	<link rel="stylesheet" href="~/css/tabbedPage.css" />
+	<link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+
+<form method="get" id="modeForm">
+	<input type="hidden" asp-for="PageMode" id="modeInput" />
+	<input type="hidden" asp-for="TopicsPageNum" />
+	<input type="hidden" asp-for="ForumsPageNum" />
+</form>
+
+<form method="post" id="unsubscribeForm">
+	<input type="hidden" asp-for="PageMode" />
+	<input type="hidden" asp-for="TopicsPageNum" />
+	<input type="hidden" asp-for="ForumsPageNum" />
+</form>
+
 <h2>@Html.Raw(DocumentTitle)</h2>
 
-@if (Model.ForumSubscriptions.Count > 0)
-{
-    <p>&nbsp;</p>
-    <h3 style="float:left">
-        @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "FORUMS", Casing.FirstUpper])
-    </h3>
+<div class="tab">
+	<button class="@(Model.PageMode == SubscriptionPageMode.Forums ? "tablinks active" : "tablinks")" onclick="setMode('modeInput', 'modeForm', 'Forums')">
+		@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "FORUMS", Casing.Title])
+	</button>
+	<button class="@(Model.PageMode == SubscriptionPageMode.Topics ? "tablinks active" : "tablinks")" onclick="setMode('modeInput', 'modeForm', 'Topics')">
+		@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "TOPICS", Casing.Title])
+	</button>
+</div>
 
-    var isFirst = true;
-    @foreach (var forum in Model.ForumSubscriptions)
-    {
-        if (!isFirst)
-        {
-            <hr class="BoxSeparator" />
-        }
+<span class="@Model.MessageClass">@Html.Raw(Model.Message)</span>
 
-        <div class="FlexRow RowMargin">
-            <span class="ForumContent">
-                <span class="Caption">
-                    @Html.Raw(_forumService.GetPathText(await _forumService.GetForumTree(Model.ForumUser, false, false), forum.ForumId!.Value))
-                </span>
-                <br/>
-                <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="nav-link" style="font-weight:bold">@Html.Raw(forum.ForumName)</a>
-                <br />
-                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
-            </span>
-            @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
-                authorId: forum.ForumLastPosterId,
-                authorName: forum.ForumLastPosterName!,
-                authorColor: forum.ForumLastPosterColour!,
-                creationTime: forum.ForumLastPostTime.ToUtcTime(),
-                assetId: forum.ForumId!.Value,
-                dateFormat: Model.ForumUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Model.Language),
-                language: Model.Language,
-                authorOnFoeList: Model.ForumUser.Foes?.Contains(forum.ForumLastPosterId) == true)
-                {
-                    IsLastPostSummary = true,
-                })
-        </div>
-        isFirst = false;
-    }
+<div id="Forums" class="tabcontent" style="@(Model.PageMode == SubscriptionPageMode.Forums? "display:inherit" : "display:none")">
+	<h3>
+		@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "FORUMS", Casing.Title])
+	</h3>
+	@if (Model.ForumSubscriptions.Count > 0)
+	{
+		@await Html.PartialAsync(
+			"_PaginationControlsPartial",
+			new _PaginationControlsPartialModel(
+				paginator: Model.ForumsPaginator!, allowPaginationChange: false, includeEasyNavigation: false, language: Model.Language,
+				back: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum - 1}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum}",
+				forward: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum + 1}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum}"));
+		<p>&nbsp;</p>
 
-}
+		var isFirst = true;
+		@foreach (var forum in Model.ForumSubscriptions)
+		{
+			if (!isFirst)
+			{
+				<hr class="BoxSeparator" />
+			}
 
+			<div class="FlexRow RowMargin">
+				<input type="checkbox" name="@nameof(Model.ForumsToUnsubscribe)" value="@forum.ForumId" form="unsubscribeForm" />
+				<span class="ForumContent">
+					<span class="Caption">
+						@Html.Raw(_forumService.GetPathText(await _forumService.GetForumTree(Model.ForumUser, false, false), forum.ParentId!.Value))
+					</span>
+					<br />
+					<a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="nav-link" style="font-weight:bold">@Html.Raw(forum.ForumName)</a>
+					<br />
+					@Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
+				</span>
+				@await Html.PartialAsync(
+					"_SummaryPartial",
+					new _SummaryPartialModel(
+						authorId: forum.ForumLastPosterId,
+						authorName: forum.ForumLastPosterName!,
+						authorColor: forum.ForumLastPosterColour!,
+						creationTime: forum.ForumLastPostTime.ToUtcTime(),
+						assetId: forum.ForumId!.Value,
+						dateFormat: Model.ForumUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Model.Language),
+						language: Model.Language,
+						authorOnFoeList: Model.ForumUser.Foes?.Contains(forum.ForumLastPosterId) == true)
+					{
+						IsLastPostSummary = true,
+					})
+			</div>
+			isFirst = false;
+		}
 
-@if (Model.TopicSubscriptions.Count > 0)
-{
-    <p>&nbsp;</p>
-    <h3 style="float:left">
-        @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])
-    </h3>
+		<p>&nbsp;</p>
+		@await Html.PartialAsync(
+			"_PaginationControlsPartial",
+			new _PaginationControlsPartialModel(
+				paginator: Model.ForumsPaginator!, allowPaginationChange: false, includeEasyNavigation: true, language: Model.Language,
+				back: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum - 1}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum}",
+				forward: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum + 1}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum}"));
 
-    @await Html.PartialAsync(
-        "_TopicDisplayPartial",
-        new _TopicDisplayPartialModel(Model.ForumUser, Model.Language, Model.TopicSubscriptions)
-        {
-            ShowPath = true
-        });
-}
+		<button onclick="selectAllCheckboxes('Forums')" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "SELECT_ALL_FORUMS"])</button>
+		<input type="submit" value="❌&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "UNSUBSCRIBE_FROM_SELECTED_FORUMS"])" form="unsubscribeForm" class="MyButton SpacedButton" onclick="return confirm('@Model.TranslationProvider.BasicText[Model.Language, "CONFIRM_UNSUBSCRIBE_FORUMS"]')" />
+		<p>&nbsp;</p>
+	}
+	else
+	{
+		<p>&nbsp;</p>
+		<h4>@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "NO_SUBSCRIPTIONS", Casing.FirstUpper])</h4>
+		<p>&nbsp;</p>
+	}
+</div>
 
-@if (Model.ForumSubscriptions.Count == 0 && Model.TopicSubscriptions.Count == 0)
-{
-    @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "NO_SUBSCRIPTIONS", Casing.FirstUpper])
-}
+<div id="Topics" class="tabcontent" style="@(Model.PageMode == SubscriptionPageMode.Topics? "display:inherit" : "display:none")">
+	<h3>
+		@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "TOPICS", Casing.Title])
+	</h3>
+	@if (Model.TopicSubscriptions.Count > 0)
+	{
+		@await Html.PartialAsync(
+			"_PaginationControlsPartial",
+			new _PaginationControlsPartialModel(
+				paginator: Model.TopicsPaginator!, allowPaginationChange: false, includeEasyNavigation: false, language: Model.Language,
+				back: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum - 1}",
+				forward: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum + 1}"));
+
+		<p>&nbsp;</p>
+
+		@await Html.PartialAsync(
+			"_TopicDisplayPartial",
+			new _TopicDisplayPartialModel(Model.ForumUser, Model.Language, Model.TopicSubscriptions)
+			{
+				ShowPath = true,
+				TopicSelectionOptions = new TopicSelectionOptions(inputName: nameof(Model.TopicsToUnsubscribe), formName: "unsubscribeForm", inputValueFactory: t => t.TopicId?.ToString()!)
+			});
+
+		<p>&nbsp;</p>
+
+		@await Html.PartialAsync(
+			"_PaginationControlsPartial",
+			new _PaginationControlsPartialModel(
+				paginator: Model.TopicsPaginator!, allowPaginationChange: false, includeEasyNavigation: true, language: Model.Language,
+				back: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum - 1}",
+				forward: $"Subscriptions?{nameof(Model.PageMode)}={Model.PageMode}&{nameof(Model.ForumsPageNum)}={Model.ForumsPageNum}&{nameof(Model.TopicsPageNum)}={Model.TopicsPageNum + 1}"));
+
+		<button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "SELECT_ALL_TOPICS"])</button>
+		<input type="submit" value="❌&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "UNSUBSCRIBE_FROM_SELECTED_TOPICS"])" form="unsubscribeForm" class="MyButton SpacedButton" onclick="return confirm('@Model.TranslationProvider.BasicText[Model.Language, "CONFIRM_UNSUBSCRIBE_TOPICS"]')" />
+		<p>&nbsp;</p>
+	}
+	else
+	{
+		<p>&nbsp;</p>
+		<h4>@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "NO_SUBSCRIPTIONS", Casing.FirstUpper])</h4>
+		<p>&nbsp;</p>
+	}
+</div>

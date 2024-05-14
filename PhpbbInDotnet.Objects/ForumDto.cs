@@ -9,5 +9,6 @@
         public long ForumLastPostTime { get; set; } = 0;
         public string ForumLastPosterName { get; set; } = string.Empty;
         public string ForumLastPosterColour { get; set; } = string.Empty;
+        public int TotalCount { get; set; } = 0;
     }
 }
