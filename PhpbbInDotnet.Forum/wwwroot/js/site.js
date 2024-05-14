@@ -186,3 +186,18 @@ function enableCollapsibles() {
         });
     }
 }
+
+function appendToStringList(checkbox, targetId) {
+    let target = $(`#${targetId}`);
+    let cur = target.val().split(',');
+    let value = $(checkbox).val();
+    if (checkbox.checked) {
+        cur.push(value.toString());
+    } else {
+        let index = cur.indexOf(value.toString());
+        if (index > -1) {
+            cur.splice(index, 1);
+        }
+    }
+    target.val(cur.join(','));
+}

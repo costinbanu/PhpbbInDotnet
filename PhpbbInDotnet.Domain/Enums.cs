@@ -284,4 +284,10 @@ namespace PhpbbInDotnet.Domain
         MySql = 0,
         SqlServer = 1
     }
+
+    public enum SubscriptionPageMode
+    {
+        Forums,
+        Topics
+    }
 }
