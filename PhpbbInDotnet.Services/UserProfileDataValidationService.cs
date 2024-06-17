@@ -12,7 +12,6 @@ namespace PhpbbInDotnet.Services
     class UserProfileDataValidationService : IUserProfileDataValidationService
     {
         private readonly Regex USERNAME_REGEX = new(@"^[a-zA-Z0-9 \._-]+$", RegexOptions.Compiled);
-        private readonly Regex PASSWORD_REGEX = new(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", RegexOptions.Compiled);
 
         private readonly EmailAddressAttribute _emailValidator;
         private readonly ModelStateDictionary _modelState;
@@ -46,7 +45,7 @@ namespace PhpbbInDotnet.Services
                 _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_CHARS"]);
                 toReturn = false;
             }
-            else if (value.Equals(Constants.ANONYMOUS_USER_NAME, System.StringComparison.InvariantCultureIgnoreCase))
+            else if (value.Equals(Constants.ANONYMOUS_USER_NAME, StringComparison.InvariantCultureIgnoreCase))
             {
                 _modelState.AddModelError(name, _translationProvider.Errors[_language, "ILLEGAL_USERNAME"]);
                 toReturn = false;
@@ -87,13 +86,30 @@ namespace PhpbbInDotnet.Services
                 _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_LENGTH"]);
                 toReturn = false;
             }
-            else if (!PASSWORD_REGEX.IsMatch(value))
+            else if (!IsPasswordValid(value))
             {
                 _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_CHARS"]);
                 toReturn = false;
             }
 
             return toReturn;
+
+            static bool IsPasswordValid(string password)
+            {
+                bool foundLetter = false, foundDigit = false;
+                foreach (var c in password)
+                {
+                    if (char.IsLetter(c))
+                    {
+                        foundLetter = true;
+                    }
+                    else if(char.IsDigit(c))
+                    {
+                        foundDigit = true;
+                    }
+                }
+                return foundLetter && foundDigit;
+            }
         }
 
         public bool ValidateSecondPassword(string secondName, string? secondValue, string? firstValue)

@@ -19,7 +19,7 @@ namespace PhpbbInDotnet.Forum.Pages
 {
 	public class SubscriptionsModel : AuthenticatedPageModel
 	{
-		const int PAGE_SIZE = 5;
+		const int PAGE_SIZE = 20;
 
 		private readonly ILogger _logger;
 
