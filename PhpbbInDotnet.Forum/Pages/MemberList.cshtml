@@ -21,6 +21,8 @@
     var dateFormat = user.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, user.IsAnonymous), ViewData)
+<p></p>
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
     <script src="~/js/tabbedPage.js"></script>

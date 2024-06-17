@@ -1,5 +1,11 @@
 ﻿@page
+@using Domain
+@using Domain.Extensions;
+@using Objects
+@using CustomPartials
+
 @model PhpbbInDotnet.Forum.Pages.PrivateMessagesModel
+
 @{
     var Lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title];
@@ -8,10 +14,8 @@
     var userCanSendMessages = Model.ForumUser.HasPrivateMessagePermissions;
 }
 
-@using Domain
-@using Domain.Extensions;
-@using Objects
-@using CustomPartials
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, Model.ForumUser.IsAnonymous), ViewData)
+<div style="clear:both; margin-bottom: 20px"></div>
 
 <environment include="Development">
     <script src="~/js/tabbedPage.js"></script>
@@ -32,17 +36,17 @@
     }
 </style>
 
-<h3 style="float: left; margin-top: 0px">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title])</h3>
+<h2 style="float: left; margin-top: 0px">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title])</h2>
 @if (userCanSendMessages)
 {
     <span>
         &nbsp;
-        <button onclick="location.href = '/SendPrivateMessage'" style="height: 26px; padding-top: 1px; padding-bottom: 1px" class="MyButton SpacedButtonNotTop">
+		<button onclick="location.href = '/SendPrivateMessage'" style="height: 33px; padding-top: 1px; padding-bottom: 1px;" class="MyButton SpacedButtonNotTop">
             &#x1F4DD;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_PM"])
         </button>
     </span>
 }
-<p style="clear:both"></p>
+<div style="clear:both"></div>
 <form method="get" id="switcher" name="switcher">
     <input type="hidden" asp-for="Show" id="show" />
     <input type="hidden" asp-for="InboxPage" />

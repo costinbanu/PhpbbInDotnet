@@ -1,12 +1,11 @@
 ﻿@page
-@using Database.Entities
 @using Domain
 @using Domain.Extensions
 @using Domain.Utilities
 @using Microsoft.Extensions.Configuration
 @using System.Globalization 
 @using Objects
-@using Microsoft.EntityFrameworkCore
+@using CustomPartials
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
@@ -35,6 +34,8 @@
         "SELECT group_user_upload_size FROM phpbb_groups WHERE group_id = @groupId",
         new { Model.CurrentUser?.GroupId });
 }
+
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, viewingUser.IsAnonymous), ViewData)
 
 <environment include="Development">
     <link rel="stylesheet" href="~/css/posting.css" />
@@ -95,13 +96,13 @@
     <input type="hidden" asp-for="UserId" />
     <input type="hidden" asp-for="ViewAsAnother" />
 </form>
-<h3>
+<h2>
     @Html.Raw(Model.TranslationProvider.BasicText[Lang, "USER_PROFILE"])
     @if (!isSelf && !canEdit)
     {
         <span> -&nbsp;@Model.CurrentUser!.Username</span>
     }
-</h3>
+</h2>
 @if (canEdit || Model.Mode == UserPageMode.AddFoe || Model.Mode == UserPageMode.RemoveFoe || Model.Mode == UserPageMode.RemoveMultipleFoes)
 {
     <span asp-validation-for="CurrentUser" class="validation"></span>
