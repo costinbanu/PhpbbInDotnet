@@ -14,6 +14,7 @@ using Serilog;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -128,14 +129,14 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<string> PrepareTextForSaving(string? text)
+        public async Task<string> PrepareTextForSaving(string? text, ITransactionalSqlExecuter? transaction = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 return string.Empty;
             }
 
-            foreach (var sr in await GetLazySmilies())
+            foreach (var sr in await GetLazySmilies(transaction))
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
                 var replacement = $"<!-- s{sr.Code} --><img src=\"{_storageService.GetEmojiRelativeUrl(sr.SmileyUrl)}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";
@@ -225,11 +226,21 @@ namespace PhpbbInDotnet.Services
 
         #region Smilies
 
-        public async Task<List<PhpbbSmilies>> GetLazySmilies()
-            => _smilies ??= await GetSmilies();
+        public async Task<List<PhpbbSmilies>> GetLazySmilies(ITransactionalSqlExecuter? transaction = null)
+            => _smilies ??= await GetSmilies(transaction);
 
-        public async Task<List<PhpbbSmilies>> GetSmilies()
-            => (await _sqlExecuter.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList();
+        public async Task<List<PhpbbSmilies>> GetSmilies(ITransactionalSqlExecuter? transaction = null)
+        {
+            var sql = "SELECT * FROM phpbb_smilies ORDER BY smiley_order";
+            if (transaction is not null)
+            {
+                return (await transaction.QueryAsync<PhpbbSmilies>(sql)).AsList();
+            }
+            else
+            {
+				return (await _sqlExecuter.QueryAsync<PhpbbSmilies>(sql)).AsList();
+			}
+        }
 
         public async Task<(string Message, bool? IsSuccess)> ManageSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
         {

@@ -1,6 +1,8 @@
 ﻿using Dapper;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MySql.Data.MySqlClient;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using Polly;
@@ -14,17 +16,17 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
 {
-    class DapperProxy : IDapperProxy
+    class DapperProxy : IDapperProxy, IDisposable
 	{
 		internal protected const int TIMEOUT = 60;
-		static readonly TimeSpan[] DURATIONS = new[]
-		{
+		static readonly TimeSpan[] DURATIONS =
+		[
 			TimeSpan.FromSeconds(1),
 			TimeSpan.FromSeconds(1),
 			TimeSpan.FromSeconds(2),
 			TimeSpan.FromSeconds(3),
 			TimeSpan.FromSeconds(5)
-		};
+		];
 
 		private readonly AsyncRetryPolicy _asyncRetryPolicy;
 		private readonly ILogger _logger;
@@ -33,14 +35,22 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		protected internal readonly DatabaseType DatabaseType;
 		protected readonly IDbConnection Connection;
 
-		public DapperProxy(IConfiguration configuration, IDbConnection dbConnection, ILogger logger)
+		protected DapperProxy(IConfiguration configuration, ILogger logger)
 		{
 			_logger = logger;
 			_asyncRetryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetryAsync(DURATIONS, OnRetry);
 			_retryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetry(DURATIONS, OnRetry);
 
 			DatabaseType = configuration.GetValue<DatabaseType>("Database:DatabaseType");
-			Connection = dbConnection;
+			
+            var connStr = configuration.GetValue<string>("Database:ConnectionString");
+			Connection = DatabaseType switch
+			{
+				DatabaseType.MySql => new MySqlConnection(connStr),
+				DatabaseType.SqlServer => new SqlConnection(connStr),
+				_ => throw new ArgumentException("Unknown Database type in configuration.")
+			};
+			Connection.Open();
 		}
 
         public Task<int> ExecuteAsync(string sql, object? param)
@@ -90,6 +100,11 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 
         public Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = TIMEOUT)
             => Connection.ExecuteAsync(sql, param, commandTimeout: commandTimeout);
+
+        public void Dispose()
+        {
+            Connection.Dispose();
+        }
 
         #region internal impl
 

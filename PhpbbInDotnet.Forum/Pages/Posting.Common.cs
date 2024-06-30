@@ -112,7 +112,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
 
                     var hasAttachments = Attachments?.Any() == true;
-                    var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText?.Trim()));
+                    var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText?.Trim()), transaction);
                     if (isNewPost)
                     {
                         post = await transaction.QuerySingleAsync<PhpbbPosts>(
@@ -174,7 +174,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             {
                                 post.PostId,
                                 post.TopicId,
-                                comment = await _writingService.PrepareTextForSaving(attach.AttachComment),
+                                comment = await _writingService.PrepareTextForSaving(attach.AttachComment, transaction),
                                 attach.AttachId
                             });
                     }
