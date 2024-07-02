@@ -9,17 +9,17 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 {
     abstract class DapperProxy(IConfiguration configuration, ILogger logger) : BaseDapperProxy(configuration, logger), IDapperProxy
     {
-        public virtual Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = TIMEOUT)
+        public virtual async Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = TIMEOUT)
         {
             using var connection = GetDbConnection();
-            return connection.ExecuteAsync(sql, param, commandTimeout: commandTimeout);
+            return await connection.ExecuteAsync(sql, param, commandTimeout: commandTimeout);
         }
 
         public virtual Task<int> ExecuteAsync(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.ExecuteAsync(sql, param, commandTimeout: TIMEOUT);
+                return await connection.ExecuteAsync(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual T? ExecuteScalar<T>(string sql, object? param)
@@ -30,10 +30,10 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             });
 
         public virtual Task<T?> ExecuteScalarAsync<T>(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.ExecuteScalarAsync<T>(sql, param, commandTimeout: TIMEOUT);
+                return await connection.ExecuteScalarAsync<T>(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual IEnumerable<dynamic> Query(string sql, object? param)
@@ -51,17 +51,17 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             });
 
         public virtual Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QueryAsync(sql, param, commandTimeout: TIMEOUT);
+                return await connection.QueryAsync(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QueryAsync<T>(sql, param, commandTimeout: TIMEOUT);
+                return await connection.QueryAsync<T>(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual T? QueryFirstOrDefault<T>(string sql, object? param)
@@ -72,17 +72,17 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             });
 
         public virtual Task<dynamic?> QueryFirstOrDefaultAsync(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QueryFirstOrDefaultAsync(sql, param, commandTimeout: TIMEOUT);
+                return await connection.QueryFirstOrDefaultAsync(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QueryFirstOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT);
+                return await connection.QueryFirstOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual T QuerySingle<T>(string sql, object? param)
@@ -93,31 +93,32 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             });
 
         public virtual Task<T> QuerySingleAsync<T>(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QuerySingleAsync<T>(sql, param, commandTimeout: TIMEOUT);
+                return await connection.QuerySingleAsync<T>(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual Task<dynamic?> QuerySingleOrDefaultAsync(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QuerySingleOrDefaultAsync(sql, param, commandTimeout: TIMEOUT);
+                return await connection.QuerySingleOrDefaultAsync(sql, param, commandTimeout: TIMEOUT);
             });
 
         public virtual Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT);
+                return await connection.QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT);
             });
 
-        public virtual Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
-            => ResilientExecuteAsync(() =>
+        public virtual Task<IMultipleResultsProxy> QueryMultipleAsync(string sql, object? param)
+            => ResilientExecuteAsync(async () =>
             {
-                using var connection = GetDbConnection();
-                return connection.QueryMultipleAsync(sql, param, commandTimeout: TIMEOUT);
+                var connection = GetDbConnection();
+                var reader = await connection.QueryMultipleAsync(sql, param, commandTimeout: TIMEOUT);
+                return new MultipleResultsProxy(connection, reader) as IMultipleResultsProxy;
             });
     }
 }

@@ -21,7 +21,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		Task<T?> ExecuteScalarAsync<T>(string sql, object? param = null);
 		T? ExecuteScalar<T>(string sql, object? param = null);
 		Task<int> ExecuteAsync(string sql, object? param = null);
-		Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param);
+		Task<IMultipleResultsProxy> QueryMultipleAsync(string sql, object? param);
 		Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = DapperProxy.TIMEOUT);
     }
 }

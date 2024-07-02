@@ -58,7 +58,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public override Task<dynamic?> QuerySingleOrDefaultAsync(string sql, object? param)
             => base.QuerySingleOrDefaultAsync(AdjustSql(sql), AdjustParameters(param));
 
-        public override Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
+        public override Task<IMultipleResultsProxy> QueryMultipleAsync(string sql, object? param)
             => base.QueryMultipleAsync(AdjustSql(sql), AdjustParameters(param));
 
         public override Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = DapperProxy.TIMEOUT)

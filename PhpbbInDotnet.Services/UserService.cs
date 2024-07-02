@@ -1,5 +1,4 @@
-﻿using Dapper;
-using LazyCache;
+﻿using LazyCache;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -180,7 +179,7 @@ namespace PhpbbInDotnet.Services
                 expanded.AllPermissions = await GetPermissionsAsync(user.UserId);
             }
 
-            SqlMapper.GridReader? result = null;
+            IMultipleResultsProxy? result = null;
             try
             {
                 if (shouldRunSql)

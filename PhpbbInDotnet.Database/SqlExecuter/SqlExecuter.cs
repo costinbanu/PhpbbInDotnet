@@ -22,20 +22,20 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             });
 
         public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT);
+                return await connection.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT);
             });
 
-        public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
+        public Task<IMultipleResultsProxy> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
             => QueryMultipleAsync(BuildStoreProcedureCall(storedProcedureName, param), param);
 
         public Task CallStoredProcedureAsync(string storedProcedureName, object? param)
-            => ResilientExecuteAsync(() =>
+            => ResilientExecuteAsync(async () =>
             {
                 using var connection = GetDbConnection();
-                return connection.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT);
+                return await connection.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT);
             });
 
         public IDapperProxy WithPagination(int skip, int take)

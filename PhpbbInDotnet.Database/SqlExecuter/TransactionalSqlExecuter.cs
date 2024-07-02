@@ -34,8 +34,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param)
             => ResilientExecuteAsync(() => _connection.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, _transaction, commandTimeout: TIMEOUT));
 
-        public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
-            => ResilientExecuteAsync(() => _connection.QueryMultipleAsync(BuildStoreProcedureCall(storedProcedureName, param), param, _transaction, commandTimeout: TIMEOUT)); 
+        public Task<IMultipleResultsProxy> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
+            => throw new NotSupportedException("Multiple result queries within a transaction are not supported");
 
         public Task CallStoredProcedureAsync(string storedProcedureName, object? param)
             => ResilientExecuteAsync(() => _connection.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, _transaction, commandTimeout: TIMEOUT));
@@ -85,8 +85,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? param) 
             => ResilientExecuteAsync(() => _connection.QuerySingleOrDefaultAsync<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
 
-        public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param) 
-            => ResilientExecuteAsync(() => _connection.QueryMultipleAsync(sql, param, _transaction, commandTimeout: TIMEOUT));
+        public Task<IMultipleResultsProxy> QueryMultipleAsync(string sql, object? param)
+            => throw new NotSupportedException("Multiple result queries within a transaction are not supported");
 
         public void CommitTransaction()
             => _transaction.Commit();
@@ -96,7 +96,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             try
             { 
                 _connection.Dispose(); 
-            } catch { }
+            } 
+            catch { }
 
             try
             { 

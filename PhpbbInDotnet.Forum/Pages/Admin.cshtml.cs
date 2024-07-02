@@ -17,11 +17,10 @@ using System.Linq;
 using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Web;
-using IOFile = System.IO.File;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[RequestSizeLimit(10 * 1024 * 1024)]
+    [RequestSizeLimit(10 * 1024 * 1024)]
     public partial class AdminModel : AuthenticatedPageModel
     {
         [BindProperty]
