@@ -1,4 +1,6 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,98 +8,102 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
 {
-    class TransactionalSqlExecuter : ITransactionalSqlExecuter
+    sealed class TransactionalSqlExecuter : BaseDapperProxy, ITransactionalSqlExecuter
     {
+        private readonly IDbConnection _connection;
         private readonly IDbTransaction _transaction;
-        private readonly SqlExecuter _implementation;
 
-        internal TransactionalSqlExecuter(IDbTransaction transaction, SqlExecuter implementation)
+        internal TransactionalSqlExecuter(IsolationLevel isolationLevel, IConfiguration configuration, ILogger logger) : base(configuration, logger)
         {
-            _transaction = transaction;
-            _implementation = implementation;
+            _connection = GetDbConnection();
+            _transaction = _connection.BeginTransaction(isolationLevel);
         }
 
-        public string LastInsertedItemId => _implementation.LastInsertedItemId;
+        public ITransactionalSqlExecuter BeginTransaction(IsolationLevel _) 
+            => throw new NotSupportedException("Transaction already started");
 
-        public string PaginationWildcard => _implementation.PaginationWildcard;
+        public ITransactionalSqlExecuter BeginTransaction() 
+            => throw new NotSupportedException("Transaction already started");
 
-        public ITransactionalSqlExecuter BeginTransaction(IsolationLevel _)
-        {
-            throw new NotSupportedException("Transaction already started");
-        }
+        public IDapperProxy WithPagination(int skip, int take) 
+            => throw new NotSupportedException("Paginated queries within a transaction are not supported");
 
-		public ITransactionalSqlExecuter BeginTransaction()
-		{
-			throw new NotSupportedException("Transaction already started");
-		}
+        public IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param)
+            => ResilientExecute(() => _connection.Query<T>(BuildStoreProcedureCall(storedProcedureName, param), param, _transaction, commandTimeout: TIMEOUT));
 
-		public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
-            => _implementation.CallMultipleResultsStoredProcedureAsyncImpl(storedProcedureName, param, _transaction);
+        public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param)
+            => ResilientExecuteAsync(() => _connection.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, _transaction, commandTimeout: TIMEOUT));
 
-        public IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param = null)
-            => _implementation.CallStoredProcedureImpl<T>(storedProcedureName, param, _transaction);
+        public Task<IMultipleResultsProxy> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
+            => throw new NotSupportedException("Multiple result queries within a transaction are not supported");
 
-        public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param = null)
-            => _implementation.CallStoredProcedureAsyncImpl<T>(storedProcedureName, param, _transaction);
+        public Task CallStoredProcedureAsync(string storedProcedureName, object? param)
+            => ResilientExecuteAsync(() => _connection.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, _transaction, commandTimeout: TIMEOUT));
 
-        public Task CallStoredProcedureAsync(string storedProcedureName, object? param = null)
-            => _implementation.CallStoredProcedureAsyncImpl(storedProcedureName, param, _transaction);
+        public Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = TIMEOUT) 
+            => _connection.ExecuteAsync(sql, param, _transaction, commandTimeout: commandTimeout);
+
+        public Task<int> ExecuteAsync(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.ExecuteAsync(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public T? ExecuteScalar<T>(string sql, object? param) 
+            => ResilientExecute(() => _connection.ExecuteScalar<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<T?> ExecuteScalarAsync<T>(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.ExecuteScalarAsync<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public IEnumerable<dynamic> Query(string sql, object? param) 
+            => ResilientExecute(() => _connection.Query(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public IEnumerable<T> Query<T>(string sql, object? param) 
+            => ResilientExecute(() => _connection.Query<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.QueryAsync(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.QueryAsync<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public T? QueryFirstOrDefault<T>(string sql, object? param) 
+            => ResilientExecute(() => _connection.QueryFirstOrDefault<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<dynamic?> QueryFirstOrDefaultAsync(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.QueryFirstOrDefaultAsync(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.QueryFirstOrDefaultAsync<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public T QuerySingle<T>(string sql, object? param) 
+            => ResilientExecute(() => _connection.QuerySingle<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<T> QuerySingleAsync<T>(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.QuerySingleAsync<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<dynamic?> QuerySingleOrDefaultAsync(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.QuerySingleOrDefaultAsync(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? param) 
+            => ResilientExecuteAsync(() => _connection.QuerySingleOrDefaultAsync<T>(sql, param, _transaction, commandTimeout: TIMEOUT));
+
+        public Task<IMultipleResultsProxy> QueryMultipleAsync(string sql, object? param)
+            => throw new NotSupportedException("Multiple result queries within a transaction are not supported");
 
         public void CommitTransaction()
             => _transaction.Commit();
 
         public void Dispose()
-            => _transaction.Dispose();
+        {
+            try
+            { 
+                _connection.Dispose(); 
+            } 
+            catch { }
 
-        public Task<int> ExecuteAsync(string sql, object? param = null)
-            => _implementation.ExecuteAsyncImpl(sql, param, _transaction);
-
-        public T? ExecuteScalar<T>(string sql, object? param = null)
-            => _implementation.ExecuteScalarImpl<T>(sql, param, _transaction);
-
-        public Task<T?> ExecuteScalarAsync<T>(string sql, object? param = null)
-            => _implementation.ExecuteScalarAsyncImpl<T>(sql, param, _transaction);
-
-        public IEnumerable<T> Query<T>(string sql, object? param = null)
-        => _implementation.QueryImpl<T>(sql, param, _transaction);
-
-        public IEnumerable<dynamic> Query(string sql, object? param = null)
-            => _implementation.QueryImpl(sql, param, _transaction);
-
-        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param = null)
-            => _implementation.QueryAsyncImpl<T>(sql, param, _transaction);
-
-        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param = null)
-            => _implementation.QueryAsyncImpl(sql, param, _transaction);
-
-        public T? QueryFirstOrDefault<T>(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefaultImpl<T>(sql, param, _transaction);
-
-        public Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefaultAsyncImpl<T>(sql, param, _transaction);
-
-        public Task<dynamic?> QueryFirstOrDefaultAsync(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefaultAsyncImpl(sql, param, _transaction);
-
-        public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
-            => _implementation.QueryMultipleAsyncImpl(sql, param, _transaction);
-
-        public T QuerySingle<T>(string sql, object? param)
-            => _implementation.QuerySingleImpl<T>(sql, param, _transaction);
-
-        public Task<T> QuerySingleAsync<T>(string sql, object? param)
-            => _implementation.QuerySingleAsyncImpl<T>(sql, param, _transaction);
-
-        public Task<T?> QuerySingleOrDefaultAsync<T>(string sql, object? param = null)
-            => _implementation.QuerySingleOrDefaultAsyncImpl<T>(sql, param, _transaction);
-
-        public Task<dynamic?> QuerySingleOrDefaultAsync(string sql, object? param = null)
-            => _implementation.QuerySingleOrDefaultAsyncImpl(sql, param, _transaction);
-
-        public Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = DapperProxy.TIMEOUT)
-            => _implementation.ExecuteAsyncWithoutResiliency(sql, param, commandTimeout);
-
-        public IDapperProxy WithPagination(int skip, int take)
-            => new PaginatedDapperProxy(_implementation, _implementation.DatabaseType, skip, take, _transaction);
+            try
+            { 
+                _transaction.Dispose(); 
+            }
+            catch { }
+        }
     }
 }
