@@ -16,6 +16,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         internal TransactionalSqlExecuter(IsolationLevel isolationLevel, IConfiguration configuration, ILogger logger) : base(configuration, logger)
         {
             _connection = GetDbConnection();
+            ResilientExecute(() => _connection.Open());
             _transaction = _connection.BeginTransaction(isolationLevel);
         }
 

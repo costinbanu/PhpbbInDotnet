@@ -68,6 +68,9 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         protected T ResilientExecute<T>(Func<T> toDo)
             => ReturnResultOrThrowExceptionIfAny(_retryPolicy.ExecuteAndCapture(_ => toDo(), ContextData));
 
+        protected void ResilientExecute(Action toDo)
+            => _retryPolicy.Execute(toDo);
+
         protected async Task<T> ResilientExecuteAsync<T>(Func<Task<T>> toDo)
             => ReturnResultOrThrowExceptionIfAny(await _asyncRetryPolicy.ExecuteAndCaptureAsync(_ => toDo(), ContextData));
 
@@ -79,7 +82,6 @@ namespace PhpbbInDotnet.Database.SqlExecuter
                 DatabaseType.SqlServer => new SqlConnection(_connectionString),
                 _ => throw new ArgumentException("Unknown Database type in configuration.")
             };
-            connection.Open();
             return connection;
         }
 
