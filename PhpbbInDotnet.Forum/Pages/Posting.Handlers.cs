@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Net.Http.Headers;
+using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -22,6 +24,48 @@ namespace PhpbbInDotnet.Forum.Pages
 	public partial class PostingModel
     {
         #region GET
+
+        public async Task<IActionResult> OnGet()
+        {
+            var userAgent = Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) ? header.ToString() : "n/a";
+            _logger.Warning("Received call to default GET handler in Posting from user '{userName}' having user agent '{userAgent}' and query string '{queryString}'", 
+                ForumUser.Username, userAgent, Request.QueryString);
+
+            var cookie = (from kvp in Request.Cookies
+                          where kvp.Key.StartsWith(CookieBackupKeyPrefix) && !string.IsNullOrWhiteSpace(kvp.Value)
+                          let deserialized = suppressExceptions(() => JsonConvert.DeserializeObject<PostingBackup>(kvp.Value))
+                          where deserialized is not null && (DateTime.UtcNow - deserialized.TextTime) < TimeSpan.FromMinutes(2)
+                          orderby deserialized.TextTime descending
+                          select deserialized)
+                          .FirstOrDefault() ?? throw new InvalidOperationException("Attempted to retrieve latest possible cookie with posting backup, but did not found any.");
+
+            Action = cookie.PostingActions;
+            ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
+            TopicId ??= cookie.TopicId;
+            PostId ??= cookie.PostId;
+            QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
+
+            return Action switch
+            {
+                PostingActions.NewTopic => await OnGetNewTopic(),
+                PostingActions.NewForumPost when PostId > 0 => await OnGetQuoteForumPost(),
+                PostingActions.NewForumPost when PostId is null => await OnGetForumPost(),
+                PostingActions.EditForumPost => await OnGetEditPost(),
+                _ => throw new InvalidOperationException($"Unsupported value '{Action}' for PostingActions.")
+            };
+
+            static T? suppressExceptions<T>(Func<T> toDo)
+            {
+                try
+                {
+                    return toDo();
+                }
+                catch 
+                {
+                    return default;
+                }
+            }
+        }
 
         public Task<IActionResult> OnGetForumPost()
             => WithRegisteredUserAndCorrectPermissions((user) => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
@@ -145,7 +189,7 @@ namespace PhpbbInDotnet.Forum.Pages
         #region POST Attachment
 
         public Task<IActionResult> OnPostAddAttachment()
-            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 var lang = Language;
                 CurrentForum = curForum;
@@ -230,11 +274,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     Attachments.AddRange(succeeded);
                 }
 
-                return Page();
+                return BackedUpPage();
             }, ReturnUrl)));
 
         public Task<IActionResult> OnPostDeleteAttachment(int index)
-            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
 
@@ -246,11 +290,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 ShowAttach = Attachments?.Count > 0;
                 ModelState.Clear();
 
-                return Page();
+                return BackedUpPage();
             }, ReturnUrl)));
 
         public Task<IActionResult> OnPostDeleteAllAttachments()
-            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
 
@@ -278,7 +322,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     ModelState.Clear();
                 }
 
-                return Page();
+                return BackedUpPage();
             }, ReturnUrl)));
 
         #endregion POST Attachment
@@ -286,7 +330,7 @@ namespace PhpbbInDotnet.Forum.Pages
         #region POST Message
 
         public Task<IActionResult> OnPostPreview()
-            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 var lang = Language;
                 var currentPost = Action == PostingActions.EditForumPost ? await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
@@ -338,7 +382,7 @@ namespace PhpbbInDotnet.Forum.Pages
             })), ReturnUrl)));
 
         public Task<IActionResult> OnPostNewForumPost()
-            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async () =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async () =>
             {
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
@@ -349,7 +393,7 @@ namespace PhpbbInDotnet.Forum.Pages
             })), ReturnUrl)));
 
         public Task<IActionResult> OnPostEditForumPost()
-            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => WithValidInput(curForum, async() =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => WithValidInput(curForum, async() =>
             {
                 if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
@@ -378,7 +422,13 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 try
                 {
-                    var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
+                    var topicId = Action switch
+                    {
+                        PostingActions.NewTopic => 0,
+                        _ when QuotePostInDifferentTopic => DestinationTopicId,
+                        _ => TopicId
+                    };
+                    
                     var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>(
                         "SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                         new { user.UserId, ForumId, topicId });
@@ -411,15 +461,17 @@ namespace PhpbbInDotnet.Forum.Pages
 				}
 
                 return Action switch
-				{
-					PostingActions.NewForumPost => await OnGetForumPost(),
-					PostingActions.NewTopic => await OnGetNewTopic(),
-					_ => RedirectToPage("Index")
-				};
+                {
+                    PostingActions.NewTopic => await OnGetNewTopic(),
+                    PostingActions.NewForumPost when PostId > 0 => await OnGetQuoteForumPost(),
+                    PostingActions.NewForumPost when PostId is null => await OnGetForumPost(),
+                    PostingActions.EditForumPost => await OnGetEditPost(),
+                    _ => RedirectToPage("Index")
+                };
 			})), ReturnUrl));
 
         public Task<IActionResult> OnPostDeleteDraft()
-            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>
             {
                 try
                 {
@@ -441,20 +493,22 @@ namespace PhpbbInDotnet.Forum.Pages
                     DeleteDraftSuccess = false;
                 }
 
-				return Action switch
-				{
-					PostingActions.NewForumPost => await OnGetForumPost(),
-					PostingActions.NewTopic => await OnGetNewTopic(),
-					_ => RedirectToPage("Index")
-				};
-			})));
+                return Action switch
+                {
+                    PostingActions.NewTopic => await OnGetNewTopic(),
+                    PostingActions.NewForumPost when PostId > 0 => await OnGetQuoteForumPost(),
+                    PostingActions.NewForumPost when PostId is null => await OnGetForumPost(),
+                    PostingActions.EditForumPost => await OnGetEditPost(),
+                    _ => RedirectToPage("Index")
+                };
+            })));
 
 		#endregion POST Draft
 
 		#region POST Poll
 
 		public async Task<IActionResult> OnPostDeletePoll()
-            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+            => await WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {

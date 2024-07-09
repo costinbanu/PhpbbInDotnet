@@ -96,8 +96,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? DeleteDraftMessage { get; private set; }
 		public bool? DeleteDraftSuccess { get; private set; }
 
-		private string CookieBackupKey 
-            => $"{nameof(PostingBackup)}_{ForumUser.UserId}_{ForumId}_{(Action == PostingActions.NewTopic ? 0 : (TopicId ?? 0))}_{PostId ?? 0}";
+        private string CookieBackupKeyPrefix => $"{nameof(PostingBackup)}_{ForumUser.UserId}";
+		private string CookieBackupKey => $"{CookieBackupKeyPrefix}_{ForumId}_{(Action == PostingActions.NewTopic ? 0 : (TopicId ?? 0))}_{PostId ?? 0}";
 		private IEnumerable<string> PollOptionsEnumerable 
             => (PollOptions?
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
