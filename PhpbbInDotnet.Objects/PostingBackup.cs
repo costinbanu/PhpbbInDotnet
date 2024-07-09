@@ -1,25 +1,9 @@
-﻿using System;
+﻿using PhpbbInDotnet.Domain;
+using System;
 using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class PostingBackup
-    {
-        public PostingBackup(string? text, DateTime textTime, int forumId, int topicId, int postId, List<int>? attachmentIds)
-        {
-            Text = text;
-            TextTime = textTime;
-            ForumId = forumId;
-            TopicId = topicId;
-            PostId = postId;
-            AttachmentIds = attachmentIds;
-        }
-
-        public string? Text { get; }
-        public DateTime TextTime { get; }
-        public int ForumId { get; }
-        public int TopicId { get; }
-        public int PostId { get; }
-        public List<int>? AttachmentIds { get; }
-    }
+    public record PostingBackup(PostingActions PostingActions, string? Title, string? Text, DateTime TextTime, int ForumId, int? TopicId, int? PostId, 
+        List<int>? AttachmentIds, bool QuotePostInDifferentTopic);
 }

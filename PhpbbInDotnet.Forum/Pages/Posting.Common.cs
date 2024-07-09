@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -286,23 +287,38 @@ namespace PhpbbInDotnet.Forum.Pages
         protected override IActionResult PageWithError(PhpbbForums curForum, string errorKey, string errorMessage)
             => PageWithError(errorKey, errorMessage, () => CurrentForum = curForum);
 
-        private Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
+        private PageResult BackedUpPage()
         {
-            Response.Cookies.AddObject(
-                key: CookieBackupKey,
-                value: new PostingBackup(PostText, DateTime.UtcNow, ForumId, TopicId ?? 0, PostId ?? 0, Attachments?.Select(a => a.AttachId).ToList()),
-                maxAge: _cookieBackupExpiration);
+            SaveBackup();
+            return Page();
+        }
+
+        private Task<IActionResult> WithInitialBackup(Func<Task<IActionResult>> toDo)
+        {
+            SaveBackup();
             return toDo();
         }
+
+        private void SaveBackup()
+            => Response.Cookies.AddObject(
+                key: CookieBackupKey,
+                value: new PostingBackup(Action!.Value, PostTitle, PostText, DateTime.UtcNow, ForumId, TopicId, PostId, Attachments?.Select(a => a.AttachId).ToList(), QuotePostInDifferentTopic),
+                maxAge: _cookieBackupExpiration);
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
             if (Request.Cookies.TryGetObject<PostingBackup>(CookieBackupKey, out var cookie))
             {
+                Action = cookie.PostingActions;
                 if ((!string.IsNullOrWhiteSpace(cookie.Text) && string.IsNullOrWhiteSpace(PostText)) ||
                     (!string.IsNullOrWhiteSpace(cookie.Text) && cookie.TextTime > minCacheAge))
                 {
                     PostText = cookie.Text;
+                }
+                if ((!string.IsNullOrWhiteSpace(cookie.Title) && string.IsNullOrWhiteSpace(PostTitle)) ||
+                    (!string.IsNullOrWhiteSpace(cookie.Title) && cookie.TextTime > minCacheAge))
+                {
+                    PostTitle = cookie.Title;
                 }
                 ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
                 TopicId ??= cookie.TopicId;
@@ -313,6 +329,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds",
                         new { cookie.AttachmentIds })).AsList();
                 }
+                QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
             }
         }
 
