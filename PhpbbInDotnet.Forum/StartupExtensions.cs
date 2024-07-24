@@ -139,7 +139,6 @@ namespace PhpbbInDotnet.Forum
                                     storageContainerName: storage.ContainerName,
                                     storageFileName: $"{Constants.LOG_FOLDER}/log{{yyyy}}{{MM}}{{dd}}.txt",
                                     outputTemplate: format,
-                                    writeInBatches: true,
                                     period: TimeSpan.FromMinutes(1),
                                     retainedBlobCountLimit: 30);
                                 break;

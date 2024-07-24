@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<ItemGroup>
-		<PackageReference Include="Coravel" Version="5.0.3" />
+		<PackageReference Include="Coravel" Version="5.0.4" />
 		<PackageReference Include="XSitemaps" Version="1.2.0" />
 	</ItemGroup>
 
