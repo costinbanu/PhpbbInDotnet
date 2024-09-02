@@ -123,7 +123,7 @@ namespace PhpbbInDotnet.Services
                     forumId,
                     topicId,
                     logData,
-                    logIp = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                    logIp = _httpContextAccessor.HttpContext?.GetIpAddress() ?? string.Empty,
                     logOperation = action,
                     logTime = DateTime.UtcNow.ToUnixTimestamp(),
                     logType = (int)operationType

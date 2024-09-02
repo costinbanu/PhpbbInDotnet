@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System.Net;
@@ -37,14 +37,16 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (ResponseStatusCode is not null)
             {
-                var path = "N/A";
+                string? path = null;
                 var feature = HttpContext.Features.Get<IStatusCodeReExecuteFeature>();
                 if (feature is not null)
                 {
                     path = feature.OriginalPath + feature.OriginalQueryString;
                 }
-                var userName = ForumUser.Username ?? "N/A";
-                _logger.Warning("Serving response code {code} to user {user} for path {path}.", ResponseStatusCode, userName, path);
+                if (!string.IsNullOrWhiteSpace(path) && ForumUser.UserId != Constants.ANONYMOUS_USER_ID)
+                {
+                    _logger.Warning("Serving response code {code} to user {user} for path {path}.", ResponseStatusCode, ForumUser.Username, path);
+                }
             }
         }
     }

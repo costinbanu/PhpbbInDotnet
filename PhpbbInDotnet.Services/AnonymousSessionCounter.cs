@@ -55,6 +55,9 @@ namespace PhpbbInDotnet.Services
         public int GetActiveBotCountByUserAgent(string userAgent)
             => _userAgentCache.TryGetValue(userAgent, out var item) ? item.Value.Count : 0;
 
+        public DateTime? GetLastVisit(string userAgent)
+            => _userAgentCache.TryGetValue(userAgent, out var item) ? item.Value.Max(b => b.EntryTime) : null;
+
         private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;
         private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _userAgentCache;
 

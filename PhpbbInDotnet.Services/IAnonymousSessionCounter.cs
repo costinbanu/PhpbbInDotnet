@@ -8,6 +8,7 @@ namespace PhpbbInDotnet.Services
     {
         int GetTotalActiveBotCount();
         int GetActiveBotCountByUserAgent(string userAgent);
+        DateTime? GetLastVisit(string userAgent);
         int GetActiveSessionCount();
         int GetUniqueBotCount();
         IEnumerable<BotData> GetBots();
