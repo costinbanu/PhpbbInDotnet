@@ -57,20 +57,11 @@ namespace PhpbbInDotnet.Forum.Middlewares
                         var botConfig = _config.GetObject<BotConfig>();
                         var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
                         var shouldLimitBasedOnSessionCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32(sessionCountedKey) != 1;
-                        var shouldSlowDownBasedOnFrequency = _sessionCounter.GetLastVisit(userAgent) is DateTime dt && (now - dt).TotalSeconds <= 1 && !context.Request.Path.ToString().Equals("/File", StringComparison.OrdinalIgnoreCase);
 
                         if (shouldLimitBasedOnTime && shouldLimitBasedOnSessionCount)
                         {
                             context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
                             return;
-                        }
-
-                        if (shouldLimitBasedOnTime && shouldSlowDownBasedOnFrequency)
-                        {
-                            var random = new Random(Guid.NewGuid().GetHashCode());
-                            var delay = TimeSpan.FromSeconds(random.Next(5, 30));
-                            _logger.Warning("Slowing down bot '{userAgent}' by '{delay}'.", userAgent, delay);
-                            await Task.Delay(delay);
                         }
                     }
                 }
