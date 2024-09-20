@@ -5,6 +5,7 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Services.Caching;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -22,19 +23,21 @@ namespace PhpbbInDotnet.Services
         private readonly ILogger _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly INotificationService _notificationService;
+		private readonly ICachedDbInfoService _cachedDbInfoService;
 
-        private HashSet<ForumTree>? _tree;
+		private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(ISqlExecuter sqlExecuter, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService)
+        public ForumTreeService(ISqlExecuter sqlExecuter, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor, INotificationService notificationService, ICachedDbInfoService cachedDbInfoService)
         {
             _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
             _notificationService = notificationService;
+            _cachedDbInfoService = cachedDbInfoService;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(ForumUserExpanded user, bool includePasswordProtected = false)
@@ -100,8 +103,8 @@ namespace PhpbbInDotnet.Services
                 tracking = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
                 shortcutParents = await GetShortcutParentForums();
             }
-            _tree = await GetForumTree();
-            _forumTopicCount = await GetForumTopicCount();
+            _tree = await _cachedDbInfoService.ForumTree.Get();
+            _forumTopicCount = await _cachedDbInfoService.ForumTopicCount.Get();
 
             traverse(0);
 
@@ -146,19 +149,6 @@ namespace PhpbbInDotnet.Services
                         }
                     }
                 }
-            }
-
-            async Task<HashSet<ForumTree>> GetForumTree()
-            {
-                var tree = await _sqlExecuter.CallStoredProcedureAsync<ForumTree>("get_forum_tree");
-                return tree.ToHashSet();
-            }
-
-            async Task<HashSet<ForumTopicCount>> GetForumTopicCount()
-            {
-                var count = await _sqlExecuter.QueryAsync<ForumTopicCount>(
-                    "SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
-                return count.ToHashSet();
             }
 
             async Task<Dictionary<int, List<(int ActualForumId, int TopicId)>>> GetShortcutParentForums()
