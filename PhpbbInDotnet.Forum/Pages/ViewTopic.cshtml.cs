@@ -196,7 +196,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 await SqlExecuter.ExecuteAsync(
                     "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @UserId, @usrIp)",
-                    newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty }));
+                    newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.GetIpAddress() ?? string.Empty }));
                 await SqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
                     newVotes.Select(vote => new { topicId, vote }));

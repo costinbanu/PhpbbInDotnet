@@ -14,6 +14,7 @@ using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -38,26 +39,35 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
+            const string sessionCountedKey = "SessionCounted";
             var isBot = false;
             string? userAgent = null;
             var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);
             if ((!hasUserId || userId == 1) && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header))
             {
-                userAgent = header.ToString();
-                var dd = new DeviceDetector(userAgent);
-                dd.Parse();
-                if (dd.IsBot())
+                try
                 {
-                    isBot = true;
-                    var now = DateTime.UtcNow;
-                    var botConfig = _config.GetObject<BotConfig>();
-                    var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
-                    var shouldLimitBasedOnCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32("SessionCounted") != 1;
-                    if (shouldLimitBasedOnTime && shouldLimitBasedOnCount)
+                    userAgent = header.ToString();
+                    var dd = new DeviceDetector(userAgent, ClientHints.Factory(context.Request.Headers.ToDictionary(a => a.Key, a => a.Value.ToArray().FirstOrDefault())));
+                    dd.Parse();
+                    if (dd.IsBot())
                     {
-                        context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                        return;
+                        isBot = true;
+                        var now = DateTime.UtcNow;
+                        var botConfig = _config.GetObject<BotConfig>();
+                        var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
+                        var shouldLimitBasedOnSessionCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32(sessionCountedKey) != 1;
+
+                        if (shouldLimitBasedOnTime && shouldLimitBasedOnSessionCount)
+                        {
+                            context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+                            return;
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Failed to detect if session is bot. User agent: {userAgent}, IP: {ip}", userAgent, context.GetIpAddress());
                 }
             }
 
@@ -100,17 +110,17 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
             {
-                if (user.IsAnonymous && context.Session.GetInt32("SessionCounted") != 1)
+                if (user.IsAnonymous && context.Session.GetInt32(sessionCountedKey) != 1)
                 {
                     if (isBot)
                     {
-                        _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress?.ToString() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);
+                        _sessionCounter.UpsertBot(context.GetIpAddress() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);
                     }
                     else
                     {
                         _sessionCounter.UpsertSession(context.Session.Id, sessionTrackingTimeout);
                     }
-                    context.Session.SetInt32("SessionCounted", 1);
+                    context.Session.SetInt32(sessionCountedKey, 1);
                 }
             }
             catch (Exception ex)

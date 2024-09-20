@@ -132,7 +132,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 now = DateTime.UtcNow.ToUnixTimestamp(),
                                 attachment = hasAttachments.ToByte(),
                                 checksum = HashUtility.ComputeMD5Hash(textForSaving),
-                                ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                                ip = HttpContext.GetIpAddress() ?? string.Empty,
                                 username = HttpUtility.HtmlEncode(usr.Username)
                             });
 

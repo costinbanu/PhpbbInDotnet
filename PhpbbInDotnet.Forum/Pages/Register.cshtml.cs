@@ -94,12 +94,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 var response = await _gClient.PostAsync(
                     requestUri: _recaptchaOptions.RelativeUri,
                     content: new StringContent(
-                        content: $"secret={_recaptchaOptions.SecretKey}&response={RecaptchaResponse}&remoteip={HttpContext.Connection.RemoteIpAddress}",
+                        content: $"secret={_recaptchaOptions.SecretKey}&response={RecaptchaResponse}&remoteip={HttpContext.GetIpAddress()}",
                         encoding: Encoding.UTF8,
-                        mediaType: "application/x-www-form-urlencoded"
-                    )
-                );
+                        mediaType: "application/x-www-form-urlencoded"));
                 response.EnsureSuccessStatusCode();
+
                 var resultText = await response.Content.ReadAsStringAsync();
                 var result = JsonConvert.DeserializeObject<dynamic>(resultText);
                 if ((bool?)result?.success != true)
@@ -117,7 +116,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(RecaptchaResponse), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            var ip = HttpContext.GetIpAddress();
             var checkBanlist = await _sqlExecuter.QueryAsync<(string? banEmail, string? banIp)>(
                 @"SELECT ban_email, ban_ip
                     FROM phpbb_banlist
@@ -168,7 +167,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     UserInactiveTime = now,
                     UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
                     UserActkey = registrationCode,
-                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                    UserIp = HttpContext.GetIpAddress() ?? string.Empty,
                     UserRegdate = now,
                     UserLastmark = now,
                     UserDateformat = TranslationProvider.GetDefaultDateFormat(Language),
