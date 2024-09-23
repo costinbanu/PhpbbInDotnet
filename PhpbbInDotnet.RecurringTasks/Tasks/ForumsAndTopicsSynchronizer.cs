@@ -33,7 +33,22 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                 Constants.DEFAULT_USER_COLOR
             });
 
-            await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+			stoppingToken.ThrowIfCancellationRequested();
+
+			await _sqlExecuter.ExecuteAsync(
+                @"WITH post_counts AS (
+	                SELECT poster_id, count(post_id) as post_count
+	                  FROM phpbb_posts
+	                 GROUP BY poster_id
+                )
+                UPDATE u
+                   SET u.user_posts = c.post_count
+                   FROM phpbb_users u
+                   JOIN post_counts c ON u.user_id = c.poster_id");
+
+			stoppingToken.ThrowIfCancellationRequested();
+
+			await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
             await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
             _logger.Information("Successfully synced forums and topics with their last posts.");
