@@ -15,6 +15,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Caching;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using SixLabors.ImageSharp;
@@ -101,12 +102,12 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IAppCache _cache;
         private readonly IUserProfileDataValidationService _validationService;
 		private readonly IImageResizeService _imageResizeService;
-
+		private readonly ICachedDbInfoService _cachedDbInfoService;
 		private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
         public UserModel(IStorageService storageService, IWritingToolsService writingService, IOperationLogService operationLogService, IConfiguration config, 
             IEmailService emailService, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, IImageResizeService imageResizeService,
-            ITranslationProvider translationProvider, ILogger logger, IAppCache cache, IUserProfileDataValidationService validationService)
+            ITranslationProvider translationProvider, ILogger logger, IAppCache cache, IUserProfileDataValidationService validationService, ICachedDbInfoService cachedDbInfoService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _storageService = storageService;
@@ -117,6 +118,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _cache = cache;
             _validationService = validationService;
             _imageResizeService = imageResizeService;
+            _cachedDbInfoService = cachedDbInfoService;
         }
 
         public async Task<IActionResult> OnGet()
@@ -169,6 +171,8 @@ namespace PhpbbInDotnet.Forum.Pages
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
             var oldUsername = dbUser.Username;
+            var shouldInvalidateCache = false;
+
             if (await UserService.IsAdmin(ForumUser) && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
                 if (!_validationService.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
@@ -198,6 +202,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 userShouldSignIn = true;
                 usernameChanged = true;
+                shouldInvalidateCache = true;
             }
 
             if (!string.IsNullOrWhiteSpace(Birthday) && Birthday != dbUser.UserBirthday)
@@ -239,6 +244,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         dbUser.UserId,
                         newColour
                     });
+                shouldInvalidateCache = true;
             }
 
             var newEmailHash = HashUtility.ComputeCrc64Hash(Email!);
@@ -424,6 +430,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 dbUser.UserColour = group!.GroupColour;
                 dbUser.GroupId = group.GroupId;
                 userShouldSignIn = true;
+                shouldInvalidateCache = true;
             }
 
 
@@ -532,6 +539,10 @@ namespace PhpbbInDotnet.Forum.Pages
             if (usernameChanged)
             {
                 await _operationLogService.LogUserProfileAction(UserProfileActions.ChangeUsername, currentUserId, dbUser, $"Old username: '{oldUsername}'");
+            }
+            if (shouldInvalidateCache)
+            {
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
             }
 
             if (affectedEntries > 0 && isSelf)

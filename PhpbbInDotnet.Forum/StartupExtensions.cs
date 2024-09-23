@@ -105,6 +105,20 @@ namespace PhpbbInDotnet.Forum
 
             services.AddLazyCache();
 
+            if (config.GetValue<DatabaseType>("Database:DatabaseType") == DatabaseType.SqlServer)
+            {
+                services.AddDistributedSqlServerCache(opts =>
+                {
+                    opts.ConnectionString = config.GetValue<string>("Database:ConnectionString")!;
+                    opts.SchemaName = "dbo";
+                    opts.TableName = "distributed_cache";
+                });
+            }
+            else
+            {
+                services.AddDistributedMemoryCache();
+            }
+
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             ServicePointManager.DefaultConnectionLimit = 100;

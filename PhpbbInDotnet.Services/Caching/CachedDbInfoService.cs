@@ -1,11 +1,9 @@
-﻿using LazyCache;
+﻿using Microsoft.Extensions.Caching.Distributed;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Objects;
-using System;
+using Serilog;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services.Caching
 {
@@ -16,7 +14,7 @@ namespace PhpbbInDotnet.Services.Caching
 		public CacheItem<HashSet<ForumTopicCount>> ForumTopicCount { get; }
 		public CacheItem<HashSet<ForumTree>> ForumTree { get; }
 
-		public CachedDbInfoService(ISqlExecuter sqlExecuter, IAppCache appCache)
+		public CachedDbInfoService(ISqlExecuter sqlExecuter, IDistributedCache cache, ILogger logger)
 		{
 			_sqlExecuter = sqlExecuter;
 
@@ -28,7 +26,8 @@ namespace PhpbbInDotnet.Services.Caching
 					return count.ToHashSet();
 				},
 				key: nameof(ForumTopicCount),
-				cache: appCache);
+				cache: cache,
+				logger: logger);
 
 			ForumTree = new(
 				factory: async () =>
@@ -37,9 +36,8 @@ namespace PhpbbInDotnet.Services.Caching
 					return tree.ToHashSet();
 				},
 				key: nameof(ForumTree),
-				cache: appCache);
-
+				cache: cache,
+				logger: logger);
 		}
-
 	}
 }

@@ -103,8 +103,8 @@ namespace PhpbbInDotnet.Services
                 tracking = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
                 shortcutParents = await GetShortcutParentForums();
             }
-            _tree = await _cachedDbInfoService.ForumTree.Get();
-            _forumTopicCount = await _cachedDbInfoService.ForumTopicCount.Get();
+            _tree = await _cachedDbInfoService.ForumTree.GetAsync();
+            _forumTopicCount = await _cachedDbInfoService.ForumTopicCount.GetAsync();
 
             traverse(0);
 

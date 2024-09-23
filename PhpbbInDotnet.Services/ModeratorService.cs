@@ -75,7 +75,7 @@ namespace PhpbbInDotnet.Services
                 var topicRows = await transaction.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
                     new { topicId, destinationForumId });
-                _cachedDbInfoService.ForumTopicCount.Invalidate();
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
 
                 if (topicRows == 0)
                 {
@@ -177,7 +177,7 @@ namespace PhpbbInDotnet.Services
                           DELETE FROM phpbb_topics_watch WHERE topic_id = @topicId",
                         new { topicId });
 
-                    _cachedDbInfoService.ForumTopicCount.Invalidate();
+                    await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
                 }
 
                 await DeletePostsCore(posts, logDto, shouldLog: false, ignoreTopics: true, transaction);
@@ -301,7 +301,7 @@ namespace PhpbbInDotnet.Services
                         title = posts.First().PostSubject, 
                         time = posts.First().PostTime 
                     });
-                _cachedDbInfoService.ForumTopicCount.Invalidate();
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
 
                 var oldTopicId = posts[0].TopicId;
                 var oldForumId = posts[0].ForumId;
