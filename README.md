@@ -153,12 +153,20 @@ In order to start using custom headers, set the `UseHeaderImage` app setting to 
 #### Custom external links
 The application can display a custom set of external links next to the menu. If you need to display this, then set the `DisplayExternalLinksMenu` app setting to `true`, then edit the **`ExternalLinks.<lang>.html`** translation file to add your links.
 
+### Distributed cache
+This application uses a distributed cache for optimization. If the database engine is MySQL, then the cache is in-memory
+(and not really distributed). If the database engine is SQL Server, then the cache is hosted in a SQL Server table.
+Run this command to set up the cache table:
+
+`dotnet sql-cache create "<your SQL Server connection string>" dbo distributed_cache`
+
 ### Install the application
 
 1. Back up your installation and database (even though the installation performs only additive operatrions in the database, without altering or deleting existing structures or data, please do it anyway)
 2. Build the solution and deploy it to your host.
 3. Execute the `PhpbbInDotnet.Database.SetupApp` application (make sure its `appsettings.json` file contains a valid connection string targeting your MySQL / MariaDB / AuroraDB server with root access)
-4. Done!
+4. If you are hosting your database in SQL server, then you need to create the cache table as per the above instructions 
+5. Done!
 
 ## Feature and functionality differences
 As of now, the platform **does not support the following phpBB features**:
@@ -166,7 +174,6 @@ As of now, the platform **does not support the following phpBB features**:
 - Forum icons
 - Post approval
 - Private message folders
-- Forum and topic watch
 - User warnings
 
 The platform also **supports some new features**:
@@ -184,7 +191,7 @@ The platform also **supports some new features**:
 
 ## Further reading
 ### Technical considerations
-This application targets .Net 6.0 and is platform agnostic.
+This application targets .Net 8.0 and is platform agnostic.
 
 However, it has not yet been researched if the database support can be extended further than the MySQL-compatible languages and Sql Server.
 

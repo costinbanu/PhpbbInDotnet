@@ -10,6 +10,7 @@ using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Caching;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -24,8 +25,9 @@ namespace PhpbbInDotnet.Forum.Pages
 		private readonly IPostService _postService;
 		private readonly IOperationLogService _operationLogService;
         private readonly ILogger _logger;
+		private readonly ICachedDbInfoService _cachedDbInfoService;
 
-        [BindProperty(SupportsGet = true)]
+		[BindProperty(SupportsGet = true)]
         public ModeratorPanelMode Mode { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -58,13 +60,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
         public ModeratorModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IModeratorService moderatorService, 
-            IPostService postService, IOperationLogService operationLogService, ILogger logger, IConfiguration configuration)
+            IPostService postService, IOperationLogService operationLogService, ILogger logger, IConfiguration configuration, ICachedDbInfoService cachedDbInfoService)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _moderatorService = moderatorService;
             _postService = postService;
             _operationLogService = operationLogService;
             _logger = logger;
+            _cachedDbInfoService = cachedDbInfoService;
         }
 
         public int[] GetTopicIds()
@@ -308,7 +311,7 @@ namespace PhpbbInDotnet.Forum.Pages
                        VALUES (@ForumId, @ParentId, @LeftId, @RightId, @ForumParents, @ForumName, @ForumDesc, @ForumDescBitfield, @ForumDescOptions, @ForumDescUid, @ForumLink, @ForumPassword, @ForumStyle, @ForumImage, @ForumRules, @ForumRulesLink, @ForumRulesBitfield, @ForumRulesOptions, @ForumRulesUid, @ForumTopicsPerPage, @ForumType, @ForumStatus, @ForumPosts, @ForumTopics, @ForumTopicsReal, @ForumLastPostId, @ForumLastPosterId, @ForumLastPostSubject, @ForumLastPostTime, @ForumLastPosterName, @ForumLastPosterColour, @ForumFlags, @ForumOptions, @DisplaySubforumList, @DisplayOnIndex, @EnableIndexing, @EnableIcons, @EnablePrune, @PruneNext, @PruneDays, @PruneViewed, @PruneFreq, @ForumEditTime);
                        DELETE FROM phpbb_recycle_bin WHERE type = @deleteForumType AND id = @deleteForumId;",
                     param);
-
+            await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
             await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, ForumUser.UserId, toAdd);
 
@@ -380,6 +383,7 @@ namespace PhpbbInDotnet.Forum.Pages
                        SELECT {SqlExecuter.LastInsertedItemId};
                        DELETE FROM phpbb_recycle_bin WHERE type = @deleteTopicType AND id = @deleteTopicId",
                     param);
+            await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
 
             var deletedPosts = await transaction.QueryAsync<PhpbbRecycleBin>(
                 "SELECT * FROM phpbb_recycle_bin WHERE type = @postType",

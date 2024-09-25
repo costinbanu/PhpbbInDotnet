@@ -9,6 +9,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Services.Caching;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -27,9 +28,10 @@ namespace PhpbbInDotnet.Services
         private readonly IOperationLogService _operationLogService;
         private readonly ITranslationProvider _translationProvider;
         private readonly ILogger _logger;
+		private readonly ICachedDbInfoService _cachedDbInfoService;
 
-        public AdminForumService(ISqlExecuter sqlExecuter, IForumTreeService forumService, IConfiguration config,
-            ITranslationProvider translationProvider, IOperationLogService operationLogService, ILogger logger)
+		public AdminForumService(ISqlExecuter sqlExecuter, IForumTreeService forumService, IConfiguration config,
+            ITranslationProvider translationProvider, IOperationLogService operationLogService, ILogger logger, ICachedDbInfoService cachedDbInfoService)
         {
             _sqlExecuter = sqlExecuter;
             _forumService = forumService;
@@ -37,6 +39,7 @@ namespace PhpbbInDotnet.Services
             _operationLogService = operationLogService;
             _translationProvider = translationProvider;
             _logger = logger;
+            _cachedDbInfoService = cachedDbInfoService;
         }
 
         public async Task<UpsertForumResult> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot)
@@ -198,6 +201,7 @@ namespace PhpbbInDotnet.Services
                     }
                 }
 
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
 
                 return new(
@@ -411,6 +415,7 @@ namespace PhpbbInDotnet.Services
 
                 transaction.CommitTransaction();
 
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
                 await _operationLogService.LogAdminForumAction(AdminForumActions.Delete, adminUserId, forum);
 
                 return (string.Format(_translationProvider.Admin[lang, "FORUM_DELETED_SUCCESSFULLY_FORMAT"], forum.ForumName), true);
