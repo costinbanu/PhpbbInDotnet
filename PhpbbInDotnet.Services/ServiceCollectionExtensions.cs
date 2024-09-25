@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Caching;
 using PhpbbInDotnet.Services.Locks;
 using PhpbbInDotnet.Services.Storage;
 using System;
@@ -29,6 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IRazorViewService, RazorViewService>();
             services.AddScoped<IUserProfileDataValidationService, UserProfileDataValidationService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<ICachedDbInfoService, CachedDbInfoService>();
 
             var storageOptions = configuration.GetObject<StorageOptions>();
             switch (storageOptions.StorageType)

@@ -8,6 +8,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Caching;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
@@ -112,12 +113,13 @@ namespace PhpbbInDotnet.Forum.Pages
 		private readonly IImageResizeService _imageResizeService;
         private readonly IModeratorService _moderatorService;
 		private readonly INotificationService _notificationService;
+		private readonly ICachedDbInfoService _cachedDbInfoService;
 
 		static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
 
         public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, 
             IConfiguration config, ILogger logger, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
-            IImageResizeService imageResizeService, IModeratorService moderatorService, INotificationService notificationService)
+            IImageResizeService imageResizeService, IModeratorService moderatorService, INotificationService notificationService, ICachedDbInfoService cachedDbInfoService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             PollExpirationDaysString = "1";
@@ -131,6 +133,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _imageResizeService = imageResizeService;
             _moderatorService = moderatorService;
             _notificationService = notificationService;
+            _cachedDbInfoService = cachedDbInfoService;
         }
     }
 }

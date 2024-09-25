@@ -110,6 +110,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 WHERE topic_id = {SqlExecuter.LastInsertedItemId};",
                             new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() });
                         TopicId = curTopic.TopicId;
+                        await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
                     }
 
                     var hasAttachments = Attachments?.Any() == true;
