@@ -46,20 +46,20 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 userAgent = header.ToString();
                 var dd = new DeviceDetector(userAgent);
                 dd.Parse();
-                if (dd.IsBot())
-                {
-                    isBot = true;
-                    var now = DateTime.UtcNow;
-                    var botConfig = _config.GetObject<BotConfig>();
-                    var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
-                    var shouldLimitBasedOnCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32("SessionCounted") != 1;
-                    if (shouldLimitBasedOnTime && shouldLimitBasedOnCount)
-                    {
-                        context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                        return;
-                    }
-                }
-            }
+				if (dd.IsBot())
+				{
+					isBot = true;
+					var now = DateTime.UtcNow;
+					var shouldRateLimitBots = _config.GetValue<bool>("RateLimitBots");
+					var shouldLimitBasedOnSessionCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 50 && context.Session.GetInt32("SessionCounted") != 1;
+
+					if (shouldRateLimitBots && shouldLimitBasedOnSessionCount)
+					{
+						context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+						return;
+					}
+				}
+			}
 
             ForumUser baseUser;
             PhpbbUsers? dbUser;
