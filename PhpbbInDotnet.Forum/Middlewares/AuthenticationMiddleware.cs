@@ -54,11 +54,10 @@ namespace PhpbbInDotnet.Forum.Middlewares
                     {
                         isBot = true;
                         var now = DateTime.UtcNow;
-                        var botConfig = _config.GetObject<BotConfig>();
-                        var shouldLimitBasedOnTime = botConfig.UnlimitedAccessStartTime is not null && botConfig.UnlimitedAccessEndTime is not null && (now < botConfig.UnlimitedAccessStartTime || now > botConfig.UnlimitedAccessEndTime);
-                        var shouldLimitBasedOnSessionCount = botConfig.InstanceCountLimit > 0 && _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > botConfig.InstanceCountLimit && context.Session.GetInt32(sessionCountedKey) != 1;
+                        var shouldRateLimitBots = _config.GetValue<bool>("RateLimitBots");
+                        var shouldLimitBasedOnSessionCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 50 && context.Session.GetInt32(sessionCountedKey) != 1;
 
-                        if (shouldLimitBasedOnTime && shouldLimitBasedOnSessionCount)
+                        if (shouldRateLimitBots && shouldLimitBasedOnSessionCount)
                         {
                             context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
                             return;
