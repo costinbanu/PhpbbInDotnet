@@ -1,6 +1,6 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -19,15 +19,15 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class FileModel : AuthenticatedPageModel
+	public class FileModel : AuthenticatedPageModel
     {
         private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
-        private readonly IAppCache _cache;
+        private readonly IDistributedCache _cache;
         private readonly ILogger _logger;
 
         public FileModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, 
-            IStorageService storageService, FileExtensionContentTypeProvider contentTypeProvider, IConfiguration config, IAppCache cache, ILogger logger)
+            IStorageService storageService, FileExtensionContentTypeProvider contentTypeProvider, IConfiguration config, IDistributedCache cache, ILogger logger)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _storageService = storageService;
@@ -40,12 +40,16 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (correlationId.HasValue && !preview)
             {
-                var dto = await _cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
-                if (dto != null)
+                var bytes = await _cache.GetAsync(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
+                if (bytes?.Length > 0)
                 {
-                    return await WithValidForum(
-                        dto.ForumId,
-                        _ => SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment));
+                    var dto = await CompressionUtility.DecompressObject<AttachmentDto>(bytes);
+                    if (dto is not null)
+                    {
+                        return await WithValidForum(
+                            dto.ForumId,
+                            _ => SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment));
+                    }
                 }
             }
 
@@ -94,7 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (correlationId.HasValue)
             {
-                file = await _cache.GetAsync<string>(CacheUtility.GetAvatarCacheKey(userId, correlationId.Value));
+                file = await _cache.GetStringAsync(CacheUtility.GetAvatarCacheKey(userId, correlationId.Value));
                 if (file != null)
                 {
                     file = getActualFileName(file);
@@ -116,8 +120,16 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             try
             {
-                var file = (await _cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId))) ?? throw new InvalidOperationException($"File '{id}' does not exist.");
-                return await SendToClient(file.PhysicalFileName!, file.DisplayName!, file.MimeType, FileType.Attachment);
+                var bytes = await _cache.GetAsync(CacheUtility.GetAttachmentCacheKey(id, correlationId));
+                if (bytes?.Length > 0)
+                {
+                    var file = await CompressionUtility.DecompressObject<AttachmentDto>(bytes);
+                    if (file is not null)
+                    {
+                        return await SendToClient(file.PhysicalFileName!, file.DisplayName!, file.MimeType, FileType.Attachment);
+                    }
+                }
+                throw new InvalidOperationException($"File '{id}' does not exist.");
             }
             catch (Exception ex)
             {

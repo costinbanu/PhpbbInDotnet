@@ -3,10 +3,10 @@
 @using Domain;
 @using Domain.Extensions
 @using Domain.Utilities
-@using LazyCache;
+@using Microsoft.Extensions.Caching.Distributed
 
 @inject Languages.ITranslationProvider _translationProvider
-@inject IAppCache _cache
+@inject IDistributedCache _cache
 
 @if (Model.CreationTime != 0L.ToUtcTime())
 {
@@ -15,7 +15,13 @@
         {
             if (Model.CorrelationId.HasValue)
             {
-                _cache.Add(CacheUtility.GetAvatarCacheKey(Model.AuthorId, Model.CorrelationId ?? Guid.Empty), Model.AuthorAvatar, TimeSpan.FromSeconds(30));
+                _cache.SetString(
+                    key: CacheUtility.GetAvatarCacheKey(Model.AuthorId, Model.CorrelationId ?? Guid.Empty), 
+                    value: Model.AuthorAvatar,
+                    options: new DistributedCacheEntryOptions
+                    {
+                        SlidingExpiration = TimeSpan.FromSeconds(60)                    
+                    });
             }
             <li>
                 <img src="./File?userId=@Model.AuthorId&correlationId=@Model.CorrelationId&handler=avatar" style="border-radius:8px" />

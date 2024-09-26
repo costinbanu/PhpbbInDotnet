@@ -1,5 +1,5 @@
 ﻿using Dapper;
-using LazyCache;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -8,6 +8,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
+using PhpbbInDotnet.Services.Caching;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -17,17 +18,19 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-	class PostService : IPostService
+    class PostService : IPostService
     {
         private readonly ISqlExecuter _sqlExecuter;
-        private readonly IAppCache _cache;
-        private readonly int _maxAttachmentCount;
+        private readonly IDistributedCache _cache;
+		private readonly ICachedDbInfoService _cachedDbInfoService;
+		private readonly int _maxAttachmentCount;
         private readonly ILogger _logger;
 
-        public PostService(ISqlExecuter sqlExecuter, IAppCache cache, IConfiguration config, ILogger logger)
+        public PostService(ISqlExecuter sqlExecuter, IDistributedCache cache, ICachedDbInfoService cachedDbInfoService, IConfiguration config, ILogger logger)
         {
             _sqlExecuter = sqlExecuter;
             _cache = cache;
+            _cachedDbInfoService = cachedDbInfoService;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
             _maxAttachmentCount = Math.Max(countLimit.Images, countLimit.OtherFiles);
             _logger = logger;
@@ -51,7 +54,13 @@ namespace PhpbbInDotnet.Services
                 }
                 if (StringUtility.IsMimeTypeInline(attachment.Mimetype))
                 {
-                    _cache.Add(CacheUtility.GetAttachmentCacheKey(attachment.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
+                    _cache.Set(
+                        key: CacheUtility.GetAttachmentCacheKey(attachment.AttachId, correlationId), 
+                        value: await CompressionUtility.CompressObject(dto), 
+                        options: new DistributedCacheEntryOptions
+                        {
+                            SlidingExpiration = TimeSpan.FromSeconds(60)
+                        });
                     ids.Add(attachment.AttachId);
                 }
             }
@@ -214,7 +223,7 @@ namespace PhpbbInDotnet.Services
 		public Task SyncForumWithPosts(ITransactionalSqlExecuter transaction, params int[] forumIds)
 			=> SyncForumWithPosts(transaction, forumIds.AsEnumerable());
 
-        private static async Task SyncForumWithPosts(ITransactionalSqlExecuter transaction, IEnumerable<int> forumIds)
+        private async Task SyncForumWithPosts(ITransactionalSqlExecuter transaction, IEnumerable<int> forumIds)
         {
             var actualForumIds = forumIds.Distinct();
             if (!actualForumIds.Any())
@@ -231,12 +240,15 @@ namespace PhpbbInDotnet.Services
                     Constants.ANONYMOUS_USER_NAME,
                     Constants.DEFAULT_USER_COLOR
                 });
-        }
 
-		private static Task SyncTopicWithPosts(ITransactionalSqlExecuter transaction, params int[] topicIds)
+			await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+			await _cachedDbInfoService.ForumTree.InvalidateAsync();
+		}
+
+		private Task SyncTopicWithPosts(ITransactionalSqlExecuter transaction, params int[] topicIds)
 	        => SyncTopicWithPosts(transaction, topicIds.AsEnumerable());
 
-        private static async Task SyncTopicWithPosts(ITransactionalSqlExecuter transaction, IEnumerable<int> topicIds)
+        private async Task SyncTopicWithPosts(ITransactionalSqlExecuter transaction, IEnumerable<int> topicIds)
         {
 			var actualTopicIds = topicIds.Distinct();
 			if (!actualTopicIds.Any())
@@ -253,7 +265,10 @@ namespace PhpbbInDotnet.Services
                     Constants.ANONYMOUS_USER_NAME,
                     Constants.DEFAULT_USER_COLOR
                 });
-        }
+
+            await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+			await _cachedDbInfoService.ForumTree.InvalidateAsync();
+		}
 
         private static async Task SyncUserPostCount(ITransactionalSqlExecuter transaction, IEnumerable<int> postIds, bool isDeleted)
         {
