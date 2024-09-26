@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -21,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    class AdminUserService : IAdminUserService
+	class AdminUserService : IAdminUserService
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;

@@ -1,7 +1,7 @@
 ﻿@page
 
 @using CustomPartials
-@using LazyCache
+@using Microsoft.Extensions.Caching.Distributed
 @using Objects
 @using Services
 @using Domain
@@ -10,7 +10,7 @@
 
 @inject IForumTreeService _forumService
 @inject IBBCodeRenderingService _renderingService
-@inject IAppCache _cache
+@inject IDistributedCache _cache
 
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel
 @{
@@ -338,7 +338,13 @@
                         foreach (var attach in post.Attachments!)
                         {
                             attach.CorrelationId = correlationId;
-                            _cache.Add(CacheUtility.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));
+                            _cache.Set(
+                                key: CacheUtility.GetAttachmentCacheKey(attach.Id, correlationId),
+                                value: await CompressionUtility.CompressObject(attach),
+                                options: new DistributedCacheEntryOptions
+                                {
+                                    SlidingExpiration = TimeSpan.FromSeconds(60)
+                                });
                         }
                         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
                         {

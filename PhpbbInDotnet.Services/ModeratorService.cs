@@ -6,7 +6,6 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services.Caching;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
@@ -24,11 +23,10 @@ namespace PhpbbInDotnet.Services
         private readonly IStorageService _storageService;
         private readonly IOperationLogService _operationLogService;
         private readonly ILogger _logger;
-		private readonly ICachedDbInfoService _cachedDbInfoService;
 		private readonly ITranslationProvider _translationProvider;
 
         public ModeratorService(ISqlExecuter sqlExecuter, IPostService postService, IStorageService storageService, ITranslationProvider translationProvider,
-            IOperationLogService operationLogService, ILogger logger, ICachedDbInfoService cachedDbInfoService)
+            IOperationLogService operationLogService, ILogger logger)
         {
             _translationProvider = translationProvider;
             _sqlExecuter = sqlExecuter;
@@ -36,7 +34,6 @@ namespace PhpbbInDotnet.Services
             _storageService = storageService;
             _operationLogService = operationLogService;
             _logger = logger;
-            _cachedDbInfoService = cachedDbInfoService;
         }
 
         #region Topic
@@ -75,7 +72,6 @@ namespace PhpbbInDotnet.Services
                 var topicRows = await transaction.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
                     new { topicId, destinationForumId });
-                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
 
                 if (topicRows == 0)
                 {
@@ -176,8 +172,6 @@ namespace PhpbbInDotnet.Services
                           DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
                           DELETE FROM phpbb_topics_watch WHERE topic_id = @topicId",
                         new { topicId });
-
-                    await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
                 }
 
                 await DeletePostsCore(posts, logDto, shouldLog: false, ignoreTopics: true, transaction);
@@ -301,7 +295,6 @@ namespace PhpbbInDotnet.Services
                         title = posts.First().PostSubject, 
                         time = posts.First().PostTime 
                     });
-                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
 
                 var oldTopicId = posts[0].TopicId;
                 var oldForumId = posts[0].ForumId;
