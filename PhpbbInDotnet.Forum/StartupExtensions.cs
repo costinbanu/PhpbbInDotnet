@@ -45,13 +45,6 @@ namespace PhpbbInDotnet.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddSession(options =>
-            {
-                options.IdleTimeout = config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
-                options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true;
-            });
-
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 
             services.AddMvc(o => o.EnableEndpointRouting = false)
@@ -188,7 +181,6 @@ namespace PhpbbInDotnet.Forum
             webApplication.UseStaticFiles();
             webApplication.UseCookiePolicy();
             webApplication.UseAuthentication();
-            webApplication.UseSession();
             webApplication.UseMiddleware<AuthenticationMiddleware>();
             webApplication.MapControllers();
             webApplication.MapRazorPages();
