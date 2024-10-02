@@ -8,6 +8,8 @@ namespace PhpbbInDotnet.Domain.Extensions
 {
     public static class CookieCollectionExtensions
     {
+        const string SessionIdKey = "07fa20fd-b0cd-4470-94c7-4e7e2711a3ec";
+
         public static void DeleteObject(this IResponseCookies cookies, string key)
             => cookies.Delete(key, new CookieOptions { Secure = true, SameSite = SameSiteMode.Strict});
 
@@ -35,6 +37,24 @@ namespace PhpbbInDotnet.Domain.Extensions
             }
             result = default;
             return false;
+        }
+
+        public static bool IsAnonymousSessionStarted (this IRequestCookieCollection cookies)
+            => cookies.TryGetValue(SessionIdKey, out var val) && Guid.TryParse(val, out _);
+
+        public static string StartAnonymousSession(this IResponseCookies cookies)
+        {
+            var sessionId = Guid.NewGuid().ToString();
+            cookies.Append(
+                key: SessionIdKey,
+                value: sessionId,
+                options: new CookieOptions
+                {
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    IsEssential = true
+                });
+            return sessionId;
         }
 
         public static void SaveForumLogin(this IResponseCookies cookies, int userId, int forumId)

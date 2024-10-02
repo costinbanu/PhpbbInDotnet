@@ -10,7 +10,6 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
@@ -43,15 +42,17 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);
             if ((!hasUserId || userId == 1) && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header))
             {
-                userAgent = header.ToString();
-                var dd = new DeviceDetector(userAgent);
-                dd.Parse();
-				if (dd.IsBot())
-				{
-					isBot = true;
-					var now = DateTime.UtcNow;
-					var shouldRateLimitBots = _config.GetValue<bool>("RateLimitBots");
-					var shouldLimitBasedOnSessionCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 50 && context.Session.GetInt32("SessionCounted") != 1;
+                try
+                {
+                    userAgent = header.ToString();
+                    var dd = new DeviceDetector(userAgent, ClientHints.Factory(context.Request.Headers.ToDictionary(a => a.Key, a => a.Value.ToArray().FirstOrDefault())));
+                    dd.Parse();
+                    if (dd.IsBot())
+                    {
+                        isBot = true;
+                        var now = DateTime.UtcNow;
+                        var shouldRateLimitBots = _config.GetValue<bool>("RateLimitBots");
+                        var shouldLimitBasedOnSessionCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 50 && !context.Request.Cookies.IsAnonymousSessionStarted();
 
 					if (shouldRateLimitBots && shouldLimitBasedOnSessionCount)
 					{
@@ -100,17 +101,17 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
             {
-                if (user.IsAnonymous && context.Session.GetInt32("SessionCounted") != 1)
+                if (user.IsAnonymous && !context.Request.Cookies.IsAnonymousSessionStarted())
                 {
+                    var sessionId = context.Response.Cookies.StartAnonymousSession();
                     if (isBot)
                     {
                         _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress?.ToString() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);
                     }
                     else
                     {
-                        _sessionCounter.UpsertSession(context.Session.Id, sessionTrackingTimeout);
+                        _sessionCounter.UpsertSession(sessionId, sessionTrackingTimeout);
                     }
-                    context.Session.SetInt32("SessionCounted", 1);
                 }
             }
             catch (Exception ex)
