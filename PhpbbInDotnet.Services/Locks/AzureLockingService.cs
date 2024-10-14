@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.Services.Locks
             }
             try
             {
-                var response = await blob.GetBlobLeaseClient(Guid.NewGuid().ToString()).AcquireAsync(BlobLeaseClient.InfiniteLeaseDuration);
+                var response = await blob.GetBlobLeaseClient(Guid.NewGuid().ToString()).AcquireAsync(TimeSpan.FromHours(4));
                 return (true, response.Value.LeaseId);
             }
             catch (RequestFailedException rfe) when (rfe.ErrorCode == BlobErrorCode.LeaseAlreadyPresent)
