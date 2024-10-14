@@ -214,6 +214,24 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGetByPostId();
             }));
 
+        public async Task FinalizeTopic()
+        {
+            if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
+            {
+                await ForumService.MarkTopicRead(ForumUser.UserId, ForumId.Value, TopicId.Value, Paginator?.IsLastPage ?? false, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
+            }
+            try
+            {
+                await SqlExecuter.ExecuteAsyncWithoutResiliency(
+                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
+                    new { TopicId },
+                    commandTimeout: 10);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, "Failed to increment topic views for topic {id} ({name}).", TopicId, TopicTitle);
+            }
+        }
 
         #region Moderator handlers
 
@@ -535,21 +553,21 @@ namespace PhpbbInDotnet.Forum.Pages
             Poll = await pollTask;
             IsSubscribed = await subscribedTask;
 
-            if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
-            {
-                await ForumService.MarkTopicRead(ForumUser.UserId, ForumId.Value, TopicId.Value, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
-            }
-            try
-            {
-                await SqlExecuter.ExecuteAsyncWithoutResiliency(
-					"UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
-                    new { TopicId },
-                    commandTimeout: 10);
-            }
-            catch (Exception ex)
-            {
-                _logger.Warning(ex, "Failed to increment topic views for topic {id} ({name}).", TopicId, TopicTitle);
-            }
+     //       if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
+     //       {
+     //           await ForumService.MarkTopicRead(ForumUser.UserId, ForumId.Value, TopicId.Value, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
+     //       }
+     //       try
+     //       {
+     //           await SqlExecuter.ExecuteAsyncWithoutResiliency(
+					//"UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
+     //               new { TopicId },
+     //               commandTimeout: 10);
+     //       }
+     //       catch (Exception ex)
+     //       {
+     //           _logger.Warning(ex, "Failed to increment topic views for topic {id} ({name}).", TopicId, TopicTitle);
+     //       }
         }
 
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
