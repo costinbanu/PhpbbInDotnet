@@ -123,7 +123,14 @@
                 }
                 else
                 {
-                    <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
+                    if (topic.TopicId > 0)
+                    {
+                        <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
+                    }
+                    else
+                    {
+                        <a asp-page="./Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId">@Html.Raw(topic.TopicTitle)</a>
+                    }
                     <br />
                     <span>
                         &nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "POSTED"])
