@@ -49,8 +49,8 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         [Fact]
         public async Task On_Parallel_Run_It_Gracefully_Stops()
         {
-            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>())).ReturnsAsync((false, null));
-            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((false, null, null));
+            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
             var services = GetServices();
             services.AddSingleton<CallCounter>();
@@ -74,8 +74,8 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         [Fact]
         public async Task On_Task_Cancellation_It_Gracefully_Stops()
         {
-            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>())).ReturnsAsync((true, Guid.NewGuid().ToString()));
-            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((true, Guid.NewGuid().ToString(), TimeSpan.FromSeconds(60)));
+            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
             var services = GetServices();
             services.AddSingleton<CallCounter>();
@@ -101,8 +101,8 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         {
             var now = DateTime.UtcNow;
             _mockTimeService.Setup(t => t.DateTimeUtcNow()).Returns(now);
-            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>())).ReturnsAsync((true, Guid.NewGuid().ToString()));
-            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((true, Guid.NewGuid().ToString(), TimeSpan.FromSeconds(60)));
+            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
             var services = GetServices();
             var counter = new CallCounter();

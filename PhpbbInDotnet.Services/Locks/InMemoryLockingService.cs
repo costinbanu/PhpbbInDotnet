@@ -10,7 +10,7 @@ namespace PhpbbInDotnet.Services.Locks
         private static readonly ReaderWriterLockSlim _lock = new();
         private static readonly ConcurrentDictionary<string, string> _locks = new();
 
-        public Task<(bool Success, string? LockId)> AcquireNamedLock(string name)
+        public Task<(bool Success, string? LockId, TimeSpan? Duration)> AcquireNamedLock(string name, CancellationToken _)
         {
             try
             {
@@ -18,9 +18,9 @@ namespace PhpbbInDotnet.Services.Locks
                 var id = Guid.NewGuid().ToString();
                 if (_locks.TryAdd(name, id))
                 {
-                    return Task.FromResult<(bool Success, string? LockId)>((true, id));
+                    return Task.FromResult<(bool Success, string? LockId, TimeSpan? Duration)>((true, id, TimeSpan.FromMinutes(1)));
                 }
-                return Task.FromResult<(bool Success, string? LockId)>((false, null));
+                return Task.FromResult<(bool Success, string? LockId, TimeSpan? Duration)>((false, null, null));
             }
             finally
             {
@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.Services.Locks
             }
         }
 
-        public Task<bool> ReleaseNamedLock(string name, string lockId)
+        public Task<bool> ReleaseNamedLock(string name, string lockId, CancellationToken __)
         {
             try
             {
@@ -44,5 +44,8 @@ namespace PhpbbInDotnet.Services.Locks
                 _lock.ExitWriteLock();
             }
         }
+
+        public Task<bool> RenewNamedLock(string name, string lockId, CancellationToken _)
+            => Task.FromResult(true);
     }
 }
