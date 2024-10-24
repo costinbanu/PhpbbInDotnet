@@ -20,9 +20,9 @@ namespace PhpbbInDotnet.Services
         ForumTree? GetTreeNode(HashSet<ForumTree> tree, int forumId);
         bool HasUnrestrictedChildren(HashSet<ForumTree> tree, int forumId);
         Task<bool> IsForumReadOnlyForUser(ForumUserExpanded user, int forumId);
-        Task<bool> IsForumUnread(int forumId, ForumUserExpanded user, bool forceRefresh = false);
+        Task<bool> IsForumUnread(int forumId, ForumUserExpanded user);
         Task<bool> IsPostUnread(int forumId, int topicId, int postId, ForumUserExpanded user);
-        Task<bool> IsTopicUnread(int forumId, int topicId, ForumUserExpanded user, bool forceRefresh = false);
+        Task<bool> IsTopicUnread(int forumId, int topicId, ForumUserExpanded user);
         Task MarkForumAndSubforumsRead(ForumUserExpanded user, int forumId);
         Task MarkForumRead(int userId, int forumId);
         Task MarkTopicRead(int userId, int forumId, int topicId, bool isLastPage, long markTime);

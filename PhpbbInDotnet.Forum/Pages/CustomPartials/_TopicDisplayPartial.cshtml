@@ -104,7 +104,7 @@
                     var firstUnreadPost = await _forumService.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
                     if (firstUnreadPost > 0)
                     {
-                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" asp-route-highlight="false" class="nav-link UnreadTitle" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" class="nav-link UnreadTitle" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
                     }
                     else
                     {
@@ -123,7 +123,14 @@
                 }
                 else
                 {
-                    <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
+                    if (topic.TopicId > 0)
+                    {
+                        <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
+                    }
+                    else
+                    {
+                        <a asp-page="./Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId">@Html.Raw(topic.TopicTitle)</a>
+                    }
                     <br />
                     <span>
                         &nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "POSTED"])

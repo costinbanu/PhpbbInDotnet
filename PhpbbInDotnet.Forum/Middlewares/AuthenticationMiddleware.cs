@@ -13,6 +13,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -54,13 +55,18 @@ namespace PhpbbInDotnet.Forum.Middlewares
                         var shouldRateLimitBots = _config.GetValue<bool>("RateLimitBots");
                         var shouldLimitBasedOnSessionCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 50 && !context.Request.Cookies.IsAnonymousSessionStarted();
 
-					if (shouldRateLimitBots && shouldLimitBasedOnSessionCount)
-					{
-						context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-						return;
-					}
+                        if (shouldRateLimitBots && shouldLimitBasedOnSessionCount)
+                        {
+                            context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+                            return;
+                        }
+                    }
 				}
-			}
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Failed to detect if session is bot. User agent: {userAgent}, IP: {ip}", userAgent, context.Connection.RemoteIpAddress);
+                }
+            }
 
             ForumUser baseUser;
             PhpbbUsers? dbUser;

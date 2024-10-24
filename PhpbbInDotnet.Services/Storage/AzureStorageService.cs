@@ -164,7 +164,15 @@ namespace PhpbbInDotnet.Services.Storage
 			await writer.FlushAsync();
 			source.Seek(0, SeekOrigin.Begin);
 
-			using var destination = await _blobContainerClient.GetBlobClient(path).OpenWriteAsync(overwrite: true);
+			using var destination = await _blobContainerClient.GetBlobClient(path).OpenWriteAsync(
+				overwrite: true, 
+				options: new BlobOpenWriteOptions 
+				{ 
+					HttpHeaders = new BlobHttpHeaders 
+					{ 
+						ContentType = "text/plain"
+					} 
+				});
 			await source.CopyToAsync(destination);
 		}
 

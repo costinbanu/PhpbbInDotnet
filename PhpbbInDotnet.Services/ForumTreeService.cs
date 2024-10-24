@@ -302,12 +302,12 @@ namespace PhpbbInDotnet.Services
                     }).ToList();
         }
 
-        public async Task<bool> IsForumUnread(int forumId, ForumUserExpanded user, bool forceRefresh = false)
-            => GetTreeNode(await GetForumTree(user, forceRefresh, true), forumId)?.IsUnread ?? false;
+        public async Task<bool> IsForumUnread(int forumId, ForumUserExpanded user)
+            => GetTreeNode(await GetForumTree(user, forceRefresh: false, fetchUnreadData: true), forumId)?.IsUnread ?? false;
 
-        public async Task<bool> IsTopicUnread(int forumId, int topicId, ForumUserExpanded user, bool forceRefresh = false)
+        public async Task<bool> IsTopicUnread(int forumId, int topicId, ForumUserExpanded user)
         {
-            var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
+            var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh: false);
             return ft.TryGetValue(forumId, out var tt) && tt.Contains(new Tracking { TopicId = topicId });
         }
 
