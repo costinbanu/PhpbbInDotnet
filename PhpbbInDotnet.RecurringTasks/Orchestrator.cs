@@ -43,21 +43,29 @@ namespace PhpbbInDotnet.RecurringTasks
 			bool lockAcquiredSuccessfully = false;
 			bool shouldUpdateControlFile = false;
 			string? lockId = null;
+			TimeSpan? duration = null;
 
 			var configComputerName = _configuration.GetValue<string?>("COMPUTERNAME");
 			var computerName =  string.IsNullOrWhiteSpace(configComputerName) ? Environment.MachineName : configComputerName;
 
 			try
 			{
-				(lockAcquiredSuccessfully, lockId) = await _lockingService.AcquireNamedLock(ControlFileName);
+				(lockAcquiredSuccessfully, lockId, duration) = await _lockingService.AcquireNamedLock(ControlFileName, CancellationToken);
 				if (lockAcquiredSuccessfully)
 				{
-					_logger.Warning("Running recurring tasks on instance {name}.", computerName);
+					_logger.Warning("Running recurring tasks on instance {name} with lock id {lockId}.", computerName, lockId);
 
-                    await Task.WhenAll(_tasks.Select(t => t.ExecuteAsync(CancellationToken)));
+					using var lockRenewalCancellation = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                    using var combinedCancellation = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken, lockRenewalCancellation.Token);
+                    var lockRenewalTask = RenewLockAsync(lockId!, duration!.Value, combinedCancellation.Token);
+                    
+					await Task.WhenAll(_tasks.Select(t => t.ExecuteAsync(CancellationToken)));
+                    shouldUpdateControlFile = true;
+                    
+					lockRenewalCancellation.Cancel();
+					await lockRenewalTask;
 
-					_logger.Warning("All recurring tasks executed successfully on instance {name}.", computerName);
-					shouldUpdateControlFile = true;
+					_logger.Warning("All recurring tasks executed successfully on instance {name} with lock id {lockId}.", computerName, lockId);
 				}
 				else
 				{
@@ -73,13 +81,35 @@ namespace PhpbbInDotnet.RecurringTasks
 			{
 				if (lockAcquiredSuccessfully)
 				{
-					await _lockingService.ReleaseNamedLock(ControlFileName, lockId!);
+					await _lockingService.ReleaseNamedLock(ControlFileName, lockId!, CancellationToken);
 					if (shouldUpdateControlFile)
 					{
 						await _storageService.WriteAllTextToFile(ControlFileName, $"Completed at {_timeService.DateTimeUtcNow():u} on instance {computerName}.");
 					}
                 }
 			}
+		}
+
+		private async Task RenewLockAsync(string lockId, TimeSpan duration, CancellationToken cancellationToken)
+		{
+			var sleepTime = duration - TimeSpan.FromSeconds(2);
+            bool shouldContinue;
+            do
+            {
+				try
+				{
+					await Task.Delay(sleepTime, cancellationToken);
+					shouldContinue = await _lockingService.RenewNamedLock(ControlFileName, lockId, cancellationToken);
+					_logger.Warning("Renewed lock {id} for another {time}", lockId, sleepTime);
+				}
+				catch 
+				{
+					shouldContinue = false;
+				}
+			}
+			while (shouldContinue);
+
+			_logger.Information("Stopped renewing lock {id}", lockId);
 		}
 	}
 }
