@@ -71,8 +71,8 @@
 
 			let userId = @Json.Serialize(currentUser?.IsAnonymous == false ? currentUser.UserId.ToString() : null);
 			if (userId) {
-				gtag('set', {
-					'user_id': userId
+				gtag('event', 'page_view', {
+					"forum_user_id": userId,
 				});
 			}
 		</script>
