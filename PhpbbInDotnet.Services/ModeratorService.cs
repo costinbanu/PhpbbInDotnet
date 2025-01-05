@@ -433,11 +433,31 @@ namespace PhpbbInDotnet.Services
 
             foreach (var post in posts)
             {
+                var postUserName = post.PostUsername;
+                if (string.IsNullOrWhiteSpace(postUserName) && post.PosterId != Constants.ANONYMOUS_USER_ID)
+                {
+                    var candidate = await transaction.QueryFirstOrDefaultAsync<string>(
+                        "SELECT username FROM phpbb_users WHERE user_id = @posterId",
+                        new { post.PosterId });
+                    if (string.IsNullOrWhiteSpace(candidate))
+                    {
+						postUserName = _translationProvider.BasicText[language, "ANONYMOUS"];
+					}
+                    else
+                    {
+                        postUserName = candidate;
+                    }
+                }
+                else if (post.PosterId == Constants.ANONYMOUS_USER_ID)
+                {
+                    postUserName = _translationProvider.BasicText[language, "ANONYMOUS"];
+				}
+
                 var dto = new PostDto
                 {
                     Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, forumId: post.ForumId, isPreview: false, language: language, deletedFile: true)).ToList(),
                     AuthorId = post.PosterId,
-                    AuthorName = string.IsNullOrWhiteSpace(post.PostUsername) ? _translationProvider.BasicText[language, "ANONYMOUS"] : post.PostUsername,
+                    AuthorName = postUserName,
                     BbcodeUid = post.BbcodeUid,
                     ForumId = post.ForumId,
                     TopicId = post.TopicId,

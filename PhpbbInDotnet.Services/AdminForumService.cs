@@ -398,7 +398,7 @@ namespace PhpbbInDotnet.Services
                 };
 
                 await transaction.ExecuteAsync(
-                    "INSERT INTO phpbb_recycle_bin VALUES (@id, @type, @content, @deleteTime, @deleteUser)",
+					"INSERT INTO phpbb_recycle_bin (id, type, content, delete_time, delete_user) VALUES (@id, @type, @content, @deleteTime, @deleteUser)",
                     new
                     {
                         id = forum.ForumId,
