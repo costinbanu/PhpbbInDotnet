@@ -371,7 +371,7 @@ namespace PhpbbInDotnet.Services
                     return (string.Format(_translationProvider.Admin[lang, "CANT_DELETE_HAS_CHILDREN_FORMAT"], forum.ForumName), false);
                 }
                 var topicCount = await transaction.ExecuteScalarAsync<long>(
-					"SELECT count(1) FROM phpbb_topics WHERE forum_id = 14",
+					"SELECT count(1) FROM phpbb_topics WHERE forum_id = @forumId",
 					new { forumId });
 				if (topicCount > 0)
                 {
