@@ -11,21 +11,13 @@
     var lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[lang, "REGISTER", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
-    var opts = _config.GetObject<Recaptcha>();
+    var opts = _config.GetObject<BotDetectorOptions>();
 }
 
 
 <h3>@Html.Raw(Model.TranslationProvider.BasicText[lang, "REGISTER", Casing.Title])</h3>
 
-<script src="https://www.google.com/recaptcha/api.js?render=@(opts.SiteKey)"></script>
-<script>
-    grecaptcha.ready(function () {
-        grecaptcha.execute('@(opts.SiteKey)', { action: 'validate_captcha' })
-            .then(function (token) {
-                $('#RecaptchaResponse').val(token);
-            });
-    });
-</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
 
 <form asp-controller="Home" method="post">
 
@@ -54,10 +46,11 @@
     <br />
     <span asp-validation-for="Agree" class="validation"></span>
     <p></p>
-    <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" style="width:auto" />
-    <input type="hidden" asp-for="RecaptchaResponse" id="RecaptchaResponse" />
+    <div class="cf-turnstile" data-sitekey="@opts.SiteKey"></div>
     <br />
-    <span asp-validation-for="RecaptchaResponse" class="validation"></span>
+    <span asp-validation-for="BotDetectorResponse" class="validation"></span>
+    <p></p>
+    <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" style="width:auto" />
     @Html.AntiForgeryToken()
 </form>
 
