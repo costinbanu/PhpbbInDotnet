@@ -449,7 +449,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["code"] = (
-                            Tag: new BBTag("code", "<span class=\"CodeBlock\">", "</span>", maxId + 9, allowUrlProcessingAsText: false),
+                            Tag: new BBTag("code", "<span class=\"CodeBlock\">", "</span>", maxId + 9, allowUrlProcessingAsText: false, allowChildren: false),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[code]",
