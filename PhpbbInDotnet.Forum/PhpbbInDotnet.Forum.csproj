@@ -12,10 +12,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
-    <PackageReference Include="DeviceDetector.NET" Version="6.3.3" />
+    <PackageReference Include="DeviceDetector.NET" Version="6.4.2" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="8.0.8" />
-    <PackageReference Include="Serilog.Sinks.AzureBlobStorage" Version="4.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="9.0.3" />
+    <PackageReference Include="Serilog.Sinks.AzureBlobStorage" Version="4.0.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
