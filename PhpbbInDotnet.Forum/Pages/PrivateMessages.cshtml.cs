@@ -10,7 +10,6 @@ using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,6 +17,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
+    [ValidateAntiForgeryToken, ResponseCache(NoStore = true, Duration = 0)]
     public class PrivateMessagesModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]

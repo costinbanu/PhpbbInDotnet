@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
+    [ValidateAntiForgeryToken, ResponseCache(NoStore = true, Duration = 0)]
     public class DraftsModel : AuthenticatedPageModel
     {
         public List<TopicDto> Topics { get; private set; } = new List<TopicDto>();

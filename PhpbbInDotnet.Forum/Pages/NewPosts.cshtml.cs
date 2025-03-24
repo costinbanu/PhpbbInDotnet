@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken, ResponseCache(NoStore = true, Duration = 0)]
     public class NewPostsModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;

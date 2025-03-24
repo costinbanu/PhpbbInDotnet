@@ -18,7 +18,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken, ResponseCache(NoStore = true, Duration = 0)]
     public class SearchModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
