@@ -19,7 +19,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class FileModel : AuthenticatedPageModel
+    public class FileModel : AuthenticatedPageModel
     {
         private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;

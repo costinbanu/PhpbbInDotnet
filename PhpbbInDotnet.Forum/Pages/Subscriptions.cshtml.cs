@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
+	[ValidateAntiForgeryToken, ResponseCache(NoStore = true, Duration = 0)]
 	public class SubscriptionsModel : AuthenticatedPageModel
 	{
 		const int PAGE_SIZE = 20;

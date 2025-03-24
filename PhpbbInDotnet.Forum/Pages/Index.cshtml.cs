@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
+    [ResponseCache(NoStore = true, Duration = 0)]
     public class IndexModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh = false;
