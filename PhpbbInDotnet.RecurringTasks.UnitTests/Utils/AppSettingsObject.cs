@@ -5,7 +5,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests.Utils
     public class AppSettingsObject
     {
         public string? ForumDbConnectionString { get; set; }
-        public Recaptcha? Recaptcha { get; set; }
+        public BotDetectorOptions? Recaptcha { get; set; }
         public Smtp? Smtp { get; set; }
         public Encryption? Encryption { get; set; }
         public string? AvatarSalt { get; set; }

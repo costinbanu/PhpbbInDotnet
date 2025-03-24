@@ -91,8 +91,8 @@ namespace PhpbbInDotnet.Forum
             services.AddTransient<IActionContextAccessor, ActionContextAccessor>();
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
 
-            var recaptchaOptions = config.GetObject<Recaptcha>();
-            services.AddHttpClient(recaptchaOptions.ClientName!, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));
+            var botDetectorOptions = config.GetObject<BotDetectorOptions>();
+            services.AddHttpClient(botDetectorOptions.ClientName!, client => client.BaseAddress = new Uri(botDetectorOptions.BaseAddress!));
 
             services.AddSqlExecuter();
 

@@ -9,6 +9,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects.BotDetectorDtos;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
@@ -16,6 +17,7 @@ using Serilog;
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,8 +27,8 @@ namespace PhpbbInDotnet.Forum.Pages
     public class RegisterModel : BaseModel
     {
         private readonly ISqlExecuter _sqlExecuter;
-        private readonly HttpClient _gClient;
-        private readonly Recaptcha _recaptchaOptions;
+        private readonly HttpClient _botDetectorApiClient;
+        private readonly BotDetectorOptions _botDetectorOptions;
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
         private readonly IUserProfileDataValidationService _validationService;
@@ -46,16 +48,16 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public bool Agree { get; set; }
 
-        [BindProperty]
-        public string? RecaptchaResponse { get; set; }
+        [BindProperty(Name = "cf-turnstile-response")]
+        public string? BotDetectorResponse { get; set; }
 
         public RegisterModel(ISqlExecuter sqlExecuter, IConfiguration config, IHttpClientFactory httpClientFactory, ITranslationProvider translationProvider, 
             IUserService userService, ILogger logger, IEmailService emailService, IUserProfileDataValidationService validationService)
             : base(translationProvider, userService, config)
         {
             _sqlExecuter = sqlExecuter;
-            _recaptchaOptions = Configuration.GetObject<Recaptcha>();
-            _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName!);
+            _botDetectorOptions = Configuration.GetObject<BotDetectorOptions>();
+            _botDetectorApiClient = httpClientFactory.CreateClient(_botDetectorOptions.ClientName!);
             _logger = logger;
             _emailService = emailService;
             _validationService = validationService;
@@ -91,30 +93,31 @@ namespace PhpbbInDotnet.Forum.Pages
 
             try
             {
-                var response = await _gClient.PostAsync(
-                    requestUri: _recaptchaOptions.RelativeUri,
-                    content: new StringContent(
-                        content: $"secret={_recaptchaOptions.SecretKey}&response={RecaptchaResponse}&remoteip={HttpContext.Connection.RemoteIpAddress}",
-                        encoding: Encoding.UTF8,
-                        mediaType: "application/x-www-form-urlencoded"
-                    )
-                );
+                var response = await _botDetectorApiClient.PostAsync(
+                    requestUri: _botDetectorOptions.RelativeUri,
+                    content: JsonContent.Create(new SiteVerifyRequest
+                    {
+                        Secret = _botDetectorOptions.SecretKey,
+                        Response = BotDetectorResponse,
+                        RemoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty
+                    }));
                 response.EnsureSuccessStatusCode();
-                var resultText = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<dynamic>(resultText);
-                if ((bool?)result?.success != true)
+
+                var result = await response.Content.ReadFromJsonAsync<SiteVerifyResponse>();
+                
+                if (!result!.Success && result.ErrorCodes.Contains("invalid-input-response") || result.ErrorCodes.Contains("missing-input-response"))
                 {
-                    throw new InvalidOperationException($"Validating g-recaptcha failed. Response: {resultText}");
+                    return PageWithError(nameof(BotDetectorResponse), string.Format(TranslationProvider.Errors[Language, "YOURE_A_BOT_FORMAT"], Configuration.GetValue<string>("AdminEmail")!.Replace("@", " at ").Replace(".", " dot ")));
                 }
-                if ((decimal)result.score < _recaptchaOptions.MinScore)
+                else if (!result.Success)
                 {
-                    return PageWithError(nameof(RecaptchaResponse), string.Format(TranslationProvider.Errors[Language, "YOURE_A_BOT_FORMAT"], Configuration.GetValue<string>("AdminEmail")!.Replace("@", " at ").Replace(".", " dot ")));
+                    throw new InvalidOperationException($"Bot detection failed with error codes: {string.Concat(",", result.ErrorCodes)}");
                 }
             }
             catch (Exception ex)
             {
                 _logger.Warning(ex, "Failed to check captcha");
-                return PageWithError(nameof(RecaptchaResponse), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                return PageWithError(nameof(BotDetectorResponse), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
