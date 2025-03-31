@@ -6,6 +6,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Services.Caching;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
@@ -24,9 +25,10 @@ namespace PhpbbInDotnet.Services
         private readonly IOperationLogService _operationLogService;
         private readonly ILogger _logger;
 		private readonly ITranslationProvider _translationProvider;
+        private readonly ICachedDbInfoService _cachedDbInfoService;
 
         public ModeratorService(ISqlExecuter sqlExecuter, IPostService postService, IStorageService storageService, ITranslationProvider translationProvider,
-            IOperationLogService operationLogService, ILogger logger)
+            IOperationLogService operationLogService, ILogger logger, ICachedDbInfoService cachedDbInfoService)
         {
             _translationProvider = translationProvider;
             _sqlExecuter = sqlExecuter;
@@ -34,6 +36,7 @@ namespace PhpbbInDotnet.Services
             _storageService = storageService;
             _operationLogService = operationLogService;
             _logger = logger;
+            _cachedDbInfoService = cachedDbInfoService;
         }
 
         #region Topic
@@ -92,6 +95,9 @@ namespace PhpbbInDotnet.Services
 				await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.", transaction);
 
                 transaction.CommitTransaction();
+
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
                 return (_translationProvider.Moderator[language, "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
@@ -179,6 +185,9 @@ namespace PhpbbInDotnet.Services
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId, transaction: transaction);
 
                 transaction.CommitTransaction();
+
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
                 return (_translationProvider.Moderator[language, "TOPIC_DELETED_SUCCESSFULLY"], true);
             }
@@ -316,6 +325,9 @@ namespace PhpbbInDotnet.Services
 
 				transaction.CommitTransaction();
 
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
+
                 return (_translationProvider.Moderator[language, "POSTS_SPLIT_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
@@ -375,6 +387,9 @@ namespace PhpbbInDotnet.Services
 
 				transaction.CommitTransaction();
 
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
+
                 return (_translationProvider.Moderator[language, "POSTS_MOVED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
@@ -404,6 +419,9 @@ namespace PhpbbInDotnet.Services
                 await DeletePostsCore(posts, logDto, shouldLog: true, ignoreTopics: false, transaction);
 
                 transaction.CommitTransaction();
+
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
                 return (_translationProvider.Moderator[language, "POSTS_DELETED_SUCCESSFULLY"], true);
             }
@@ -536,6 +554,9 @@ namespace PhpbbInDotnet.Services
                 await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId, transaction: transaction);
 
                 transaction.CommitTransaction();
+
+                await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
                 return (string.Empty, true);
             }
