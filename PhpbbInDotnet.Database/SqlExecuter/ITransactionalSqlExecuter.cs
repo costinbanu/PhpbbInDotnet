@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
 {
     public interface ITransactionalSqlExecuter : ISqlExecuter, IDisposable
     {
-        void CommitTransaction();
+        Task CommitTransaction();
+
+        Func<Task> OnSuccessfulCommit { get; set; }
     }
 }

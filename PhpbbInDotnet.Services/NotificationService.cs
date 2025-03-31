@@ -56,7 +56,7 @@ namespace PhpbbInDotnet.Services
                     "UPDATE phpbb_forums_watch SET notify_status = 1 WHERE user_id IN @users AND forum_id = @forumId",
                     new { users = forumSubscribers.Select(s => s.UserId).DefaultIfEmpty(), forumId });
 
-                forumTransaction.CommitTransaction();
+                await forumTransaction.CommitTransaction();
 			}
 
             using var topicTransaction = _sqlExecuter.BeginTransaction();
@@ -86,7 +86,7 @@ namespace PhpbbInDotnet.Services
                 "UPDATE phpbb_topics_watch SET notify_status = 1 WHERE user_id IN @users AND topic_id = @topicId",
                 new { users = topicNotificationUsers.Select(s => s.UserId).DefaultIfEmpty(), topicId });
 
-            topicTransaction.CommitTransaction();
+            await topicTransaction.CommitTransaction();
         }
 
 		public async Task<(string Message, bool IsSuccess)> ToggleTopicSubscription(int userId, int topicId)

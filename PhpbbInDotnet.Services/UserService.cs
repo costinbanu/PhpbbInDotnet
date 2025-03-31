@@ -331,7 +331,7 @@ namespace PhpbbInDotnet.Services
                     @"DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; 
                       DELETE t FROM phpbb_privmsgs_to t JOIN phpbb_privmsgs_to tt ON t.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE t.msg_id = @messageId;",
                     new { messageId });
-                transaction.CommitTransaction();
+                await transaction.CommitTransaction();
 
                 if (rows == 0)
                 {

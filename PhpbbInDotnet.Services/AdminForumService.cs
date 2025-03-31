@@ -413,10 +413,13 @@ namespace PhpbbInDotnet.Services
                       DELETE FROM phpbb_forums_watch WHERE forum_id = @forumId",
                     new { forum.ForumId });
 
-                transaction.CommitTransaction();
+                transaction.OnSuccessfulCommit = async () =>
+                {
+                    await _cachedDbInfoService.ForumTree.InvalidateAsync();
+                    await _operationLogService.LogAdminForumAction(AdminForumActions.Delete, adminUserId, forum);
+                };
 
-                await _cachedDbInfoService.ForumTree.InvalidateAsync();
-                await _operationLogService.LogAdminForumAction(AdminForumActions.Delete, adminUserId, forum);
+                await transaction.CommitTransaction();
 
                 return (string.Format(_translationProvider.Admin[lang, "FORUM_DELETED_SUCCESSFULLY_FORMAT"], forum.ForumName), true);
             }
