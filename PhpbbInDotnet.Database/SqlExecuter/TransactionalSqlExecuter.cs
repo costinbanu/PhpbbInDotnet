@@ -18,7 +18,6 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             _connection = GetDbConnection();
             ResilientExecute(() => _connection.Open());
             _transaction = _connection.BeginTransaction(isolationLevel);
-            _onSuccessfulCommit = () => Task.CompletedTask;
         }
 
         public ITransactionalSqlExecuter BeginTransaction(IsolationLevel _) 
@@ -90,33 +89,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<IMultipleResultsProxy> QueryMultipleAsync(string sql, object? param)
             => throw new NotSupportedException("Multiple result queries within a transaction are not supported");
 
-        public async Task CommitTransaction()
-        {
-            if (_isCommitted)
-            {
-                throw new InvalidOperationException("Can not commit transaction because it is already committed.");
-            }
-            _transaction.Commit();
-            _isCommitted = true;
-            await OnSuccessfulCommit();
-        }
-
-        private Func<Task> _onSuccessfulCommit;
-        private bool _isCommitted;
-
-        public Func<Task> OnSuccessfulCommit
-        {
-            get => _onSuccessfulCommit;
-
-            init
-            { 
-                if (_isCommitted)
-                {
-                    throw new InvalidOperationException($"Can not assign value to {nameof(OnSuccessfulCommit)} because the transaction is already committed.");
-                }
-                _onSuccessfulCommit = value;
-            }
-        }
+        public void CommitTransaction()
+            => _transaction.Commit();
 
         public void Dispose()
         {

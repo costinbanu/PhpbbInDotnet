@@ -223,7 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
                     }
 
-                    await transaction.CommitTransaction();
+                    transaction.CommitTransaction();
                 });
 
             Response.Cookies.DeleteObject(CookieBackupKey);

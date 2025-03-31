@@ -244,7 +244,7 @@ namespace PhpbbInDotnet.Services
                                 });
 
                             await deleteUser(transaction);
-                            await transaction.CommitTransaction();
+                            transaction.CommitTransaction();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -261,7 +261,7 @@ namespace PhpbbInDotnet.Services
 
                             await deleteUser(transaction);
 
-                            await transaction.CommitTransaction();
+                            transaction.CommitTransaction();
 
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;

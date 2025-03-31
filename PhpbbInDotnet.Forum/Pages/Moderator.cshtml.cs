@@ -501,7 +501,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 RecycleBinItemType.Post => await RestorePost(itemId, transaction),
                 _ => throw new NotSupportedException($"Can't restore item of type '{itemType}'.")
             };
-            await transaction.CommitTransaction();
+            transaction.CommitTransaction();
             return toReturn;
         }
     }

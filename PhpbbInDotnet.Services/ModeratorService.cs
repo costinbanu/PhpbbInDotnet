@@ -91,7 +91,7 @@ namespace PhpbbInDotnet.Services
 
 				await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.", transaction);
 
-                await transaction.CommitTransaction();
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
@@ -178,7 +178,7 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId, transaction: transaction);
 
-                await transaction.CommitTransaction();
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "TOPIC_DELETED_SUCCESSFULLY"], true);
             }
@@ -314,7 +314,7 @@ namespace PhpbbInDotnet.Services
 
                 await _postService.CascadePostAdd(transaction, ignoreUser: true, ignoreForums: oldForumId == newTopic.ForumId, posts);
 
-				await transaction.CommitTransaction();
+				transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "POSTS_SPLIT_SUCCESSFULLY"], true);
             }
@@ -373,7 +373,7 @@ namespace PhpbbInDotnet.Services
                 }
 				await _postService.CascadePostAdd(transaction, ignoreUser: true, ignoreForums: oldForumId == newTopic.ForumId, posts);
 
-				await transaction.CommitTransaction();
+				transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "POSTS_MOVED_SUCCESSFULLY"], true);
             }
@@ -403,7 +403,7 @@ namespace PhpbbInDotnet.Services
 
                 await DeletePostsCore(posts, logDto, shouldLog: true, ignoreTopics: false, transaction);
 
-                await transaction.CommitTransaction();
+                transaction.CommitTransaction();
 
                 return (_translationProvider.Moderator[language, "POSTS_DELETED_SUCCESSFULLY"], true);
             }
@@ -535,7 +535,7 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId, transaction: transaction);
 
-                await transaction.CommitTransaction();
+                transaction.CommitTransaction();
 
                 return (string.Empty, true);
             }
