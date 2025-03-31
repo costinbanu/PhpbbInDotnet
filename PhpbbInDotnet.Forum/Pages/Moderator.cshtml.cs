@@ -311,7 +311,6 @@ namespace PhpbbInDotnet.Forum.Pages
                        VALUES (@ForumId, @ParentId, @LeftId, @RightId, @ForumParents, @ForumName, @ForumDesc, @ForumDescBitfield, @ForumDescOptions, @ForumDescUid, @ForumLink, @ForumPassword, @ForumStyle, @ForumImage, @ForumRules, @ForumRulesLink, @ForumRulesBitfield, @ForumRulesOptions, @ForumRulesUid, @ForumTopicsPerPage, @ForumType, @ForumStatus, @ForumPosts, @ForumTopics, @ForumTopicsReal, @ForumLastPostId, @ForumLastPosterId, @ForumLastPostSubject, @ForumLastPostTime, @ForumLastPosterName, @ForumLastPosterColour, @ForumFlags, @ForumOptions, @DisplaySubforumList, @DisplayOnIndex, @EnableIndexing, @EnableIcons, @EnablePrune, @PruneNext, @PruneDays, @PruneViewed, @PruneFreq, @ForumEditTime);
                        DELETE FROM phpbb_recycle_bin WHERE type = @deleteForumType AND id = @deleteForumId;",
                     param);
-            await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
             await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, ForumUser.UserId, toAdd);
 
@@ -383,7 +382,6 @@ namespace PhpbbInDotnet.Forum.Pages
                        SELECT {SqlExecuter.LastInsertedItemId};
                        DELETE FROM phpbb_recycle_bin WHERE type = @deleteTopicType AND id = @deleteTopicId",
                     param);
-            await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
 
             var deletedPosts = await transaction.QueryAsync<PhpbbRecycleBin>(
                 "SELECT * FROM phpbb_recycle_bin WHERE type = @postType",
@@ -502,6 +500,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 _ => throw new NotSupportedException($"Can't restore item of type '{itemType}'.")
             };
             transaction.CommitTransaction();
+            await _cachedDbInfoService.ForumTree.InvalidateAsync();
+            await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
             return toReturn;
         }
     }

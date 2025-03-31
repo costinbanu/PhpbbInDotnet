@@ -240,9 +240,6 @@ namespace PhpbbInDotnet.Services
                     Constants.ANONYMOUS_USER_NAME,
                     Constants.DEFAULT_USER_COLOR
                 });
-
-			await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
-			await _cachedDbInfoService.ForumTree.InvalidateAsync();
 		}
 
 		private Task SyncTopicWithPosts(ITransactionalSqlExecuter transaction, params int[] topicIds)
@@ -265,9 +262,6 @@ namespace PhpbbInDotnet.Services
                     Constants.ANONYMOUS_USER_NAME,
                     Constants.DEFAULT_USER_COLOR
                 });
-
-            await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
-			await _cachedDbInfoService.ForumTree.InvalidateAsync();
 		}
 
         private static async Task SyncUserPostCount(ITransactionalSqlExecuter transaction, IEnumerable<int> postIds, bool isDeleted)

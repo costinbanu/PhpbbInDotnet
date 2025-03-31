@@ -9,6 +9,7 @@ using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.EmailDtos;
+using PhpbbInDotnet.Services.Caching;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -30,9 +31,10 @@ namespace PhpbbInDotnet.Services
         private readonly ITranslationProvider _translationProvider;
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
+        private readonly ICachedDbInfoService _cachedDbInfoService;
 
-        public AdminUserService(ISqlExecuter sqlExecuter, IConfiguration config, IModeratorService moderatorService, ITranslationProvider translationProvider, 
-            IPostService postService, IOperationLogService operationLogService, ILogger logger, IEmailService emailService)
+        public AdminUserService(ISqlExecuter sqlExecuter, IConfiguration config, IModeratorService moderatorService, ITranslationProvider translationProvider,
+            IPostService postService, IOperationLogService operationLogService, ILogger logger, IEmailService emailService, ICachedDbInfoService cachedDbInfoService)
         {
             _sqlExecuter = sqlExecuter;
             _config = config;
@@ -42,6 +44,7 @@ namespace PhpbbInDotnet.Services
             _translationProvider = translationProvider;
             _logger = logger;
             _emailService = emailService;
+            _cachedDbInfoService = cachedDbInfoService;
         }
 
         #region User
@@ -262,6 +265,9 @@ namespace PhpbbInDotnet.Services
                             await deleteUser(transaction);
 
                             transaction.CommitTransaction();
+
+                            await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                            await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
