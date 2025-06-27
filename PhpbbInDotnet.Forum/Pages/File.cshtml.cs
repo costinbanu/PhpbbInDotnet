@@ -36,11 +36,11 @@ namespace PhpbbInDotnet.Forum.Pages
             _logger = logger;
         }
 
-        public async Task<IActionResult> OnGet(int id, bool preview = false, Guid? correlationId = null)
+        public async Task<IActionResult> OnGet(int id, bool preview = false, int? postId= null)
         {
-            if (correlationId.HasValue && !preview)
+            if (postId.HasValue && !preview)
             {
-                var bytes = await _cache.GetAsync(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
+                var bytes = await _cache.GetAsync(CacheUtility.GetAttachmentCacheKey(id, postId.Value));
                 if (bytes?.Length > 0)
                 {
                     var dto = await CompressionUtility.DecompressObject<AttachmentDto>(bytes);
@@ -70,7 +70,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment);
             }
 
-            if (!correlationId.HasValue)
+            if (!postId.HasValue)
             {
                 try
                 {
@@ -116,11 +116,11 @@ namespace PhpbbInDotnet.Forum.Pages
             return await SendToClient(file, file, null, FileType.Avatar);
         }
 
-        public async Task<IActionResult> OnGetDeletedFile(int id, Guid correlationId)
+        public async Task<IActionResult> OnGetDeletedFile(int id, int postId)
         {
             try
             {
-                var bytes = await _cache.GetAsync(CacheUtility.GetAttachmentCacheKey(id, correlationId));
+                var bytes = await _cache.GetAsync(CacheUtility.GetAttachmentCacheKey(id, postId));
                 if (bytes?.Length > 0)
                 {
                     var file = await CompressionUtility.DecompressObject<AttachmentDto>(bytes);

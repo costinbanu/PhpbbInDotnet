@@ -2,7 +2,6 @@
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
-using System;
 
 namespace PhpbbInDotnet.Objects
 {
@@ -18,7 +17,7 @@ namespace PhpbbInDotnet.Objects
         public long FileSize { get; }
         public string Language { get; } = Constants.DEFAULT_LANGUAGE;
         public bool IsPreview { get; }
-        public Guid? CorrelationId { get; set; }
+        public int? PostId { get; set; }
         public bool DeletedFile { get; }
 
         [JsonIgnore]
@@ -28,14 +27,18 @@ namespace PhpbbInDotnet.Objects
             {
                 if (DeletedFile)
                 {
-                    return $"/File?id={Id}&correlationId={CorrelationId}&handler=deletedFile";
+                    return $"/File?id={Id}&postId={PostId}&handler=deletedFile";
                 }
                 else
                 {
-                    var url = $"/File?id={Id}&preview={IsPreview}";
-                    if (CorrelationId.HasValue && StringUtility.IsMimeTypeInline(MimeType))
+                    var url = $"/File?id={Id}";
+                    if (IsPreview)
                     {
-                        url += $"&correlationId={CorrelationId.Value}";
+                        url += "&preview=true";
+                    }
+                    if (PostId.HasValue && StringUtility.IsMimeTypeInline(MimeType))
+                    {
+                        url += $"&postId={PostId.Value}";
                     }
                     return url;
                 }
@@ -43,7 +46,7 @@ namespace PhpbbInDotnet.Objects
         }
 
 
-        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, Guid? correlationId = null, bool deletedFile = false)
+        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, int? postId = null, bool deletedFile = false)
         {
             DisplayName = dbRecord.RealFilename;
             Comment = dbRecord.AttachComment;
@@ -55,12 +58,12 @@ namespace PhpbbInDotnet.Objects
             ForumId = forumId;
             Language = language;
             IsPreview = isPreview;
-            CorrelationId = correlationId;
+            PostId = postId;
             DeletedFile = deletedFile;
         }
 
         [JsonConstructor]
-        public AttachmentDto(int id, string? displayName, string? physicalFileName, int forumId, string? mimeType, int downloadCount, string? comment, long fileSize, string language, bool isPreview, Guid? correlationId, bool deletedFile)
+        public AttachmentDto(int id, string? displayName, string? physicalFileName, int forumId, string? mimeType, int downloadCount, string? comment, long fileSize, string language, bool isPreview, int? postId, bool deletedFile)
         {
             Id = id;
             DisplayName = displayName;
@@ -72,7 +75,7 @@ namespace PhpbbInDotnet.Objects
             FileSize = fileSize;
             Language = language;
             IsPreview = isPreview;
-            CorrelationId = correlationId;
+            PostId = postId;
             DeletedFile = deletedFile;
         }
     }

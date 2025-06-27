@@ -128,7 +128,6 @@ else if (Model.Action == PostingActions.NewTopic)
         CurrentUser = CurrentUser,
         Post = Model.PreviewablePost,
         Language = Lang,
-        CorrelationId = Model.PreviewCorrelationId
     }, ViewData)
 
 	<hr class="BoxSeparator" />
@@ -381,7 +380,6 @@ else if (Model.Action == PostingActions.NewTopic)
 				Post = post,
 				ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId) ?? false),
 				Language = Lang,
-				CorrelationId = previousPosts.AttachmentDisplayCorrelationId
 			}, ViewData)
 		}
 	}

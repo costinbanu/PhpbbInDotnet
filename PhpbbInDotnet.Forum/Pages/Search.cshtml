@@ -155,7 +155,7 @@ else
             continue;
         }
 
-        post.Attachments = cacheResult.Attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
+        post.Attachments = cacheResult.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
 
         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
         {
@@ -166,7 +166,6 @@ else
             OpenPostLinkInNewTab = true,
             ToHighlight = Model.SearchText,
             Language = Lang,
-            CorrelationId = cacheResult.CorrelationId,
             Path = _forumService.GetPathText((await _forumService.GetForumTree(CurrentUser, false, false)), post.ForumId)
         }, ViewData)
     }
