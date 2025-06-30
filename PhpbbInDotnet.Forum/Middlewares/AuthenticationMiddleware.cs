@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database.Entities;
@@ -38,6 +39,14 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
+            var allowedHost = new Uri(_config.GetValue<string>("BaseUrl")!).Host;
+            if (!context.Request.Host.Host.Equals(allowedHost, StringComparison.InvariantCultureIgnoreCase))
+            {
+                _logger.Warning($"Prevented access to '{context.Request.GetDisplayUrl()}' for user agent '{context.Request.Headers.UserAgent}'");
+                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                return;
+            }
+
             var isBot = false;
             string? userAgent = null;
             var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);

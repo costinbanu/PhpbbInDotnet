@@ -38,7 +38,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet(int id, bool preview = false, int? postId= null)
         {
-            if (postId.HasValue && !preview)
+            if (postId > 0 && !preview)
             {
                 var bytes = await _cache.GetAsync(CacheUtility.GetAttachmentCacheKey(id, postId.Value));
                 if (bytes?.Length > 0)
