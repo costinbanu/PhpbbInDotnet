@@ -42,7 +42,6 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var allowedHost = new Uri(_config.GetValue<string>("BaseUrl")!).Host;
             if (!context.Request.Host.Host.Equals(allowedHost, StringComparison.InvariantCultureIgnoreCase))
             {
-                _logger.Warning($"Prevented access to '{context.Request.GetDisplayUrl()}' for user agent '{context.Request.Headers.UserAgent}'");
                 context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
                 return;
             }
