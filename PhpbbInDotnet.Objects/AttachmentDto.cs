@@ -17,7 +17,7 @@ namespace PhpbbInDotnet.Objects
         public long FileSize { get; }
         public string Language { get; } = Constants.DEFAULT_LANGUAGE;
         public bool IsPreview { get; }
-        public int? PostId { get; set; }
+        public int PostId { get; set; }
         public bool DeletedFile { get; }
 
         [JsonIgnore]
@@ -36,9 +36,9 @@ namespace PhpbbInDotnet.Objects
                     {
                         url += "&preview=true";
                     }
-                    if (PostId.HasValue && StringUtility.IsMimeTypeInline(MimeType))
+                    if (StringUtility.IsMimeTypeInline(MimeType))
                     {
-                        url += $"&postId={PostId.Value}";
+                        url += $"&postId={PostId}";
                     }
                     return url;
                 }
@@ -46,7 +46,7 @@ namespace PhpbbInDotnet.Objects
         }
 
 
-        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, int? postId = null, bool deletedFile = false)
+        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, int postId, bool deletedFile = false)
         {
             DisplayName = dbRecord.RealFilename;
             Comment = dbRecord.AttachComment;
@@ -75,7 +75,7 @@ namespace PhpbbInDotnet.Objects
             FileSize = fileSize;
             Language = language;
             IsPreview = isPreview;
-            PostId = postId;
+            PostId = postId ?? 0;
             DeletedFile = deletedFile;
         }
     }

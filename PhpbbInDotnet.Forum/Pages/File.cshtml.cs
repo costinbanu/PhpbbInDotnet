@@ -77,7 +77,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     await SqlExecuter.ExecuteAsyncWithoutResiliency(
                         "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id",
                         new { id },
-                        commandTimeout: 10);
+                        commandTimeout: 20);
                 }
                 catch (Exception ex)
                 {
