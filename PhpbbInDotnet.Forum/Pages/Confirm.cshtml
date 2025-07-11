@@ -113,5 +113,5 @@ else
         <a asp-page="./Login">@Html.Raw(Model.TranslationProvider.BasicText[lang, "LOGIN", Domain.Casing.FirstUpper])</a>
         <br />
     }
-    <a asp-page="./">@Html.Raw(Model.TranslationProvider.BasicText[lang, "HOME", Domain.Casing.FirstUpper])</a>
+    <a asp-page="./Index">@Html.Raw(Model.TranslationProvider.BasicText[lang, "HOME", Domain.Casing.FirstUpper])</a>
 }
