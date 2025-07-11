@@ -39,8 +39,6 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 
-        public Guid? CorrelationId { get; set; }
-
         public bool DisablePostTitleLink { get; set; }
 
         public string? Path { get; set; }

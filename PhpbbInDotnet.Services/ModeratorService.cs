@@ -473,7 +473,7 @@ namespace PhpbbInDotnet.Services
 
                 var dto = new PostDto
                 {
-                    Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, forumId: post.ForumId, isPreview: false, language: language, deletedFile: true)).ToList(),
+                    Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, forumId: post.ForumId, isPreview: false, language: language, post.PostId, deletedFile: true)).ToList(),
                     AuthorId = post.PosterId,
                     AuthorName = postUserName,
                     BbcodeUid = post.BbcodeUid,

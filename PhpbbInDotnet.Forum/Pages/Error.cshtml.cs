@@ -46,6 +46,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 var userName = ForumUser.Username ?? "N/A";
                 _logger.Warning("Serving response code {code} to user {user} for path {path}.", ResponseStatusCode, userName, path);
             }
+
+            Response.StatusCode = ResponseStatusCode ?? (int)HttpStatusCode.InternalServerError;
+            if (Response.StatusCode >= 200 && Response.StatusCode <= 299)
+            {
+                Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            }
         }
     }
 }

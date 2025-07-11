@@ -52,7 +52,6 @@
             AlignLeft = true,
             IsLastPostSummary = false,
             PMLink = Model.HasCurrentUserPM && !authorIsOnFoeList ? $"<a href=\"./SendPrivateMessage?postId={Model.Post.PostId}\">&#x1F5E8; {_translationProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
-            CorrelationId = Model.CorrelationId
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
             @if (!string.IsNullOrWhiteSpace(Model.Path))

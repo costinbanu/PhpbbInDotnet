@@ -68,7 +68,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? ForumTitle { get; private set; }
         public (string? Message, bool? IsSuccess) ModeratorActionResult { get; private set; }
         public Paginator? Paginator { get; private set; }
-        public Guid CorrelationId { get; private set; }
         public bool ScrollToSubscriptionToggle { get; private set; }
         public bool IsSubscribed { get; private set; }
         public bool? SubscriptionToggleWasSuccessful { get; private set; }
@@ -539,7 +538,6 @@ namespace PhpbbInDotnet.Forum.Pages
             Posts = postList.Posts;
             Attachments = postList.Attachments;
             Reports = postList.Reports;
-            CorrelationId = postList.AttachmentDisplayCorrelationId;
             Paginator = new Paginator(postList.PostCount!.Value, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, ForumUser);
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
             ForumRulesLink = curForum.ForumRulesLink;

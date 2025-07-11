@@ -342,10 +342,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
                 var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, 1, true);
-                PreviewCorrelationId = cacheResult.CorrelationId;
                 PreviewablePost = new PostDto
                 {
-                    Attachments = cacheResult.Attachments.FirstOrDefault().Value ?? new List<AttachmentDto>(),
+                    Attachments = cacheResult.FirstOrDefault().Value ?? new List<AttachmentDto>(),
                     AuthorColor = postAuthor?.UserColour,
                     AuthorId = postAuthor?.UserId ?? Constants.ANONYMOUS_USER_ID,
                     AuthorName = postAuthor?.Username ?? Constants.ANONYMOUS_USER_NAME,
