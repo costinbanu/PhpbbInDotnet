@@ -224,13 +224,13 @@
 					}
 				}
 
-				if (currentUser?.ShouldConfirmEmail == true)
+				if (currentUser?.ShouldConfirmEmail == true && ViewContext.RouteData.Values["page"]?.ToString() != "/Confirm" && ViewContext.RouteData.Values["page"]?.ToString() != "/User")
 				{
-					if (!displayedBox)
-					{
-						<p style="clear:both"></p>
-					}
-					<div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
+					<div class="MiddleBox" style="padding:20px" id="confirmEmailBox">
+						<div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('confirmEmailBox')">
+							@Html.Raw(_translationProvider.BasicText[lang, "CLOSE_BUTTON"])
+						</div>
+						<p>&nbsp;</p>
 						<h4>
 							@Html.Raw(string.Format(_translationProvider.BasicText[lang, "EMAIL_NOT_CONFIRMED_WARNING_FORMAT"], currentUser.EmailAddress!))
 						</h4>
@@ -242,7 +242,6 @@
 							@Html.Raw(_translationProvider.BasicText[lang, "CHANGE_EMAIL_ADDRESS"])
 						</a>
 					</div>
-					displayedBox = true;
 				}
 
 				if (_config.GetValue<bool>("ForumIsReadOnly"))
