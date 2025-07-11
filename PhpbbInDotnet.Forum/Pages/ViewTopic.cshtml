@@ -135,7 +135,6 @@
             IsForumReadOnly = isCurrentForumReadOnly,
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.PostEditTime > Model.Posts[index + 1].PostTime) || (post.PostEditCount > 0 && post.PostEditUser != post.AuthorName),
             Language = lang,
-            CorrelationId = Model.CorrelationId,
         }, ViewData)
 
         useModActions = post == Model.Posts.Last() && (post.AuthorId == currentUser.UserId && (editTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= editTime));

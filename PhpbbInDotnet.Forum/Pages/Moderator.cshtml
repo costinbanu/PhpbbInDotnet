@@ -337,13 +337,12 @@
                         <br />
                         foreach (var attach in post.Attachments!)
                         {
-                            attach.CorrelationId = correlationId;
                             _cache.Set(
-                                key: CacheUtility.GetAttachmentCacheKey(attach.Id, correlationId),
+                                key: CacheUtility.GetAttachmentCacheKey(attach.Id, post.PostId),
                                 value: await CompressionUtility.CompressObject(attach),
                                 options: new DistributedCacheEntryOptions
                                 {
-                                    SlidingExpiration = TimeSpan.FromSeconds(60)
+                                    SlidingExpiration = TimeSpan.FromSeconds(20)
                                 });
                         }
                         @await Html.PartialAsync("_PostPartial", new _PostPartialModel

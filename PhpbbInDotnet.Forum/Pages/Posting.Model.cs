@@ -93,7 +93,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public PhpbbForums? CurrentForum { get; private set; }
         public bool? SaveDraftSuccess { get; private set; }
         public string? SaveDraftMessage { get; private set; }
-        public Guid? PreviewCorrelationId { get; private set; }
         public string? DeleteDraftMessage { get; private set; }
 		public bool? DeleteDraftSuccess { get; private set; }
 

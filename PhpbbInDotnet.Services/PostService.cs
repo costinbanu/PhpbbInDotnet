@@ -36,14 +36,13 @@ namespace PhpbbInDotnet.Services
             _logger = logger;
         }
 
-        public async Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachmentExpanded> dbAttachments, string language, int postCount, bool isPreview)
+        public async Task<Dictionary<int, List<AttachmentDto>>> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachmentExpanded> dbAttachments, string language, int postCount, bool isPreview)
         {
-            var correlationId = Guid.NewGuid();
             var attachments = new Dictionary<int, List<AttachmentDto>>(postCount);
             var ids = new List<int>();
             foreach (var attachment in dbAttachments)
             {
-                var dto = new AttachmentDto(attachment, attachment.ForumId, isPreview, language, correlationId);
+                var dto = new AttachmentDto(attachment, attachment.ForumId, isPreview, language, attachment.PostMsgId);
                 if (!attachments.ContainsKey(attachment.PostMsgId))
                 {
                     attachments.Add(attachment.PostMsgId, new List<AttachmentDto>(_maxAttachmentCount) { dto });
@@ -55,11 +54,11 @@ namespace PhpbbInDotnet.Services
                 if (StringUtility.IsMimeTypeInline(attachment.Mimetype))
                 {
                     _cache.Set(
-                        key: CacheUtility.GetAttachmentCacheKey(attachment.AttachId, correlationId), 
+                        key: CacheUtility.GetAttachmentCacheKey(attachment.AttachId, attachment.PostMsgId), 
                         value: await CompressionUtility.CompressObject(dto), 
                         options: new DistributedCacheEntryOptions
                         {
-                            SlidingExpiration = TimeSpan.FromSeconds(60)
+                            SlidingExpiration = TimeSpan.FromSeconds(20)
                         });
                     ids.Add(attachment.AttachId);
                 }
@@ -80,10 +79,10 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            return (correlationId, attachments);
+            return attachments;
         }
 
-        public Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachments> dbAttachments, int forumId, string language, int postCount, bool isPreview)
+        public Task<Dictionary<int, List<AttachmentDto>>> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachments> dbAttachments, int forumId, string language, int postCount, bool isPreview)
             => CacheAttachmentsAndPrepareForDisplay(dbAttachments.Select(attachment => new PhpbbAttachmentExpanded(attachment, forumId)), language, postCount, isPreview);
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
@@ -110,13 +109,12 @@ namespace PhpbbInDotnet.Services
                 reports = (await results.ReadAsync<ReportDto>()).AsList();
             }
 
-            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(dbAttachments, posts.FirstOrDefault()?.ForumId ?? 0, language, posts.Count, false);
+            var attachments = await CacheAttachmentsAndPrepareForDisplay(dbAttachments, posts.FirstOrDefault()?.ForumId ?? 0, language, posts.Count, false);
 
             return new PostListDto
             {
                 Posts = posts,
-                Attachments = Attachments,
-                AttachmentDisplayCorrelationId = CorrelationId,
+                Attachments = attachments,
                 PostCount = count,
                 Reports = reports
             };
