@@ -1,5 +1,7 @@
 ﻿-- TODO add other statements from MySql ???
 
+--TODO add fulltext index on phpbb_attachments created thru SSMS UI ???
+
 ALTER TABLE dbo.phpbb_attachments ADD
 	draft_id int NULL
 GO

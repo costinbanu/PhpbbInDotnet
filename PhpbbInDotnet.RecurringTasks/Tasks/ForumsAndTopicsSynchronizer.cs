@@ -35,23 +35,14 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
 			stoppingToken.ThrowIfCancellationRequested();
 
-			await _sqlExecuter.ExecuteAsync(
-                @"WITH post_counts AS (
-	                SELECT poster_id, count(post_id) as post_count
-	                  FROM phpbb_posts
-	                 GROUP BY poster_id
-                )
-                UPDATE u
-                   SET u.user_posts = c.post_count
-                   FROM phpbb_users u
-                   JOIN post_counts c ON u.user_id = c.poster_id");
+            await _sqlExecuter.CallStoredProcedureAsync("sync_user_posts");
 
 			stoppingToken.ThrowIfCancellationRequested();
 
 			await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
             await _cachedDbInfoService.ForumTree.InvalidateAsync();
 
-            _logger.Information("Successfully synced forums and topics with their last posts.");
+            _logger.Information("Successfully synced forums and topics and users with their last posts.");
         }
     }
 }
