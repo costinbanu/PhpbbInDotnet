@@ -2,9 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
@@ -417,7 +414,7 @@ namespace PhpbbInDotnet.Forum.Pages
 		#region POST Draft
 
 		public Task<IActionResult> OnPostSaveDraft()
-            => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 try
                 {
@@ -467,7 +464,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostingActions.EditForumPost => await OnGetEditPost(),
                     _ => RedirectToPage("Index")
                 };
-			})), ReturnUrl));
+			})), ReturnUrl)));
 
         public Task<IActionResult> OnPostDeleteDraft()
             => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>
