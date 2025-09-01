@@ -21,6 +21,7 @@ namespace PhpbbInDotnet.Objects
             Filesize = @base.Filesize;
             Filetime = @base.Filetime;
             Thumbnail = @base.Thumbnail;
+            DraftId = @base.DraftId;
             ForumId = forumId;
         }
 

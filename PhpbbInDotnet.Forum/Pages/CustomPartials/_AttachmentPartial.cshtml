@@ -13,8 +13,7 @@
     }
     else if (StringUtility.IsPlayableVideoMimeType(Model.MimeType))
     {
-		<video src="@Model.FileUrl" class="VideoSize" preload="metadata" controls />
-        <p></p>
+		<video src="@Model.FileUrl" class="VideoSize" preload="metadata" controls> </video>
     }
     else
     {
