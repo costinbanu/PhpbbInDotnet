@@ -29,6 +29,22 @@ BEGIN
 			   AND (@topic = 0 OR @topicId = p.topic_id)
 			   AND (@author = 0 OR @authorId = p.poster_id)
 			   AND (@search IS NULL OR MATCH(p.post_subject) AGAINST(@search IN BOOLEAN MODE))
+               
+			UNION            
+
+			SELECT DISTINCT post_msg_id
+			  FROM phpbb_attachments
+			 WHERE (@topic = 0 OR @topicId = topic_id)
+			   AND (@author = 0 OR @authorId = poster_id)
+			   AND (@search IS NULL OR MATCH(real_filename) AGAINST(@search IN BOOLEAN MODE))
+               
+			UNION            
+
+			SELECT DISTINCT post_msg_id
+			  FROM phpbb_attachments
+			 WHERE (@topic = 0 OR @topicId = topic_id)
+			   AND (@author = 0 OR @authorId = poster_id)
+			   AND (@search IS NULL OR MATCH(attach_comment) AGAINST(@search IN BOOLEAN MODE))
 		) a
     );
 
@@ -49,13 +65,13 @@ BEGIN
 	                   p.post_text,
 	                   case when p.poster_id = ?
 			                then p.post_username 
-			                else a.username
+			                else u.username
 	                   end as author_name,
 	                   p.poster_id as author_id,
 	                   p.bbcode_uid,
 	                   p.post_time,
-	                   a.user_colour as author_color,
-	                   a.user_avatar as author_avatar,
+	                   u.user_colour as author_color,
+	                   u.user_avatar as author_avatar,
 	                   p.post_edit_count,
 	                   p.post_edit_reason,
 	                   p.post_edit_time,
@@ -64,9 +80,9 @@ BEGIN
 	                   p.poster_ip as ip,
                        cast(? AS SIGNED) AS total_count
                   FROM phpbb_posts p
-                  JOIN phpbb_users a ON p.poster_id = a.user_id
+                  JOIN phpbb_users u ON p.poster_id = u.user_id
                   LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
-                  LEFT JOIN ranks r ON a.user_id = r.user_id
+                  LEFT JOIN ranks r ON u.user_id = r.user_id
                  WHERE FIND_IN_SET (p.forum_id, '", searchable_forums, "')
                    AND (? = 0 OR ? = p.topic_id)
                    AND (? = 0 OR ? = p.poster_id)
@@ -81,13 +97,13 @@ BEGIN
 	                   p.post_text,
 	                   case when p.poster_id = ?
 			                then p.post_username 
-			                else a.username
+			                else u.username
 	                   end as author_name,
 	                   p.poster_id as author_id,
 	                   p.bbcode_uid,
 	                   p.post_time,
-	                   a.user_colour as author_color,
-	                   a.user_avatar as author_avatar,
+	                   u.user_colour as author_color,
+	                   u.user_avatar as author_avatar,
 	                   p.post_edit_count,
 	                   p.post_edit_reason,
 	                   p.post_edit_time,
@@ -96,22 +112,89 @@ BEGIN
 	                   p.poster_ip as ip,
                        cast(? AS SIGNED) AS total_count
                   FROM phpbb_posts p
-                  JOIN phpbb_users a ON p.poster_id = a.user_id
+                  JOIN phpbb_users u ON p.poster_id = u.user_id
                   LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
-                  LEFT JOIN ranks r ON a.user_id = r.user_id
+                  LEFT JOIN ranks r ON u.user_id = r.user_id
                  WHERE FIND_IN_SET (p.forum_id, '", searchable_forums, "')
                    AND (? = 0 OR ? = p.topic_id)
                    AND (? = 0 OR ? = p.poster_id)
                    AND (? IS NULL OR MATCH(p.post_subject) AGAINST(? IN BOOLEAN MODE))
+                   
+				UNION
+  
+                SELECT p.forum_id,
+	                   p.topic_id,
+	                   p.post_id,
+	                   p.post_subject,
+	                   p.post_text,
+	                   case when p.poster_id = ?
+			                then p.post_username 
+			                else u.username
+	                   end as author_name,
+	                   p.poster_id as author_id,
+	                   p.bbcode_uid,
+	                   p.post_time,
+	                   u.user_colour as author_color,
+	                   u.user_avatar as author_avatar,
+	                   p.post_edit_count,
+	                   p.post_edit_reason,
+	                   p.post_edit_time,
+	                   e.username as post_edit_user,
+	                   r.rank_title as author_rank,
+	                   p.poster_ip as ip,
+                       cast(? AS SIGNED) AS total_count
+                  FROM phpbb_posts p
+                  JOIN phpbb_attachments a on p.post_id = a.post_msg_id
+                  JOIN phpbb_users u ON p.poster_id = u.user_id
+                  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+                  LEFT JOIN ranks r ON u.user_id = r.user_id
+                 WHERE FIND_IN_SET (p.forum_id, '", searchable_forums, "')
+                   AND (? = 0 OR ? = p.topic_id)
+                   AND (? = 0 OR ? = p.poster_id)
+                   AND (? IS NULL OR MATCH(a.real_filename) AGAINST(? IN BOOLEAN MODE))
+                   
+				UNION
+  
+                SELECT p.forum_id,
+	                   p.topic_id,
+	                   p.post_id,
+	                   p.post_subject,
+	                   p.post_text,
+	                   case when p.poster_id = ?
+			                then p.post_username 
+			                else u.username
+	                   end as author_name,
+	                   p.poster_id as author_id,
+	                   p.bbcode_uid,
+	                   p.post_time,
+	                   u.user_colour as author_color,
+	                   u.user_avatar as author_avatar,
+	                   p.post_edit_count,
+	                   p.post_edit_reason,
+	                   p.post_edit_time,
+	                   e.username as post_edit_user,
+	                   r.rank_title as author_rank,
+	                   p.poster_ip as ip,
+                       cast(? AS SIGNED) AS total_count
+                  FROM phpbb_posts p
+                  JOIN phpbb_attachments a on p.post_id = a.post_msg_id
+                  JOIN phpbb_users u ON p.poster_id = u.user_id
+                  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+                  LEFT JOIN ranks r ON u.user_id = r.user_id
+                 WHERE FIND_IN_SET (p.forum_id, '", searchable_forums, "')
+                   AND (? = 0 OR ? = p.topic_id)
+                   AND (? = 0 OR ? = p.poster_id)
+                   AND (? IS NULL OR MATCH(a.attach_comment) AGAINST(? IN BOOLEAN MODE))
    
                  ORDER BY post_time DESC
                  LIMIT ?, 14;");
     
 	PREPARE stmt FROM @sql;
-	set @skip = `skip`;
-    set @anonymous_user_id = ANONYMOUS_USER_ID;
-    
-	EXECUTE stmt USING @anonymous_iser_id, @total_count, @topic, @topic, @author, @author, @search, @search, @anonymous_iser_id, @total_count, @topic, @topic, @author, @author, @search, @search, @skip;
+
+	EXECUTE stmt USING @anonymous_iser_id, @total_count, @topic, @topic, @author, @author, @search, @search, 
+						@anonymous_iser_id, @total_count, @topic, @topic, @author, @author, @search, @search, 
+                        @anonymous_iser_id, @total_count, @topic, @topic, @author, @author, @search, @search,
+                        @anonymous_iser_id, @total_count, @topic, @topic, @author, @author, @search, @search, @skip;
 	DEALLOCATE PREPARE stmt;
     
 END

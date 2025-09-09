@@ -24,7 +24,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    class BBCodeRenderingService : IBBCodeRenderingService
+	class BBCodeRenderingService : IBBCodeRenderingService
     {
         private static readonly Regex _htmlRegex = new("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _spaceRegex = new(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
@@ -71,11 +71,10 @@ namespace PhpbbInDotnet.Services
             TagMap = tagMap;
         }
 
-        public async Task ProcessPost(PostDto post, bool renderAttachments, string? toHighlight = null)
+        public async Task ProcessPost(PostDto post, bool renderAttachments, List<string>? toHighlight = null)
         {
-            var highlightWords = SplitHighlightWords(toHighlight);
-            post.PostSubject = HighlightWords(CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value), highlightWords);
-            post.PostText = HighlightWords(CensorWords(BbCodeToHtml(post.PostText, post.BbcodeUid), _bannedWords.Value), highlightWords);
+            post.PostSubject = HighlightWords(CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value), toHighlight ?? []);
+            post.PostText = HighlightWords(CensorWords(BbCodeToHtml(post.PostText, post.BbcodeUid), _bannedWords.Value), toHighlight ?? []);
 
             if (renderAttachments)
             {
@@ -149,7 +148,7 @@ namespace PhpbbInDotnet.Services
             return bbCodeText;
         }
 
-        private static List<string> SplitHighlightWords(string? search)
+        public List<string> SplitHighlightWords(string? search)
         {
             var highlightWords = new List<string>();
             if (string.IsNullOrWhiteSpace(search))
@@ -183,7 +182,7 @@ namespace PhpbbInDotnet.Services
             return highlightWords;
         }
 
-        private string HighlightWords(string text, List<string> words)
+        public string HighlightWords(string text, List<string> words)
             => ProcessAllWords(
                 input: text,
                 words: words,

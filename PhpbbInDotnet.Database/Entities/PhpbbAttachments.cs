@@ -21,5 +21,6 @@ namespace PhpbbInDotnet.Database.Entities
         public long Filesize { get; set; } = 0;
         public long Filetime { get; set; } = 0;
         public byte Thumbnail { get; set; } = 0;
+        public int? DraftId { get; set; }
     }
 }

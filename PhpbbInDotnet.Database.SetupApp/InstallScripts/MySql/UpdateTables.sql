@@ -76,3 +76,17 @@ CREATE TABLE `phpbb_shortcuts` (
   `forum_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY (`topic_id`, `forum_id`)
 ) ENGINE = MyISAM DEFAULT CHARACTER SET = utf8 COLLATE = utf8_bin;
+
+ALTER TABLE phpbb_attachments 
+ADD FULLTEXT KEY attach_comment (attach_comment);
+
+ALTER TABLE phpbb_attachments
+ADD FULLTEXT KEY real_filename (real_filename);
+
+ALTER TABLE phpbb_attachments
+ADD FULLTEXT KEY file_name_and_description (attach_comment, real_filename);
+
+ALTER TABLE `phpbb_attachments` 
+ADD COLUMN `draft_id` MEDIUMINT(8) NULL AFTER `thumbnail`,
+ADD INDEX `draft_id` (`draft_id` ASC) VISIBLE;
+

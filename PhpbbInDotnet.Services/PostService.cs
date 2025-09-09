@@ -36,13 +36,13 @@ namespace PhpbbInDotnet.Services
             _logger = logger;
         }
 
-        public async Task<Dictionary<int, List<AttachmentDto>>> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachmentExpanded> dbAttachments, string language, int postCount, bool isPreview)
+        public async Task<Dictionary<int, List<AttachmentDto>>> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachmentExpanded> dbAttachments, string language, int postCount, bool isPreview, List<string>? toHighlight = null)
         {
             var attachments = new Dictionary<int, List<AttachmentDto>>(postCount);
             var ids = new List<int>();
             foreach (var attachment in dbAttachments)
             {
-                var dto = new AttachmentDto(attachment, attachment.ForumId, isPreview, language, attachment.PostMsgId);
+                var dto = new AttachmentDto(attachment, attachment.ForumId, isPreview, language, attachment.PostMsgId, highlightWords: toHighlight);
                 if (!attachments.ContainsKey(attachment.PostMsgId))
                 {
                     attachments.Add(attachment.PostMsgId, new List<AttachmentDto>(_maxAttachmentCount) { dto });

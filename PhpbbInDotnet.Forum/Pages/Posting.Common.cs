@@ -326,7 +326,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
                 TopicId ??= cookie.TopicId;
                 PostId ??= cookie.PostId;
-                if (Attachments?.Any() != true && cookie.AttachmentIds?.Any() == true)
+                if (Attachments?.Any() != true && cookie.AttachmentIds?.Any() == true && cookie.TextTime > minCacheAge)
                 {
                     Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
                         "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds",

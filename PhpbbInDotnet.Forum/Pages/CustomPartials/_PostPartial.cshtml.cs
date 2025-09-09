@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Objects;
 using System;
+using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
@@ -35,7 +36,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public bool OpenPostLinkInNewTab { get; set; }
 
-        public string? ToHighlight { get; set; }
+        public List<string>? ToHighlight { get; set; }
 
         public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 

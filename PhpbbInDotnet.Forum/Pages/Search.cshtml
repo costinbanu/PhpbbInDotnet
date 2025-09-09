@@ -147,7 +147,8 @@ else
         ViewData
     )
     <hr class="BoxSeparator" />
-    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments!, Lang, Model.Posts!.Count, false);
+    var toHighlight = _renderingService.SplitHighlightWords(Model.SearchText);
+    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments!, Lang, Model.Posts!.Count, isPreview: false, toHighlight);
     foreach (var post in Model.Posts)
     {
         if (post.PostId == 0)
@@ -164,7 +165,7 @@ else
             IsPostFirstInPage = post == Model.Posts.First(),
             IsPostLastInPage = post == Model.Posts.Last(),
             OpenPostLinkInNewTab = true,
-            ToHighlight = Model.SearchText,
+            ToHighlight = toHighlight,
             Language = Lang,
             Path = _forumService.GetPathText((await _forumService.GetForumTree(CurrentUser, false, false)), post.ForumId)
         }, ViewData)

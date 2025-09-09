@@ -56,8 +56,13 @@ BEGIN
 		  FROM phpbb_posts p
 		 WHERE CONTAINS(*, @search_text);
 
+		INSERT INTO #filtered_posts
+		SELECT a.post_msg_id
+		  FROM phpbb_attachments a
+		 WHERE CONTAINS(a.*, @search_text);
+
 		INSERT INTO #posts
-		SELECT p.forum_id,
+		SELECT DISTINCT p.forum_id,
 			   p.topic_id,
 			   p.post_id,
 			   p.post_subject,
