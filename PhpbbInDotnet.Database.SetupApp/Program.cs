@@ -79,7 +79,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                 }
                 else
                 {
-                    path = Path.Combine("InstallScripts", "UpdateTables.sql");
+                    path = Path.Combine("InstallScripts", dbType.ToString(), "UpdateTables.sql");
                 }
                 var upsertTables = await File.ReadAllTextAsync(path);
                 await connection.ExecuteAsync(upsertTables);

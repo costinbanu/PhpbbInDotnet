@@ -2,6 +2,7 @@
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
+using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Objects
 {
@@ -19,6 +20,7 @@ namespace PhpbbInDotnet.Objects
         public bool IsPreview { get; }
         public int PostId { get; set; }
         public bool DeletedFile { get; }
+        public List<string> HighlightWords { get; }
 
         [JsonIgnore]
         public string FileUrl
@@ -45,8 +47,7 @@ namespace PhpbbInDotnet.Objects
             }
         }
 
-
-        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, int postId, bool deletedFile = false)
+        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, int postId, bool deletedFile = false, List<string>? highlightWords = null)
         {
             DisplayName = dbRecord.RealFilename;
             Comment = dbRecord.AttachComment;
@@ -60,10 +61,11 @@ namespace PhpbbInDotnet.Objects
             IsPreview = isPreview;
             PostId = postId;
             DeletedFile = deletedFile;
+            HighlightWords = highlightWords ?? [];
         }
 
         [JsonConstructor]
-        public AttachmentDto(int id, string? displayName, string? physicalFileName, int forumId, string? mimeType, int downloadCount, string? comment, long fileSize, string language, bool isPreview, int? postId, bool deletedFile)
+        public AttachmentDto(int id, string? displayName, string? physicalFileName, int forumId, string? mimeType, int downloadCount, string? comment, long fileSize, string language, bool isPreview, int? postId, bool deletedFile, List<string>? highlightWords)
         {
             Id = id;
             DisplayName = displayName;
@@ -77,6 +79,7 @@ namespace PhpbbInDotnet.Objects
             IsPreview = isPreview;
             PostId = postId ?? 0;
             DeletedFile = deletedFile;
+            HighlightWords = highlightWords ?? [];
         }
     }
 }

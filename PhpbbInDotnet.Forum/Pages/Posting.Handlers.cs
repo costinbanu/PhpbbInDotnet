@@ -2,9 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
@@ -21,7 +18,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public partial class PostingModel
+    public partial class PostingModel
     {
         #region GET
 
@@ -82,6 +79,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     PostTitle = HttpUtility.HtmlDecode(ExistingPostDraft.DraftSubject);
                     PostText = HttpUtility.HtmlDecode(ExistingPostDraft.DraftMessage);
+                    Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
+                        "SELECT * FROM phpbb_attachments WHERE draft_id = @draftId",
+                        new { ExistingPostDraft.DraftId })).AsList();
                 }
                 else
                 {
@@ -135,11 +135,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewTopic;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
-                ExistingPostDraft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
+                ExistingPostDraft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>(
+                    "SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", 
+                    new { user.UserId, ForumId, topicId = 0 }); 
                 if (ExistingPostDraft != null)
                 {
                     PostTitle = HttpUtility.HtmlDecode(ExistingPostDraft.DraftSubject);
                     PostText = HttpUtility.HtmlDecode(ExistingPostDraft.DraftMessage);
+                    Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
+                        "SELECT * FROM phpbb_attachments WHERE draft_id = @draftId",
+                        new { ExistingPostDraft.DraftId })).AsList();
                 }
                 await RestoreBackupIfAny(ExistingPostDraft?.SaveTime.ToUtcTime());
                 ShowAttach = Attachments?.Count > 0;
@@ -417,7 +422,7 @@ namespace PhpbbInDotnet.Forum.Pages
 		#region POST Draft
 
 		public Task<IActionResult> OnPostSaveDraft()
-            => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
+            => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 try
                 {
@@ -428,14 +433,15 @@ namespace PhpbbInDotnet.Forum.Pages
                         _ => TopicId
                     };
                     
-                    var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>(
+                    var draft = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbDrafts>(
                         "SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                         new { user.UserId, ForumId, topicId });
 
                     if (draft == null)
                     {
-                        await SqlExecuter.ExecuteAsync(
-                            "INSERT INTO phpbb_drafts (draft_message, draft_subject, forum_id, topic_id, user_id, save_time) VALUES (@message, @subject, @forumId, @topicId, @userId, @now)",
+                        draft = await SqlExecuter.QuerySingleAsync<PhpbbDrafts>(
+                            "INSERT INTO phpbb_drafts (draft_message, draft_subject, forum_id, topic_id, user_id, save_time) VALUES (@message, @subject, @forumId, @topicId, @userId, @now);" +
+                            $"SELECT * FROM phpbb_drafts WHERE draft_id = {SqlExecuter.LastInsertedItemId};",
                             new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), ForumId, topicId = TopicId ?? 0, user.UserId, now = DateTime.UtcNow.ToUnixTimestamp() });
                     }
                     else
@@ -444,6 +450,20 @@ namespace PhpbbInDotnet.Forum.Pages
                         await SqlExecuter.ExecuteAsync(
                             "UPDATE phpbb_drafts SET draft_message = @message, draft_subject = @subject, save_time = @now WHERE draft_id = @draftId",
                             new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now, draft.DraftId });
+                    }
+
+                    foreach (var attach in Attachments!)
+                    {
+                        await SqlExecuter.ExecuteAsync(
+                            @"UPDATE phpbb_attachments 
+                                 SET draft_id = @draftId, attach_comment = @comment, is_orphan = 0 
+                               WHERE attach_id = @attachId",
+                        new
+                        {
+                            draft.DraftId,
+                            comment = await _writingService.PrepareTextForSaving(attach.AttachComment),
+                            attach.AttachId
+                        });
                     }
 
                     SaveDraftMessage = TranslationProvider.BasicText[Language, "DRAFT_SAVED_SUCCESSFULLY"];
@@ -467,7 +487,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostingActions.EditForumPost => await OnGetEditPost(),
                     _ => RedirectToPage("Index")
                 };
-			})), ReturnUrl));
+			})), ReturnUrl)));
 
         public Task<IActionResult> OnPostDeleteDraft()
             => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>

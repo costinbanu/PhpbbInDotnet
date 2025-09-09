@@ -25,7 +25,10 @@
     <None Update="InstallScripts\InsertInitialData.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="InstallScripts\UpdateTables.sql">
+    <None Update="InstallScripts\MySql\UpdateTables.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="InstallScripts\SqlServer\UpdateTables.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="StoredProcedures\MySql\get_forum_permissions.sql">

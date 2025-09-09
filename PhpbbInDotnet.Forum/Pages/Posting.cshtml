@@ -9,6 +9,7 @@
 @using Services
 @using Services.Storage
 @using Microsoft.Extensions.Configuration
+@using Newtonsoft.Json
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
 
@@ -71,10 +72,11 @@
 	});
 
 	var isFormSubmitting = false;
+	var isDraftSaved = @Html.Raw(JsonConvert.SerializeObject(Model.SaveDraftSuccess ?? false));
 	window.addEventListener('beforeunload', (event) => {
 		if (isFormSubmitting) {
 			isFormSubmitting = false;
-		} else {
+		} else if (!isDraftSaved) {
 			event.preventDefault();
 			event.returnValue = 'x';
 		}
