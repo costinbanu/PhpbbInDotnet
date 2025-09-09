@@ -83,10 +83,10 @@ namespace PhpbbInDotnet.Services.Storage
 		public abstract Task WriteAllTextToFile(string path, string contents);
         public abstract Task<List<(DateTime LogDate, string? LogPath)>?> GetSystemLogs();
 
-        protected Task<PhpbbAttachments> AddToDatabase(string uploadedFileName, string physicalFileName, long fileSize, string mimeType, int posterId)
+        protected Task<PhpbbAttachments> AddToDatabase(string uploadedFileName, string physicalFileName, long fileSize, string mimeType, int posterId, int orderInPost)
 			=> _sqlExecuter.QuerySingleAsync<PhpbbAttachments>(
-				@$"INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) 
-				   VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId);
+				@$"INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id, order_in_post) 
+				   VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId, @orderInPost);
 				   SELECT * FROM phpbb_attachments WHERE attach_id = {_sqlExecuter.LastInsertedItemId}",
 				new
 				{
@@ -97,6 +97,7 @@ namespace PhpbbInDotnet.Services.Storage
 					physicalFileName,
 					RealFilename = Path.GetFileName(uploadedFileName),
 					posterId,
+					orderInPost
 				});
 
 		protected static string GenerateNewAttachmentFileName(int userId)

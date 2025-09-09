@@ -80,7 +80,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostTitle = HttpUtility.HtmlDecode(ExistingPostDraft.DraftSubject);
                     PostText = HttpUtility.HtmlDecode(ExistingPostDraft.DraftMessage);
                     Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
-                        "SELECT * FROM phpbb_attachments WHERE draft_id = @draftId",
+                        "SELECT * FROM phpbb_attachments WHERE draft_id = @draftId ORDER BY order_in_post",
                         new { ExistingPostDraft.DraftId })).AsList();
                 }
                 else
@@ -143,7 +143,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostTitle = HttpUtility.HtmlDecode(ExistingPostDraft.DraftSubject);
                     PostText = HttpUtility.HtmlDecode(ExistingPostDraft.DraftMessage);
                     Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
-                        "SELECT * FROM phpbb_attachments WHERE draft_id = @draftId",
+                        "SELECT * FROM phpbb_attachments WHERE draft_id = @draftId ORDER BY order_in_post",
                         new { ExistingPostDraft.DraftId })).AsList();
                 }
                 await RestoreBackupIfAny(ExistingPostDraft?.SaveTime.ToUtcTime());
@@ -167,7 +167,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.EditForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
-                Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
+                Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
+                    "SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY order_in_post", 
+                    new { PostId })).AsList();
 
                 if (canCreatePoll && curTopic.PollStart > 0)
                 {
@@ -330,11 +332,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 return BackedUpPage();
             }, ReturnUrl)));
 
-        #endregion POST Attachment
+		#endregion POST Attachment
 
-        #region POST Message
+		#region POST Message
 
-        public Task<IActionResult> OnPostPreview()
+		public Task<IActionResult> OnPostPreview()
             => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 var lang = Language;

@@ -355,6 +355,43 @@
         showElement('attachPanel');
     }
 
+    toggleAttachOrdering(button) {
+        showElement(
+            'attachManagementPanel',
+            () => { button.value = 'Administreaza fisiere'; },
+            () => { button.value = 'Ordoneaza fisiere'; }
+        );
+        showElement('attachSortingPanel');
+    }
+
+    onSortAttachmentList(_evt) {
+        let mgmtContainer = $('#attachManagementPanel');
+        let mgmtContainerChildren = mgmtContainer.children();
+        let orders = {};
+
+        $('#attachmentNames').children('.MySortableItem').each((index, elem) => {
+            orders[$(elem).data('attach-id')] = index;
+        });
+
+        mgmtContainerChildren.detach();
+
+        mgmtContainerChildren.sort((a, b) => {
+            let an = orders[$(a).data('attach-id')];
+            let bn = orders[$(b).data('attach-id')];
+
+            if (an > bn) {
+                return 1;
+            }
+            if (an < bn) {
+                return -1;
+            }
+            return 0;
+        });
+
+        mgmtContainerChildren.appendTo(mgmtContainer);
+
+    }
+
     togglePoll() {
         if ($('#attachPanel').is(':visible')) {
             showElement('attachPanel')

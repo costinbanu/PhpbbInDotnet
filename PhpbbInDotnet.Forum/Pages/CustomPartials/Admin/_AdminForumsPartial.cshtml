@@ -136,7 +136,7 @@
                 <div id="children" style="width:100%">
                     @foreach (var child in Model?.ForumChildren ?? Enumerable.Empty<Database.Entities.PhpbbForums>())
                     {
-                        <div style="padding:5px; margin:5px; border: solid 1px black; border-radius:5px; cursor:move; width: 95%">
+                        <div class="MySortableItem">
                             @Html.Raw(child.ForumName)
                             <input type="hidden" name="dto.childrenForums" value="@child.ForumId" style="width:0px" />
                         </div>

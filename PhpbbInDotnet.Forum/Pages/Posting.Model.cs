@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -66,9 +67,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? EditReason { get; set; }
 
         [BindProperty]
-        public List<PhpbbAttachments>? Attachments { get; set; }
-
-        [BindProperty]
         public long? PostTime { get; set; }
 
         [BindProperty]
@@ -85,6 +83,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
 		[BindProperty]
 		public PhpbbDrafts? ExistingPostDraft { get; set; }
+
+        [BindProperty]
+        public List<PhpbbAttachments>? Attachments { get; set; }
 
 		public PostDto? PreviewablePost { get; private set; }
         public PollDto? PreviewablePoll { get; private set; }

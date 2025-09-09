@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Services.Storage
 			var succeeded = new List<PhpbbAttachments>();
 			var failed = new List<string>();
 
-			foreach (var file in attachedFiles)
+			foreach (var (file, index) in attachedFiles.OrderBy(f => f.FileName).Indexed())
 			{
 				try
 				{
@@ -43,7 +43,7 @@ namespace PhpbbInDotnet.Services.Storage
 						await input.CopyToAsync(fs);
 					}
 
-					succeeded.Add(await AddToDatabase(file.FileName, name, file.Length, file.ContentType, userId));
+					succeeded.Add(await AddToDatabase(file.FileName, name, file.Length, file.ContentType, userId, index));
 				}
 				catch (Exception ex)
 				{

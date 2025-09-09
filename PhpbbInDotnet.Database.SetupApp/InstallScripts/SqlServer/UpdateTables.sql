@@ -13,5 +13,5 @@ CREATE NONCLUSTERED INDEX draft_id ON dbo.phpbb_attachments
 GO
 
 ALTER TABLE dbo.phpbb_attachments ADD
-	[order] int NULL
+	order_in_post int NULL
 GO

@@ -23,6 +23,6 @@ namespace PhpbbInDotnet.Database.Entities
         public byte Thumbnail { get; set; } = 0;
         public int? DraftId { get; set; }
 
-        public int? Order { get; set; }
+        public int? OrderInPost { get; set; }
     }
 }

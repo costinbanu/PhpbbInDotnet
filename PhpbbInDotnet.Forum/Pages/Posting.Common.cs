@@ -329,7 +329,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (Attachments?.Any() != true && cookie.AttachmentIds?.Any() == true && cookie.TextTime > minCacheAge)
                 {
                     Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
-                        "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds",
+                        "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds ORDER BY order_in_post",
                         new { cookie.AttachmentIds })).AsList();
                 }
                 QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
