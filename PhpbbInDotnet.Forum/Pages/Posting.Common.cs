@@ -51,7 +51,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 PostText = Regex.Replace(
 					input: PostText,
-					pattern: $@"\[attachment={index}\]{Regex.Escape(attachment.RealFilename)}[/attachment\]",
+					pattern: $@"\[attachment={index}\]{Regex.Escape(attachment.RealFilename)}\[\/attachment\]",
 					replacement: string.Empty,
 					options: RegexOptions.IgnoreCase);
 				//PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     PostText = Regex.Replace(
                         input: PostText,
-                        pattern: $@"\[attachment={i}\]{Regex.Escape(Attachments[i].RealFilename)}[/attachment\]",
+                        pattern: $@"\[attachment={i}\]{Regex.Escape(Attachments[i].RealFilename)}\[\/attachment\]",
                         replacement: $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]",
                         options: RegexOptions.IgnoreCase);
                         //PostText.Replace($"[attachment={i}]{Attachments[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
@@ -359,15 +359,6 @@ namespace PhpbbInDotnet.Forum.Pages
 			}
 		}
 
-        private void RemoveAttachmentsFromModelState()
-        {
-			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(Attachments)));
-			foreach (var keyToRemove in keysToRemove)
-			{
-				ModelState.Remove(keyToRemove);
-			}
-		}
-
         private void ReorderModelAttachmentsIfNeeded()
         {
             if (!AttachmentOrderHasChanged)
@@ -386,7 +377,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
             Attachments = Attachments?.OrderBy(attach => attach.OrderInPost).ToList();
 
-            RemoveAttachmentsFromModelState();
+			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(Attachments)));
+			foreach (var keyToRemove in keysToRemove)
+			{
+				ModelState.Remove(keyToRemove);
+			}
 		}
 
         private async Task ReorderModelAndDatabaseAttachmentsIfNeeded()

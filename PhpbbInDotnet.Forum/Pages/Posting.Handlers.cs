@@ -298,7 +298,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 ShowAttach = Attachments?.Count > 0;
-                RemoveAttachmentsFromModelState();
+                ModelState.Clear();
 
                 return BackedUpPage();
             }, ReturnUrl)));
@@ -329,7 +329,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (!error)
                 {
-                    RemoveAttachmentsFromModelState();
+                    ModelState.Clear();
                 }
 
                 return BackedUpPage();

@@ -60,7 +60,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShouldResize { get; set; } = true;
 
         [BindProperty]
-        public string DeleteFileDummyForValidation { get; set; }
+        public string? DeleteFileDummyForValidation { get; set; }
 
         [BindProperty]
         public string? EditReason { get; set; }
@@ -129,7 +129,6 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
-            DeleteFileDummyForValidation = string.Empty;
             _postService = postService;
             _storageService = storageService;
             _writingService = writingService;

@@ -324,15 +324,16 @@ else if (Model.Action == PostingActions.NewTopic)
 					<span asp-validation-for="DeleteFileDummyForValidation" class="validation"></span>
 					@for (var i = 0; i < Model.Attachments.Count; i++)
 					{
-						<div style="margin-bottom:20px; padding-bottom:20px" data-attach-id="@Model.Attachments[i].AttachId">
-							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename <br />
+						<div style="margin-bottom:20px; padding-bottom:20px" data-attach-id="@Model.Attachments[i].AttachId" data-index="@i">
+							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename
+							<br />
 							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
 							<br />
 							<textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
 							<p style="clear:both"></p>
 							<input type="button" 
 								value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" 
-								onclick="posting.attach_inline(@Model.Attachments[i].AttachId, '@Model.Attachments[i].RealFilename')" 
+								onclick="posting.attach_inline($(this).parent().data('index'), '@Model.Attachments[i].RealFilename')" 
 								class="MyButton" />
 								&nbsp;&bull;&nbsp;
 							<input type="submit" 

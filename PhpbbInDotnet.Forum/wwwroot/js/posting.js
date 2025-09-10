@@ -1,7 +1,4 @@
 ﻿class Posting {
-
-    attachmentOrder;
-
     constructor(bbtags, imgSizeLimit, imgCountLimit, isMod, isEditAction, userDateFormat, baseUrl, attachmentIds) {
         this.form_name = 'postform';
         this.text_name = 'message';
@@ -25,14 +22,6 @@
         this.imgCountLimit = imgCountLimit;
 
         this.baseUrl = baseUrl;
-
-        this.attachmentOrder = {};
-        if (Array.isArray(attachmentIds)) {
-            attachmentIds.forEach((elem, index) => {
-                this.attachmentOrder[elem] = index;
-            });
-        }
-        console.log(this.attachmentOrder);
     }
 
     /**
@@ -143,9 +132,7 @@
     /**
     * Add inline attachment at position
     */
-    attach_inline(id, filename) {
-        console.log(this.attachmentOrder);
-        let index = this.attachmentOrder[id];
+    attach_inline(index, filename) {
         this.insert_text('[attachment=' + index + ']' + filename + '[/attachment]', false, false);
     }
 
@@ -379,22 +366,19 @@
 
     onSortAttachmentList(_evt) {
         let mgmtContainer = $('#attachManagementPanel');
-        let mgmtContainerChildren = mgmtContainer.children();
-        console.log(this.attachmentOrder);
+        let mgmtContainerChildren = mgmtContainer.children('div');
+
         let newAttachmentOrder = {};
         $('#attachmentNames').children('.MySortableItem').each((index, elem) => {
             newAttachmentOrder[$(elem).data('attach-id')] = index;
         });
         $('#AttachmentOrderHasChanged').val('true');
-        this.attachmentOrder = newAttachmentOrder;
-
-        console.log(this.attachmentOrder);
 
         mgmtContainerChildren.detach();
 
         mgmtContainerChildren.sort((a, b) => {
-            let an = this.attachmentOrder[$(a).data('attach-id')];
-            let bn = this.attachmentOrder[$(b).data('attach-id')];
+            let an = newAttachmentOrder[$(a).data('attach-id')];
+            let bn = newAttachmentOrder[$(b).data('attach-id')];
 
             if (an > bn) {
                 return 1;
@@ -403,6 +387,10 @@
                 return -1;
             }
             return 0;
+        });
+
+        mgmtContainerChildren.each((index, elem) => {
+            $(elem).data('index', index);
         });
 
         mgmtContainerChildren.appendTo(mgmtContainer);
