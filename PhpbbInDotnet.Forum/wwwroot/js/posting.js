@@ -356,10 +356,11 @@
     }
 
     toggleAttachOrdering(button) {
+        console.log(dictionary);
         showElement(
             'attachManagementPanel',
-            () => { button.value = 'Administreaza fisiere'; },
-            () => { button.value = 'Ordoneaza fisiere'; }
+            () => { button.value = dictionary.Posting['MANAGE_FILES']; },
+            () => { button.value = dictionary.Posting['ORDER_FILES']; }
         );
         showElement('attachSortingPanel');
     }

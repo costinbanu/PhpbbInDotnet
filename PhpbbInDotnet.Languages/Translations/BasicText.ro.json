@@ -277,6 +277,7 @@
     "DOWNLOADED_COUNT_FORMAT": "descărcat de {0} ori",
     "SUBMITTED": "trimis",
     "NO_ATTACHMENTS": "Nici un fisier atașat",
+    "ORDER_FILES": "Ordonează fișierele",
 
     //navigation
     "CHOOSE_DESTINATION_FORUM_TOPIC": "Alege forumul și subiectul de destinație",

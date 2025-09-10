@@ -118,15 +118,6 @@ select, input:not([type=checkbox]):not([type=radio]), button {
     padding-bottom: 1px;
 }
 
-.MySortableItem {
-    padding: 5px;
-    margin: 5px;
-    border: solid 1px black;
-    border-radius: 5px;
-    cursor: move;
-    width: 95%;
-}
-
 .size1300 {
     width: 80% !important;
 }

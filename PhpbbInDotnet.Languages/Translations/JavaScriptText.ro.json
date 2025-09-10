@@ -33,7 +33,9 @@
         "POLL_NEVER_EXPIRES": "Chestionarul nu va expira niciodată",
         "POLL_EXPIRES_FORMAT": "Chestionarul expiră {0}",
         "CONFIRM_POLL_OPTIONS_CHANGE": "Dacă modifici opțiunile, toate voturile înregistrate până acum vor fi șterse. Ești sigur că dorești să continui?",
-        "LOADING_FILES": "Se încarcă fișierele..."
+        "LOADING_FILES": "Se încarcă fișierele...",
+        "ORDER_FILES": "Ordonează fișierele",
+        "MANAGE_FILES": "Administrează fișierele"
     },
     "Moderator": {
         "DUPLICATE_POST": "Dublează mesaj"

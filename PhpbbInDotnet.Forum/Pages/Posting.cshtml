@@ -304,20 +304,19 @@ else if (Model.Action == PostingActions.NewTopic)
 			@if (Model.Attachments?.Any() == true)
 			{
 				<hr class="SubtypeSeparator" />
-				<h4 style="float:left;margin-bottom:0px; margin-top:3px;">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
+				<h4 style="float:left; margin-bottom:0px; margin-top:10px;">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
 				<span>
 					&nbsp;
 					<input type="submit"
 						value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_ALL_FILES"])"
 						asp-page-handler="DeleteAllAttachments"
-						class="MyButton SlimButton"
+						class="MyButton PostingButton SpacedButton"
 						formnovalidate
 						onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')" />
-					&nbsp;&bull;&nbsp;
 					<input type="button" 
 						onclick="posting.toggleAttachOrdering(this)" 
-						class="MyButton SlimButton" 
-						value="Ordoneaza fisierele" />
+						class="MyButton PostingButton SpacedButton" 
+						value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ORDER_FILES"])" />
 				</span>
 				<p>&nbsp;</p>
 				<div id="attachManagementPanel">
@@ -335,7 +334,6 @@ else if (Model.Action == PostingActions.NewTopic)
 								value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" 
 								onclick="posting.attach_inline($(this).parent().data('index'), '@Model.Attachments[i].RealFilename')" 
 								class="MyButton" />
-								&nbsp;&bull;&nbsp;
 							<input type="submit" 
 								value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" 
 								asp-page-handler="DeleteAttachment" 
