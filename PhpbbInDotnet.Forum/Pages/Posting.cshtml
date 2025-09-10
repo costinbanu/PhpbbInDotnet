@@ -53,7 +53,8 @@
 		@(IsMod.ToString().ToLower()),
 		@((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
 			'@UserDateFormat',
-			'@(_config.GetValue<string>("BaseUrl"))'
+			'@(_config.GetValue<string>("BaseUrl"))',
+		@Json.Serialize(Model.Attachments?.Select(a => a.AttachId) ?? [])
 	);
 
 	$(window).on('load', function () {
@@ -307,19 +308,20 @@ else if (Model.Action == PostingActions.NewTopic)
 				<span>
 					&nbsp;
 					<input type="submit"
-						   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_ALL_FILES"])"
-						   asp-page-handler="DeleteAllAttachments"
-						   class="MyButton SlimButton"
-						   formnovalidate
-						   onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')" />
-					&nbsp;
+						value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_ALL_FILES"])"
+						asp-page-handler="DeleteAllAttachments"
+						class="MyButton SlimButton"
+						formnovalidate
+						onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')" />
+					&nbsp;&bull;&nbsp;
 					<input type="button" 
-						   onclick="posting.toggleAttachOrdering(this)" 
-						   class="MyButton SlimButton" 
-						   value="Ordoneaza fisierele" />
+						onclick="posting.toggleAttachOrdering(this)" 
+						class="MyButton SlimButton" 
+						value="Ordoneaza fisierele" />
 				</span>
 				<p>&nbsp;</p>
 				<div id="attachManagementPanel">
+					<span asp-validation-for="DeleteFileDummyForValidation" class="validation"></span>
 					@for (var i = 0; i < Model.Attachments.Count; i++)
 					{
 						<div style="margin-bottom:20px; padding-bottom:20px" data-attach-id="@Model.Attachments[i].AttachId">
@@ -328,10 +330,18 @@ else if (Model.Action == PostingActions.NewTopic)
 							<br />
 							<textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
 							<p style="clear:both"></p>
-							<input type="button" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
-							<input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" formnovalidate />
+							<input type="button" 
+								value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" 
+								onclick="posting.attach_inline(@Model.Attachments[i].AttachId, '@Model.Attachments[i].RealFilename')" 
+								class="MyButton" />
+								&nbsp;&bull;&nbsp;
+							<input type="submit" 
+								value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" 
+								asp-page-handler="DeleteAttachment" 
+								onclick="$('#idToDelete').val(@Model.Attachments[i].AttachId); return true;" 
+								class="MyButton" 
+								formnovalidate />
 							<br />
-							<span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>					
 							<input type="hidden" asp-for="Attachments![i].AttachId" />
 							<input type="hidden" asp-for="Attachments![i].RealFilename" />
 							<input type="hidden" asp-for="Attachments![i].PhysicalFilename" />

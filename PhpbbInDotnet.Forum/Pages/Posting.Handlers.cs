@@ -258,6 +258,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(Files), string.Format(TranslationProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
                 }
 
+                ReorderModelAttachmentsIfNeeded();
                 var existingImages = Attachments?.Count(a => StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
                 var existingNonImages = Attachments?.Count(a => !StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
                 if (!isMod && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
@@ -285,18 +286,19 @@ namespace PhpbbInDotnet.Forum.Pages
                 return BackedUpPage();
             }, ReturnUrl)));
 
-        public Task<IActionResult> OnPostDeleteAttachment(int index)
+        public Task<IActionResult> OnPostDeleteAttachment(int idToDelete)
             => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
 
-                if (await DeleteAttachment(index, true) is null)
+                ReorderModelAttachmentsIfNeeded();
+                if (await DeleteAttachment(idToDelete, true) is null)
                 {
-                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    return PageWithError(curForum, nameof(DeleteFileDummyForValidation), TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
                 ShowAttach = Attachments?.Count > 0;
-                ModelState.Clear();
+                RemoveAttachmentsFromModelState();
 
                 return BackedUpPage();
             }, ReturnUrl)));
@@ -308,13 +310,13 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var error = false;
                 var successfullyDeleted = new HashSet<int>(Attachments?.Count ?? 0);
-                for (var index = 0; index < (Attachments?.Count ?? 0); index++)
+                foreach (var attach in Attachments ?? [])
                 {
-                    var deletedAttachment = await DeleteAttachment(index, false);
+                    var deletedAttachment = await DeleteAttachment(attach.AttachId, false);
                     if (deletedAttachment is null)
                     {
                         error = true;
-                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                        ModelState.AddModelError(nameof(DeleteFileDummyForValidation), TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                     }
                     else
                     {
@@ -327,7 +329,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (!error)
                 {
-                    ModelState.Clear();
+                    RemoveAttachmentsFromModelState();
                 }
 
                 return BackedUpPage();

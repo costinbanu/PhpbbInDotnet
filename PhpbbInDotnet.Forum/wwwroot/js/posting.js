@@ -1,5 +1,8 @@
 ﻿class Posting {
-    constructor(bbtags, imgSizeLimit, imgCountLimit, isMod, isEditAction, userDateFormat, baseUrl) {
+
+    attachmentOrder;
+
+    constructor(bbtags, imgSizeLimit, imgCountLimit, isMod, isEditAction, userDateFormat, baseUrl, attachmentIds) {
         this.form_name = 'postform';
         this.text_name = 'message';
 
@@ -22,6 +25,14 @@
         this.imgCountLimit = imgCountLimit;
 
         this.baseUrl = baseUrl;
+
+        this.attachmentOrder = {};
+        if (Array.isArray(attachmentIds)) {
+            attachmentIds.forEach((elem, index) => {
+                this.attachmentOrder[elem] = index;
+            });
+        }
+        console.log(this.attachmentOrder);
     }
 
     /**
@@ -132,7 +143,9 @@
     /**
     * Add inline attachment at position
     */
-    attach_inline(index, filename) {
+    attach_inline(id, filename) {
+        console.log(this.attachmentOrder);
+        let index = this.attachmentOrder[id];
         this.insert_text('[attachment=' + index + ']' + filename + '[/attachment]', false, false);
     }
 
@@ -367,17 +380,21 @@
     onSortAttachmentList(_evt) {
         let mgmtContainer = $('#attachManagementPanel');
         let mgmtContainerChildren = mgmtContainer.children();
-        let orders = {};
-
+        console.log(this.attachmentOrder);
+        let newAttachmentOrder = {};
         $('#attachmentNames').children('.MySortableItem').each((index, elem) => {
-            orders[$(elem).data('attach-id')] = index;
+            newAttachmentOrder[$(elem).data('attach-id')] = index;
         });
+        $('#AttachmentOrderHasChanged').val('true');
+        this.attachmentOrder = newAttachmentOrder;
+
+        console.log(this.attachmentOrder);
 
         mgmtContainerChildren.detach();
 
         mgmtContainerChildren.sort((a, b) => {
-            let an = orders[$(a).data('attach-id')];
-            let bn = orders[$(b).data('attach-id')];
+            let an = this.attachmentOrder[$(a).data('attach-id')];
+            let bn = this.attachmentOrder[$(b).data('attach-id')];
 
             if (an > bn) {
                 return 1;
@@ -389,8 +406,6 @@
         });
 
         mgmtContainerChildren.appendTo(mgmtContainer);
-
-        $('#AttachmentOrderHasChanged').val('true');
     }
 
     togglePoll() {
