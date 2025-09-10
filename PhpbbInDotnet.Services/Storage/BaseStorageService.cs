@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 		}
 
-		public abstract Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId);
+		public abstract Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId, int minOrderInPost);
 		public abstract Task<(IEnumerable<string> Succeeded, IEnumerable<string> Failed)> BulkDeleteAttachments(IEnumerable<string> files);
 		public abstract Task<bool> DeleteAvatar(int userId, string fileName);
 		public abstract Task<bool> DeleteAttachment(string name);

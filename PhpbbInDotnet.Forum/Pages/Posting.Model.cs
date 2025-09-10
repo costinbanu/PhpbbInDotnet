@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -86,6 +85,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty]
         public List<PhpbbAttachments>? Attachments { get; set; }
+
+        [BindProperty]
+        public int[]? AttachmentOrder { get; set; }
+
+        [BindProperty]
+        public bool AttachmentOrderHasChanged { get; set; }
 
 		public PostDto? PreviewablePost { get; private set; }
         public PollDto? PreviewablePoll { get; private set; }

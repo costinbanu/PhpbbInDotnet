@@ -169,14 +169,15 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         await transaction.ExecuteAsync(
                             @"UPDATE phpbb_attachments 
-                                 SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 
+                                 SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0, order_in_post = @orderInPost
                                WHERE attach_id = @attachId",
                             new
                             {
                                 post.PostId,
                                 post.TopicId,
                                 comment = await _writingService.PrepareTextForSaving(attach.AttachComment, transaction),
-                                attach.AttachId
+                                attach.AttachId,
+                                attach.OrderInPost
                             });
                     }
 
@@ -338,11 +339,58 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private void RemoveDraftFromModelState()
         {
-			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(ExistingPostDraft))).ToList();
+			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(ExistingPostDraft)));
 			foreach (var keyToRemove in keysToRemove)
 			{
 				ModelState.Remove(keyToRemove);
 			}
 		}
+
+        private void ReorderModelAttachmentsIfNeeded()
+        {
+            if (!AttachmentOrderHasChanged)
+            {
+                return;
+            }
+
+            var orderDict = AttachmentOrder?.Indexed().ToDictionary(k => k.Item, v => v.Index) ?? [];
+            foreach (var attach in Attachments ?? [])
+            {
+                if (orderDict.TryGetValue(attach.AttachId, out var order))
+                {
+                    attach.OrderInPost = order;
+                }
+            }
+
+            Attachments = Attachments?.OrderBy(attach => attach.OrderInPost).ToList();
+
+			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(Attachments)));
+			foreach (var keyToRemove in keysToRemove)
+			{
+				ModelState.Remove(keyToRemove);
+			}
+		}
+
+        private async Task ReorderModelAndDatabaseAttachmentsIfNeeded()
+        {
+			if (!AttachmentOrderHasChanged)
+			{
+				return;
+			}
+
+            ReorderModelAttachmentsIfNeeded();
+			foreach (var attach in Attachments!)
+			{
+				await SqlExecuter.ExecuteAsync(
+					@"UPDATE phpbb_attachments 
+                                SET order_in_post = @orderInPost
+                            WHERE attach_id = @attachId",
+				new
+				{
+					attach.AttachId,
+					attach.OrderInPost
+				});
+			}
+        }
     }
 }

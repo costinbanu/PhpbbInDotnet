@@ -390,6 +390,7 @@
 
         mgmtContainerChildren.appendTo(mgmtContainer);
 
+        $('#AttachmentOrderHasChanged').val('true');
     }
 
     togglePoll() {

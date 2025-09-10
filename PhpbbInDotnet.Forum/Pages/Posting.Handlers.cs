@@ -265,7 +265,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "TOO_MANY_FILES"]);
                 }
 
-                var (succeeded, failed) = await _storageService.BulkAddAttachments(images.Union(nonImages), user.UserId);
+                var minOrderInPost = (Attachments?.Max(attach => attach.OrderInPost) ?? 0) + 1;
+                var (succeeded, failed) = await _storageService.BulkAddAttachments(images.Union(nonImages), user.UserId, minOrderInPost);
 
                 if (failed.Any())
                 {
@@ -348,6 +349,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var uid = string.Empty;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
+                ReorderModelAttachmentsIfNeeded();
                 var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, 1, true);
                 PreviewablePost = new PostDto
                 {
@@ -390,6 +392,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostNewForumPost()
             => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async () =>
             {
+                ReorderModelAttachmentsIfNeeded();
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
                 {
@@ -406,6 +409,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
 
+                ReorderModelAttachmentsIfNeeded();
                 var post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
                 var addedPostId = await UpsertPost(post, user);
                 if (addedPostId == null)
@@ -454,17 +458,19 @@ namespace PhpbbInDotnet.Forum.Pages
                             new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now, draft.DraftId });
                     }
 
+                    ReorderModelAttachmentsIfNeeded();
                     foreach (var attach in Attachments!)
                     {
                         await SqlExecuter.ExecuteAsync(
                             @"UPDATE phpbb_attachments 
-                                 SET draft_id = @draftId, attach_comment = @comment, is_orphan = 0 
+                                 SET draft_id = @draftId, attach_comment = @comment, is_orphan = 0, order_in_post = @orderInPost
                                WHERE attach_id = @attachId",
                         new
                         {
                             draft.DraftId,
                             comment = await _writingService.PrepareTextForSaving(attach.AttachComment),
-                            attach.AttachId
+                            attach.AttachId,
+                            attach.OrderInPost
                         });
                     }
 
@@ -500,6 +506,8 @@ namespace PhpbbInDotnet.Forum.Pages
 						"DELETE FROM phpbb_drafts WHERE draft_id = @draftId",
 						new { ExistingPostDraft!.DraftId });
 					
+                    await ReorderModelAndDatabaseAttachmentsIfNeeded();
+
                     ExistingPostDraft = null;
 
 					DeleteDraftMessage = TranslationProvider.BasicText[Language, "DRAFT_DELETED_SUCCESSFULLY"];
@@ -553,6 +561,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
                     new { TopicId }
                 );
+
+                await ReorderModelAndDatabaseAttachmentsIfNeeded();
 
                 CurrentForum = curForum;
                 CurrentTopic = curTopic;

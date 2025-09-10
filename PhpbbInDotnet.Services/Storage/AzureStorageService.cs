@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Services.Storage
 		protected override string AttachmentsPath => StorageOptions.Files!;
 		protected override string AvatarsPath =>  StorageOptions.Avatars!;
 
-		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
+		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId, int minOrderInPost)
 		{
 			var succeededUploads = new ConcurrentBag<(string uploadedFileName, string physicalFileName, long fileSize, string mimeType)>();
 			var failedUploads = new ConcurrentBag<string>();
@@ -60,7 +60,7 @@ namespace PhpbbInDotnet.Services.Storage
 			{
 				try
 				{
-					var attachment = await AddToDatabase(item.uploadedFileName, item.physicalFileName, item.fileSize, item.mimeType, userId, index);
+					var attachment = await AddToDatabase(item.uploadedFileName, item.physicalFileName, item.fileSize, item.mimeType, userId, index + minOrderInPost);
 					succeededUploadsToReturn.Add(attachment);
 				}
 				catch (Exception ex)

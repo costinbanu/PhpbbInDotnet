@@ -47,13 +47,13 @@
 
 <script type="text/javascript">
 	var posting = new Posting(
-	@Json.Serialize(_renderingService.TagMap),
-	@(_config.GetValue<int>("UploadLimitsMB:Images")),
-	@(_config.GetValue<int>("UploadLimitsCount:Images")),
-	@(IsMod.ToString().ToLower()),
-	@((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
-		'@UserDateFormat',
-		'@(_config.GetValue<string>("BaseUrl"))'
+		@Json.Serialize(_renderingService.TagMap),
+		@(_config.GetValue<int>("UploadLimitsMB:Images")),
+		@(_config.GetValue<int>("UploadLimitsCount:Images")),
+		@(IsMod.ToString().ToLower()),
+		@((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
+			'@UserDateFormat',
+			'@(_config.GetValue<string>("BaseUrl"))'
 	);
 
 	$(window).on('load', function () {
@@ -345,11 +345,12 @@ else if (Model.Action == PostingActions.NewTopic)
 						{
 							<div class="MySortableItem" data-attach-id="@attach.AttachId">
 								@Html.Raw(attach.RealFilename)
-								<input type="hidden" name="attachmentOrder" value="@attach.AttachId" style="width:0px" />
+								<input type="hidden" asp-for="AttachmentOrder" value="@attach.AttachId" />
 							</div>
 						}
 					</div>
 				</div>
+				<input type="hidden" asp-for="AttachmentOrderHasChanged" id="AttachmentOrderHasChanged" value="false" />
 			}
 		</div>
 	}
