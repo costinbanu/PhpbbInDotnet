@@ -311,9 +311,12 @@ else if (Model.Action == PostingActions.NewTopic)
 						   asp-page-handler="DeleteAllAttachments"
 						   class="MyButton SlimButton"
 						   formnovalidate
-						   onclick="confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')" />
+						   onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')" />
 					&nbsp;
-					<input type="button" onclick="posting.toggleAttachOrdering(this)" class="MyButton SlimButton" value="Ordoneaza fisierele" />
+					<input type="button" 
+						   onclick="posting.toggleAttachOrdering(this)" 
+						   class="MyButton SlimButton" 
+						   value="Ordoneaza fisierele" />
 				</span>
 				<p>&nbsp;</p>
 				<div id="attachManagementPanel">
