@@ -27,12 +27,12 @@ namespace PhpbbInDotnet.Services.Storage
 		protected override string AttachmentsPath => Path.Combine(Environment.WebRootPath, StorageOptions.Files!);
 		protected override string AvatarsPath => Path.Combine(Environment.WebRootPath, StorageOptions.Avatars!);
 
-		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
+		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId, int minOrderInPost)
 		{
 			var succeeded = new List<PhpbbAttachments>();
 			var failed = new List<string>();
 
-			foreach (var file in attachedFiles)
+			foreach (var (file, index) in attachedFiles.OrderBy(f => f.FileName).Indexed())
 			{
 				try
 				{
@@ -43,7 +43,7 @@ namespace PhpbbInDotnet.Services.Storage
 						await input.CopyToAsync(fs);
 					}
 
-					succeeded.Add(await AddToDatabase(file.FileName, name, file.Length, file.ContentType, userId));
+					succeeded.Add(await AddToDatabase(file.FileName, name, file.Length, file.ContentType, userId, index + minOrderInPost));
 				}
 				catch (Exception ex)
 				{

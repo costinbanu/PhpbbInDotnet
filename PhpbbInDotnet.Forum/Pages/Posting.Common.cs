@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -30,15 +31,17 @@ namespace PhpbbInDotnet.Forum.Pages
             return null;
         }
 
-        private async Task<PhpbbAttachments?> DeleteAttachment(int index, bool removeFromList)
+        private async Task<PhpbbAttachments?> DeleteAttachment(int attachId, bool removeFromList)
         {
-            var attachment = Attachments?.ElementAtOrDefault(index);
-
-            if (attachment is null)
+            var search = Attachments?.Indexed().FirstOrDefault(a => a.Item.AttachId == attachId);
+            
+            if (search?.Item is null)
             {
                 return null;
             }
 
+            var attachment = search.Value.Item;
+            var index = search.Value.Index;
             if (!await _storageService.DeleteAttachment(attachment.PhysicalFilename))
             {
                 return null;
@@ -46,10 +49,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (!string.IsNullOrWhiteSpace(PostText))
             {
-                PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
-                for (int i = index + 1; i < Attachments!.Count; i++)
+                PostText = Regex.Replace(
+					input: PostText,
+					pattern: $@"\[attachment={index}\]{Regex.Escape(attachment.RealFilename)}\[\/attachment\]",
+					replacement: string.Empty,
+					options: RegexOptions.IgnoreCase);
+				//PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
+				for (int i = index + 1; i < Attachments!.Count; i++)
                 {
-                    PostText = PostText.Replace($"[attachment={i}]{Attachments[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
+                    PostText = Regex.Replace(
+                        input: PostText,
+                        pattern: $@"\[attachment={i}\]{Regex.Escape(Attachments[i].RealFilename)}\[\/attachment\]",
+                        replacement: $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]",
+                        options: RegexOptions.IgnoreCase);
+                        //PostText.Replace($"[attachment={i}]{Attachments[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
                 }
             }
 
@@ -169,14 +182,15 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         await transaction.ExecuteAsync(
                             @"UPDATE phpbb_attachments 
-                                 SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 
+                                 SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0, order_in_post = @orderInPost
                                WHERE attach_id = @attachId",
                             new
                             {
                                 post.PostId,
                                 post.TopicId,
                                 comment = await _writingService.PrepareTextForSaving(attach.AttachComment, transaction),
-                                attach.AttachId
+                                attach.AttachId,
+                                attach.OrderInPost
                             });
                     }
 
@@ -329,7 +343,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (Attachments?.Any() != true && cookie.AttachmentIds?.Any() == true && cookie.TextTime > minCacheAge)
                 {
                     Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
-                        "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds",
+                        "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds ORDER BY order_in_post",
                         new { cookie.AttachmentIds })).AsList();
                 }
                 QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
@@ -338,11 +352,58 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private void RemoveDraftFromModelState()
         {
-			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(ExistingPostDraft))).ToList();
+			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(ExistingPostDraft)));
 			foreach (var keyToRemove in keysToRemove)
 			{
 				ModelState.Remove(keyToRemove);
 			}
 		}
+
+        private void ReorderModelAttachmentsIfNeeded()
+        {
+            if (!AttachmentOrderHasChanged)
+            {
+                return;
+            }
+
+            var orderDict = AttachmentOrder?.Indexed().ToDictionary(k => k.Item, v => v.Index) ?? [];
+            foreach (var attach in Attachments ?? [])
+            {
+                if (orderDict.TryGetValue(attach.AttachId, out var order))
+                {
+                    attach.OrderInPost = order;
+                }
+            }
+
+            Attachments = Attachments?.OrderBy(attach => attach.OrderInPost).ToList();
+
+			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(Attachments)));
+			foreach (var keyToRemove in keysToRemove)
+			{
+				ModelState.Remove(keyToRemove);
+			}
+		}
+
+        private async Task ReorderModelAndDatabaseAttachmentsIfNeeded()
+        {
+			if (!AttachmentOrderHasChanged)
+			{
+				return;
+			}
+
+            ReorderModelAttachmentsIfNeeded();
+			foreach (var attach in Attachments!)
+			{
+				await SqlExecuter.ExecuteAsync(
+					@"UPDATE phpbb_attachments 
+                         SET order_in_post = @orderInPost
+                       WHERE attach_id = @attachId",
+				new
+				{
+					attach.AttachId,
+					attach.OrderInPost
+				});
+			}
+        }
     }
 }

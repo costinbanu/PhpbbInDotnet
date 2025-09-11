@@ -22,6 +22,7 @@ namespace PhpbbInDotnet.Objects
             Filetime = @base.Filetime;
             Thumbnail = @base.Thumbnail;
             DraftId = @base.DraftId;
+            OrderInPost = @base.OrderInPost;
             ForumId = forumId;
         }
 

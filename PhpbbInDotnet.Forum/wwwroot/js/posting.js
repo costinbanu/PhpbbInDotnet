@@ -1,5 +1,5 @@
 ﻿class Posting {
-    constructor(bbtags, imgSizeLimit, imgCountLimit, isMod, isEditAction, userDateFormat, baseUrl) {
+    constructor(bbtags, imgSizeLimit, imgCountLimit, isMod, isEditAction, userDateFormat, baseUrl, attachmentIds) {
         this.form_name = 'postform';
         this.text_name = 'message';
 
@@ -353,6 +353,48 @@
             showElement('emojiPanel');
         }
         showElement('attachPanel');
+    }
+
+    toggleAttachOrdering(button) {
+        console.log(dictionary);
+        showElement(
+            'attachManagementPanel',
+            () => { button.value = dictionary.Posting['MANAGE_FILES']; },
+            () => { button.value = dictionary.Posting['ORDER_FILES']; }
+        );
+        showElement('attachSortingPanel');
+    }
+
+    onSortAttachmentList(_evt) {
+        let mgmtContainer = $('#attachManagementPanel');
+        let mgmtContainerChildren = mgmtContainer.children('div');
+
+        let newAttachmentOrder = {};
+        $('#attachmentNames').children('.MySortableItem').each((index, elem) => {
+            newAttachmentOrder[$(elem).data('attach-id')] = index;
+        });
+        $('#AttachmentOrderHasChanged').val('true');
+
+        mgmtContainerChildren.detach();
+
+        mgmtContainerChildren.sort((a, b) => {
+            let an = newAttachmentOrder[$(a).data('attach-id')];
+            let bn = newAttachmentOrder[$(b).data('attach-id')];
+
+            if (an > bn) {
+                return 1;
+            }
+            if (an < bn) {
+                return -1;
+            }
+            return 0;
+        });
+
+        mgmtContainerChildren.each((index, elem) => {
+            $(elem).data('index', index);
+        });
+
+        mgmtContainerChildren.appendTo(mgmtContainer);
     }
 
     togglePoll() {

@@ -60,13 +60,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShouldResize { get; set; } = true;
 
         [BindProperty]
-        public List<string> DeleteFileDummyForValidation { get; set; }
+        public string? DeleteFileDummyForValidation { get; set; }
 
         [BindProperty]
         public string? EditReason { get; set; }
-
-        [BindProperty]
-        public List<PhpbbAttachments>? Attachments { get; set; }
 
         [BindProperty]
         public long? PostTime { get; set; }
@@ -85,6 +82,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
 		[BindProperty]
 		public PhpbbDrafts? ExistingPostDraft { get; set; }
+
+        [BindProperty]
+        public List<PhpbbAttachments>? Attachments { get; set; }
+
+        [BindProperty]
+        public int[]? AttachmentOrder { get; set; }
+
+        [BindProperty]
+        public bool AttachmentOrderHasChanged { get; set; }
 
 		public PostDto? PreviewablePost { get; private set; }
         public PollDto? PreviewablePoll { get; private set; }
@@ -123,7 +129,6 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
-            DeleteFileDummyForValidation = new List<string>();
             _postService = postService;
             _storageService = storageService;
             _writingService = writingService;
