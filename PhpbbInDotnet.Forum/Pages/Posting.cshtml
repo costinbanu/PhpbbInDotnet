@@ -394,7 +394,8 @@ else if (Model.Action == PostingActions.NewTopic)
 	if (previousPosts?.Posts.Any() == true)
 	{
 		<script>
-			var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(previousPosts.Posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
+			var texts = @Json.Serialize(previousPosts.Posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid)));
+			var attachments = @Json.Serialize(previousPosts.Attachments.ToDictionary(k => k.Key, v => v.Value.Indexed().Select(a => new { index = a.Index, name = a.Item.DisplayName }) ?? []));
 			$('#lastPostTime').val(@Math.Max(previousPosts.Posts.First().PostTime, previousPosts.Posts.First().PostEditTime));
 		</script>
 

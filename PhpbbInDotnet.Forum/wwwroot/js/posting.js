@@ -24,10 +24,6 @@
         this.baseUrl = baseUrl;
     }
 
-    /**
-    * Fix a bug involving the TextRange object. From
-    * http://www.frostjedi.com/terra/scripts/demo/caretBug.html
-    */
     initInsertions() {
         var doc;
 
@@ -39,16 +35,10 @@
         }
     }
 
-    /**
-    * bbstyle
-    */
     bbstyle(code) {
         this.bbfontstyle(this.bbtags[code].openTag, this.bbtags[code].closeTag);
     }
 
-    /**
-    * Apply this.bbcodes
-    */
     bbfontstyle(bbopen, bbclose) {
         this.theSelection = false;
 
@@ -88,9 +78,6 @@
         return;
     }
 
-    /**
-    * Insert text at position
-    */
     insert_text(text, spaces, popup) {
         var textarea;
 
@@ -129,16 +116,10 @@
         }
     }
 
-    /**
-    * Add inline attachment at position
-    */
     attach_inline(index, filename) {
         this.insert_text('[attachment=' + index + ']' + filename + '[/attachment]', false, false);
     }
 
-    /**
-    * Get the caret position in an textarea
-    */
     getCaretPosition(txtarea) {
         var caretPos = new CaretPosition();
 
@@ -173,10 +154,7 @@
         return caretPos;
     }
 
-    /**
-    * Add quote text to message
-    */
-    addquote(text, username, postId) {
+    addquote(text, username, postId, allAttachments) {
         this.theSelection = '';
 
         // Get text selection - not only the post content :(
@@ -190,9 +168,33 @@
             this.theSelection = document.selection.createRange().text;
         }
 
+        let partialSelection = true;
         if (this.theSelection == '' || typeof this.theSelection == 'undefined' || this.theSelection == null) {
             this.theSelection = text;
+            partialSelection = false;
         }
+
+        const attachRegex = /\[attachment=(\d+)](.+?)\[\/attachment]/g;
+
+        if (!partialSelection && Array.isArray(allAttachments) && allAttachments.length > 0) {
+            const inlineAttachments = [];
+            let match;
+
+            while ((match = attachRegex.exec(this.theSelection)) !== null) {
+                inlineAttachments.push({
+                    index: parseInt(match[1], 10),
+                    name: match[2]
+                });
+            }
+
+            allAttachments.forEach((attach) => {
+                if (!inlineAttachments.some((inlineAttach) => inlineAttach.index === attach.index && inlineAttach.name === attach.name)) {
+                    this.theSelection += `\n[quote-attachment=${attach.index},${postId}]${attach.name}[/quote-attachment]`;
+                }
+            });
+        }
+
+        this.theSelection = this.theSelection.replace(attachRegex, `[quote-attachment=$1,${postId}]$2[/quote-attachment]`);
 
         if (this.theSelection) {
             this.insert_text(`[quote="${username}",${postId}]\n${this.theSelection}\n[/quote]\n`);
@@ -201,9 +203,6 @@
         return;
     }
 
-    /**
-    * From http://www.massless.org/mozedit/
-    */
     mozWrap(txtarea, open, close) {
         var selLength = txtarea.textLength;
         var selStart = txtarea.selectionStart;
@@ -227,10 +226,6 @@
         return;
     }
 
-    /**
-    * Insert at Caret position. Code from
-    * http://www.faqts.com/knowledge_base/view.phtml/aid/1052/fid/130
-    */
     storeCaret(textEl) {
         if (textEl.createTextRange) {
             textEl.caretPos = document.selection.createRange().duplicate();
@@ -423,9 +418,6 @@
     }
 }
 
-/**
-* Caret Position object
-*/
 class CaretPosition {
     constructor() {
         this.start = null;
