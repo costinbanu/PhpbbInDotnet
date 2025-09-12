@@ -27,7 +27,7 @@
         Model.Post.PostText = _translationProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
     }
 
-    await _renderingService.ProcessPost(Model.Post, true, Model.ToHighlight);
+    await _renderingService.ProcessPost(Model.Post, Model.IsPreview, Model.ToHighlight);
 }
 
 @if (!Model.IsPostFirstInPage)

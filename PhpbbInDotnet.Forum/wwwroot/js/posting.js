@@ -189,12 +189,12 @@
 
             allAttachments.forEach((attach) => {
                 if (!inlineAttachments.some((inlineAttach) => inlineAttach.index === attach.index && inlineAttach.name === attach.name)) {
-                    this.theSelection += `\n[quote-attachment=${attach.index},${postId}]${attach.name}[/quote-attachment]`;
+                    this.theSelection += `\n[quoted-attachment=${attach.index},${postId}]${attach.name}[/quoted-attachment]`;
                 }
             });
         }
 
-        this.theSelection = this.theSelection.replace(attachRegex, `[quote-attachment=$1,${postId}]$2[/quote-attachment]`);
+        this.theSelection = this.theSelection.replace(attachRegex, `[quoted-attachment=$1,${postId}]$2[/quoted-attachment]`);
 
         if (this.theSelection) {
             this.insert_text(`[quote="${username}",${postId}]\n${this.theSelection}\n[/quote]\n`);
