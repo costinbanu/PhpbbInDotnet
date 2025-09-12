@@ -5,6 +5,7 @@
 @using Domain.Extensions
 @using Domain.Utilities
 @using CustomPartials
+@using Objects
 @using Objects.Configuration
 @using Services
 @using Services.Storage
@@ -70,6 +71,12 @@
 		else {
 			$('#pollButton').text(posting.showPollText);
 		}
+
+		let quotedPostText = @Json.Serialize(Model.QuotedPostText);
+		if (quotedPostText) {
+			posting.addquote(quotedPostText, @Json.Serialize(Model.QuotedPostAuthor), @Json.Serialize(Model.PostId), @Json.Serialize(Model.QuotedAttachments));
+		}
+
 		$('#message').focus();
 	});
 
@@ -396,7 +403,7 @@ else if (Model.Action == PostingActions.NewTopic)
 	{
 		<script>
 			var texts = @Json.Serialize(previousPosts.Posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid)));
-			var attachments = @Json.Serialize(previousPosts.Attachments.ToDictionary(k => k.Key, v => v.Value.Indexed().Select(a => new { index = a.Index, name = a.Item.DisplayName }) ?? []));
+			var attachments = @Json.Serialize(previousPosts.Attachments.ToDictionary(k => k.Key, v => v.Value.Indexed().Select(a => new QuotedAttachment(a.Index, a.Item.DisplayName)) ?? []));
 			$('#lastPostTime').val(@Math.Max(previousPosts.Posts.First().PostTime, previousPosts.Posts.First().PostEditTime));
 		</script>
 
