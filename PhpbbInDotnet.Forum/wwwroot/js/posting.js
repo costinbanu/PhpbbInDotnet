@@ -351,7 +351,6 @@
     }
 
     toggleAttachOrdering(button) {
-        console.log(dictionary);
         showElement(
             'attachManagementPanel',
             () => { button.value = dictionary.Posting['MANAGE_FILES']; },

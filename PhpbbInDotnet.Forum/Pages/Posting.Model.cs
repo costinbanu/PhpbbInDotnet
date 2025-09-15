@@ -87,7 +87,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public List<PhpbbAttachments>? Attachments { get; set; }
 
         [BindProperty]
-        public int[]? AttachmentOrder { get; set; }
+        public List<int>? AttachmentOrder { get; set; }
 
         [BindProperty]
         public bool AttachmentOrderHasChanged { get; set; }

@@ -319,7 +319,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private void SaveBackup()
             => Response.Cookies.AddObject(
                 key: CookieBackupKey,
-                value: new PostingBackup(Action!.Value, PostTitle, PostText, DateTime.UtcNow, ForumId, TopicId, PostId, Attachments?.Select(a => a.AttachId).ToList(), QuotePostInDifferentTopic),
+                value: new PostingBackup(Action!.Value, PostTitle, PostText, DateTime.UtcNow, ForumId, TopicId, PostId, Attachments?.Select(a => a.AttachId).ToList(), QuotePostInDifferentTopic, AttachmentOrder),
                 maxAge: _cookieBackupExpiration);
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
@@ -351,6 +351,13 @@ namespace PhpbbInDotnet.Forum.Pages
                         "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds ORDER BY order_in_post",
                         new { cookie.AttachmentIds })).AsList();
                 }
+
+                if ((AttachmentOrder?.Any() != true && cookie.AttachmentOrder?.Any() == true) ||
+                    (cookie.AttachmentOrder?.Any() == true && cookie.TextTime > minCacheAge))
+                {
+                    AttachmentOrder = cookie.AttachmentOrder;
+                    ReorderModelAttachments();
+                }
             }
         }
 
@@ -370,6 +377,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
+            ReorderModelAttachments();
+		}
+
+        private void ReorderModelAttachments()
+        {
             var orderDict = AttachmentOrder?.Indexed().ToDictionary(k => k.Item, v => v.Index) ?? [];
             foreach (var attach in Attachments ?? [])
             {
@@ -381,12 +393,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
             Attachments = Attachments?.OrderBy(attach => attach.OrderInPost).ToList();
 
-			var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(Attachments)));
-			foreach (var keyToRemove in keysToRemove)
-			{
-				ModelState.Remove(keyToRemove);
-			}
-		}
+            var keysToRemove = ModelState.Keys.Where(k => k.StartsWith(nameof(Attachments)));
+            foreach (var keyToRemove in keysToRemove)
+            {
+                ModelState.Remove(keyToRemove);
+            }
+        }
 
         private async Task ReorderModelAndDatabaseAttachmentsIfNeeded()
         {
@@ -395,7 +407,8 @@ namespace PhpbbInDotnet.Forum.Pages
 				return;
 			}
 
-            ReorderModelAttachmentsIfNeeded();
+            ReorderModelAttachments();
+
 			foreach (var attach in Attachments!)
 			{
 				await SqlExecuter.ExecuteAsync(
