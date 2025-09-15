@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhpbbInDotnet.BackgroundProcessing;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Middlewares;
@@ -21,7 +22,6 @@ using Serilog.Events;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StorageOptions = PhpbbInDotnet.Objects.Configuration.Storage;
@@ -82,6 +82,7 @@ namespace PhpbbInDotnet.Forum
             services.AddLanguageSupport();
             services.AddApplicationServices(config);
             services.AddRecurringTasks();
+            services.AddBackgroundProcessing();
             
             services.AddSingleton<FileExtensionContentTypeProvider>();
 
@@ -114,7 +115,6 @@ namespace PhpbbInDotnet.Forum
 
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            ServicePointManager.DefaultConnectionLimit = 100;
 
             webApplicationBuilder.Host
                 .UseSerilog((context, config) =>

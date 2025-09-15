@@ -30,6 +30,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.RecurringTask
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.RecurringTasks.UnitTests", "PhpbbInDotnet.RecurringTasks.UnitTests\PhpbbInDotnet.RecurringTasks.UnitTests.csproj", "{02142DA4-F51F-471A-AE3B-499614752004}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.BackgroundProcessing", "PhpbbInDotnet.BackgroundProcessing\PhpbbInDotnet.BackgroundProcessing.csproj", "{0F8E8DEB-0FF7-4DE6-94CB-144697ED356E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,6 +74,10 @@ Global
 		{02142DA4-F51F-471A-AE3B-499614752004}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02142DA4-F51F-471A-AE3B-499614752004}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02142DA4-F51F-471A-AE3B-499614752004}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F8E8DEB-0FF7-4DE6-94CB-144697ED356E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F8E8DEB-0FF7-4DE6-94CB-144697ED356E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F8E8DEB-0FF7-4DE6-94CB-144697ED356E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F8E8DEB-0FF7-4DE6-94CB-144697ED356E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

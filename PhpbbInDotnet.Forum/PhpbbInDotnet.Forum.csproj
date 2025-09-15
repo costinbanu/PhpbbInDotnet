@@ -18,6 +18,7 @@
     <PackageReference Include="Serilog.Sinks.AzureBlobStorage" Version="4.0.5" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PhpbbInDotnet.BackgroundProcessing\PhpbbInDotnet.BackgroundProcessing.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />
