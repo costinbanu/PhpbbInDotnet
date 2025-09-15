@@ -5,6 +5,7 @@
 @using Domain.Extensions
 @using Domain.Utilities
 @using CustomPartials
+@using Objects
 @using Objects.Configuration
 @using Services
 @using Services.Storage
@@ -70,6 +71,12 @@
 		else {
 			$('#pollButton').text(posting.showPollText);
 		}
+
+		let quotedPostText = @Json.Serialize(Model.QuotedPostText);
+		if (quotedPostText) {
+			posting.addquote(quotedPostText, @Json.Serialize(Model.QuotedPostAuthor), @Json.Serialize(Model.PostId), @Json.Serialize(Model.QuotedAttachments));
+		}
+
 		$('#message').focus();
 	});
 
@@ -132,6 +139,7 @@ else if (Model.Action == PostingActions.NewTopic)
 		CurrentUser = CurrentUser,
 		Post = Model.PreviewablePost,
 		Language = Lang,
+		IsPreview = true
 	}, ViewData)
 
 	<hr class="BoxSeparator" />
@@ -394,7 +402,8 @@ else if (Model.Action == PostingActions.NewTopic)
 	if (previousPosts?.Posts.Any() == true)
 	{
 		<script>
-			var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(previousPosts.Posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
+			var texts = @Json.Serialize(previousPosts.Posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid)));
+			var attachments = @Json.Serialize(previousPosts.Attachments.ToDictionary(k => k.Key, v => v.Value.Indexed().Select(a => new QuotedAttachment(a.Index, a.Item.DisplayName)) ?? []));
 			$('#lastPostTime').val(@Math.Max(previousPosts.Posts.First().PostTime, previousPosts.Posts.First().PostEditTime));
 		</script>
 

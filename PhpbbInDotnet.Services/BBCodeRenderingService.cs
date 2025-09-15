@@ -5,6 +5,7 @@ using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -29,6 +30,7 @@ namespace PhpbbInDotnet.Services
         private static readonly Regex _htmlRegex = new("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _spaceRegex = new(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
         private static readonly Regex _attachRegex = new("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
+        private static readonly Regex _quotedAttachRegex = new("#{QuotedAttachmentFileName=[^/]+/QuotedAttachmentIndexAndPostId=[0-9]+,[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _quoteAttributeRegex = new("(\".+\")[, ]{0,2}([0-9]+)?", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
         private readonly ISqlExecuter _sqlExecuter;
@@ -71,46 +73,95 @@ namespace PhpbbInDotnet.Services
             TagMap = tagMap;
         }
 
-        public async Task ProcessPost(PostDto post, bool renderAttachments, List<string>? toHighlight = null)
+        public async Task ProcessPost(PostDto post, bool isPreview, List<string>? toHighlight = null)
         {
             post.PostSubject = HighlightWords(CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value), toHighlight ?? []);
             post.PostText = HighlightWords(CensorWords(BbCodeToHtml(post.PostText, post.BbcodeUid), _bannedWords.Value), toHighlight ?? []);
 
-            if (renderAttachments)
+            await ProcessAttachments(post);
+            await ProcessQuotedAttachments(post, isPreview, toHighlight);
+        }
+
+        private async Task ProcessAttachments(PostDto post)
+        {
+            var matches = from m in _attachRegex.Matches(post.PostText!).AsEnumerable()
+                          where m.Success
+                          orderby m.Index descending
+                          let parts = m.Value.Split(['/'], StringSplitOptions.RemoveEmptyEntries)
+                          let fn = parts[0].Trim("#{".ToCharArray()).Replace("AttachmentFileName=", string.Empty)
+                          let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
+                          select (FileName: fn, AttachIndex: i);
+
+            foreach (var (FileName, AttachIndex) in matches)
             {
-                var matches = from m in _attachRegex.Matches(post.PostText).AsEnumerable()
-                              where m.Success
-                              orderby m.Index descending
-                              let parts = m.Value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-                              let fn = parts[0].Trim("#{".ToCharArray()).Replace("AttachmentFileName=", string.Empty)
-                              let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
-                              select (FileName: fn, AttachIndex: i);
-
-                foreach (var (FileName, AttachIndex) in matches)
+                var model = GetAttachmentByNameAndIndex(post.Attachments, FileName, AttachIndex);
+                if (model != null)
                 {
-                    AttachmentDto? model = null;
-                    var candidates = post.Attachments?.Where(a => BbCodeToHtml(a.DisplayName, string.Empty) == FileName).ToList();
-                    if (candidates?.Count == 1)
-                    {
-                        model = candidates.First();
-                    }
-                    else if (candidates?.Count > 1)
-                    {
-                        model = candidates.FirstOrDefault(a => post.Attachments?.ElementAtOrDefault(AttachIndex)?.Id == a.Id);
-                    }
-
-                    if (model != null)
-                    {
-                        post.PostText = post.PostText.Replace(
-                            $"#{{AttachmentFileName={FileName}/AttachmentIndex={AttachIndex}}}#",
-                            await _razorViewService.RenderRazorViewToString("_AttachmentPartial", model)
-                        );
-                        post.Attachments?.Remove(model);
-                    }
+                    post.PostText = post.PostText!.Replace(
+                        $"#{{AttachmentFileName={FileName}/AttachmentIndex={AttachIndex}}}#",
+                        await _razorViewService.RenderRazorViewToString("_AttachmentPartial", model));
+                    post.Attachments?.Remove(model);
                 }
             }
 
-            post.PostText = _attachRegex.Replace(post.PostText, string.Empty);
+            post.PostText = _attachRegex.Replace(post.PostText!, string.Empty);
+        }
+
+        private async Task ProcessQuotedAttachments(PostDto post, bool isPreview, List<string>? toHighlight)
+        {
+            var matches = from m in _quotedAttachRegex.Matches(post.PostText!).AsEnumerable()
+                          where m.Success
+                          orderby m.Index descending
+                          let parts = m.Value.Split(['/'], StringSplitOptions.RemoveEmptyEntries)
+                          let fn = parts[0].Trim("#{".ToCharArray()).Replace("QuotedAttachmentFileName=", string.Empty)
+                          let indexAndPostId = parts[1].Trim("}#".ToCharArray()).Replace("QuotedAttachmentIndexAndPostId=", string.Empty).Split([','], StringSplitOptions.RemoveEmptyEntries)
+                          let index = int.Parse(indexAndPostId[0])
+                          let postId = int.Parse(indexAndPostId[1])
+                          select (FileName: fn, AttachIndex: index, PostId: postId);
+
+            var attachmentsByPostId = new Dictionary<int, IEnumerable<AttachmentDto>>();
+            foreach (var (FileName, AttachIndex, PostId) in matches)
+            {
+                if (!attachmentsByPostId.TryGetValue(PostId, out var attachments))
+                {
+                    var dbAttachments = await _sqlExecuter.QueryAsync<PhpbbAttachments>(
+                        "SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY order_in_post",
+                        new { PostId });
+                    if (dbAttachments.AsList().Count > 0)
+                    {
+                        attachments = dbAttachments.Select(a => new AttachmentDto(a, post.ForumId, isPreview, _translationProvider.GetLanguage(), PostId, deletedFile: false, toHighlight));
+                        attachmentsByPostId.Add(PostId, attachments);
+                    }
+                    else
+                    {
+                        attachments = null;
+                    }
+                }
+
+                var model = GetAttachmentByNameAndIndex(attachments, FileName, AttachIndex);
+                if (model != null)
+                {
+                    post.PostText = post.PostText!.Replace(
+                        $"#{{QuotedAttachmentFileName={FileName}/QuotedAttachmentIndexAndPostId={AttachIndex},{PostId}}}#",
+                        await _razorViewService.RenderRazorViewToString("_AttachmentPartial", model));
+                }
+            }
+
+            post.PostText = _quotedAttachRegex.Replace(post.PostText!, string.Empty);
+        }
+
+        private AttachmentDto? GetAttachmentByNameAndIndex(IEnumerable<AttachmentDto>? attachments, string fileName, int index)
+        {
+            var candidates = attachments?.Where(a => BbCodeToHtml(a.DisplayName, string.Empty) == fileName).ToList();
+            if (candidates?.Count == 1)
+            {
+                return candidates.First();
+            }
+            else if (candidates?.Count > 1)
+            {
+                return candidates.FirstOrDefault(a => attachments?.ElementAtOrDefault(index)?.Id == a.Id);
+            }
+            return null;
         }
 
         public string BbCodeToHtml(string? bbCodeText, string? bbCodeUid)
@@ -492,6 +543,23 @@ namespace PhpbbInDotnet.Services
                                 autoRenderContent: false, 
                                 tagClosingStyle: BBTagClosingStyle.AutoCloseElement, 
                                 contentTransformer: FileNameTransformer, 
+                                allowChildren: false,
+                                attributes: new[] { new BBAttribute("num", "") }),
+                            Summary: new BBTagSummary
+                            {
+                                ShowOnPage = false
+                            }
+                        ),
+
+                        ["quoted-attachment"] = (
+                            Tag: new BBTag(
+                                name: "quoted-attachment",
+                                openTagTemplate: "#{QuotedAttachmentFileName=${content}/QuotedAttachmentIndexAndPostId=${num}}#",
+                                closeTagTemplate: "",
+                                id: maxId + 12,
+                                autoRenderContent: false,
+                                tagClosingStyle: BBTagClosingStyle.AutoCloseElement,
+                                contentTransformer: FileNameTransformer,
                                 allowChildren: false,
                                 attributes: new[] { new BBAttribute("num", "") }),
                             Summary: new BBTagSummary

@@ -106,10 +106,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<IActionResult> toDo(PhpbbForums curForum, PhpbbTopics curTopic, PhpbbPosts curPost)
             {
-                var curAuthor = curPost.PostUsername;
-                if (string.IsNullOrWhiteSpace(curAuthor))
+                QuotedPostAuthor = curPost.PostUsername;
+                if (string.IsNullOrWhiteSpace(QuotedPostAuthor))
                 {
-                    curAuthor = await SqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? Constants.ANONYMOUS_USER_NAME;
+                    QuotedPostAuthor = await SqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? Constants.ANONYMOUS_USER_NAME;
                 }
 
                 CurrentForum = curForum;
@@ -118,8 +118,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
+                var dbQuotedAttachmentNames = await SqlExecuter.QueryAsync<string>(
+                    "SELECT real_filename FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY order_in_post",
+                    new { PostId });
+                QuotedAttachments = dbQuotedAttachmentNames.Indexed().Select(a => new QuotedAttachment(a.Index, a.Item)).ToList();
+
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
-                PostText = $"[quote=\"{curAuthor}\",{PostId}]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]\n";
+                QuotedPostText = _writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                 await RestoreBackupIfAny();
                 ShowAttach = Attachments?.Count > 0;

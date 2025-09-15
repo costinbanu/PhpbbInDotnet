@@ -101,6 +101,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? SaveDraftMessage { get; private set; }
         public string? DeleteDraftMessage { get; private set; }
 		public bool? DeleteDraftSuccess { get; private set; }
+        public string? QuotedPostText { get; private set; }
+        public string? QuotedPostAuthor { get; private set; }
+        public List<QuotedAttachment>? QuotedAttachments { get; private set; }
 
         private string CookieBackupKeyPrefix => $"{nameof(PostingBackup)}_{ForumUser.UserId}";
 		private string CookieBackupKey => $"{CookieBackupKeyPrefix}_{ForumId}_{(Action == PostingActions.NewTopic ? 0 : (TopicId ?? 0))}_{PostId ?? 0}";
