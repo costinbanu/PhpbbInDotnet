@@ -94,6 +94,15 @@
     padding: 0px 8px 0px 8px;
 }
 
+.HorizontalScrollPanel {
+    height: 250px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    scroll-behavior: smooth;
+}
+
 @media (max-width: 960px) {
 
     .PostingControls {

@@ -152,9 +152,6 @@ else if (Model.Action == PostingActions.NewTopic)
 
 <form name="postform" method="post" enctype="multipart/form-data" onsubmit="isFormSubmitting = true">
 	@await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
-	<script>
-		$('#message').prop('disabled', true);
-	</script>
 
 	@if (Model.Action == PostingActions.EditForumPost)
 	{
@@ -334,26 +331,32 @@ else if (Model.Action == PostingActions.NewTopic)
 						value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ORDER_FILES"])" />
 				</span>
 				<p>&nbsp;</p>
-				<div id="attachManagementPanel">
+				<div id="attachManagementPanel" class="HorizontalScrollPanel">
 					<span asp-validation-for="DeleteFileDummyForValidation" class="validation"></span>
 					@for (var i = 0; i < Model.Attachments.Count; i++)
 					{
-						<div style="margin-bottom:20px; padding-bottom:20px" data-attach-id="@Model.Attachments[i].AttachId" data-index="@i">
+						<div style="margin-right:20px; padding-right:20px" data-attach-id="@Model.Attachments[i].AttachId" data-index="@i">
 							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename
 							<br />
 							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
 							<br />
-							<textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
+							<textarea 
+								type="text" 
+								asp-for="Attachments![i].AttachComment" 
+								rows="4" 
+								cols="100" 
+								style="display:inline-block; color:black; width: 60vw" 
+								class="InputBox"></textarea>
 							<p style="clear:both"></p>
 							<input type="button" 
 								value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" 
 								onclick="posting.attach_inline($(this).parent().data('index'), '@Model.Attachments[i].RealFilename')" 
-								class="MyButton" />
+								class="MyButton SpacedButton" />
 							<input type="submit" 
 								value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" 
 								asp-page-handler="DeleteAttachment" 
 								onclick="$('#idToDelete').val(@Model.Attachments[i].AttachId); return true;" 
-								class="MyButton" 
+								class="MyButton SpacedButton" 
 								formnovalidate />
 							<br />
 							<input type="hidden" asp-for="Attachments![i].AttachId" />
@@ -454,6 +457,13 @@ else if (Model.Action == PostingActions.NewTopic)
 			onSort: posting.onSortAttachmentList
 		});
 	}
+
+	$('#message').prop('disabled', true);
+
+	$("#attachManagementPanel").on("wheel", function(e) {
+	  e.preventDefault();
+	  this.scrollLeft += e.originalEvent.deltaY;
+	});
 </script>
 
 <div id="imgcheckstatus" class="Popup"></div>
