@@ -327,26 +327,30 @@ namespace PhpbbInDotnet.Forum.Pages
             if (Request.Cookies.TryGetObject<PostingBackup>(CookieBackupKey, out var cookie))
             {
                 Action = cookie.PostingActions;
+                ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
+                TopicId ??= cookie.TopicId;
+                PostId ??= cookie.PostId;
+                QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
+
                 if ((!string.IsNullOrWhiteSpace(cookie.Text) && string.IsNullOrWhiteSpace(PostText)) ||
                     (!string.IsNullOrWhiteSpace(cookie.Text) && cookie.TextTime > minCacheAge))
                 {
                     PostText = cookie.Text;
                 }
+
                 if ((!string.IsNullOrWhiteSpace(cookie.Title) && string.IsNullOrWhiteSpace(PostTitle)) ||
                     (!string.IsNullOrWhiteSpace(cookie.Title) && cookie.TextTime > minCacheAge))
                 {
                     PostTitle = cookie.Title;
                 }
-                ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
-                TopicId ??= cookie.TopicId;
-                PostId ??= cookie.PostId;
-                if (Attachments?.Any() != true && cookie.AttachmentIds?.Any() == true && cookie.TextTime > minCacheAge)
+
+                if ((Attachments?.Any() != true && cookie.AttachmentIds?.Any() == true) ||
+                    (cookie.AttachmentIds?.Any() == true && cookie.TextTime > minCacheAge))
                 {
                     Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
                         "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds ORDER BY order_in_post",
                         new { cookie.AttachmentIds })).AsList();
                 }
-                QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
             }
         }
 
