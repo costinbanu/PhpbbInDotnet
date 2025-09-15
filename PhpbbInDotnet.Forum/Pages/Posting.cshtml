@@ -53,11 +53,12 @@
 		@(_config.GetValue<int>("UploadLimitsCount:Images")),
 		@(IsMod.ToString().ToLower()),
 		@((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
-			'@UserDateFormat',
-			'@(_config.GetValue<string>("BaseUrl"))',
+		'@UserDateFormat',
+		'@(_config.GetValue<string>("BaseUrl"))',
 		@Json.Serialize(Model.Attachments?.Select(a => a.AttachId) ?? [])
 	);
 
+	const shouldFocusMessage = @Json.Serialize(Model.PreviewablePost is null);
 	$(window).on('load', function () {
 		if ($('#attachPanel').is(':visible')) {
 			$('#attachButton').text(posting.hideAttachText);
@@ -77,7 +78,10 @@
 			posting.addquote(quotedPostText, @Json.Serialize(Model.QuotedPostAuthor), @Json.Serialize(Model.PostId), @Json.Serialize(Model.QuotedAttachments));
 		}
 
-		$('#message').focus();
+		$('#message').prop('disabled', false);
+		if (shouldFocusMessage) {
+			$('#message').focus();
+		}
 	});
 
 	var isFormSubmitting = false;
@@ -148,6 +152,9 @@ else if (Model.Action == PostingActions.NewTopic)
 
 <form name="postform" method="post" enctype="multipart/form-data" onsubmit="isFormSubmitting = true">
 	@await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
+	<script>
+		$('#message').prop('disabled', true);
+	</script>
 
 	@if (Model.Action == PostingActions.EditForumPost)
 	{
