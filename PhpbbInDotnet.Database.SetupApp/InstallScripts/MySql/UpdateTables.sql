@@ -90,3 +90,6 @@ ALTER TABLE `phpbb_attachments`
 ADD COLUMN `draft_id` MEDIUMINT(8) NULL AFTER `thumbnail`,
 ADD INDEX `draft_id` (`draft_id` ASC) VISIBLE;
 
+ALTER TABLE `phpbb_attachments` 
+ADD COLUMN `order_in_post` MEDIUMINT(8) NULL DEFAULT NULL AFTER `draft_id`;
+
