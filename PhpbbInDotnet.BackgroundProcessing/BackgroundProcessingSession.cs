@@ -1,21 +1,12 @@
 ﻿using LightningQueues;
-using LightningQueues.Storage.LMDB;
-using Microsoft.Extensions.Logging;
+using PhpbbInDotnet.Objects.Messages;
 using System.Text.Json;
 
 namespace PhpbbInDotnet.BackgroundProcessing
 {
-    class BackgroundProcessingSession : IBackgroundProcessingSession
+    class BackgroundProcessingSession(Queue queue) : IBackgroundProcessingSession
     {
-        private readonly Queue _queue;
-
-        public BackgroundProcessingSession(ILogger<BackgroundProcessingSession> logger) 
-        {
-            _queue = new QueueConfiguration().StoreWithLmdb("background-queues").LogWith(logger).BuildQueue();
-            _queue.Start();
-        }
-
-        public async Task SendMessage<TMessage>(TMessage message, CancellationToken cancellationToken)
+        public async Task SendMessage<TMessage>(TMessage message, CancellationToken cancellationToken = default) where TMessage : class, IBackgroundMessage, new()
         {
             using var stream = new MemoryStream();
             await JsonSerializer.SerializeAsync(stream, message, cancellationToken: cancellationToken);
@@ -24,14 +15,10 @@ namespace PhpbbInDotnet.BackgroundProcessing
             {
                 Data = stream.ToArray(),
                 Id = MessageId.GenerateRandom(),
-                Queue = "add-post"
+                Queue = message.QueueName,
+                Destination = new Uri($"lq.tcp://{queue.Endpoint}")
             };
-            _queue.Send(rawMessage);
-        }
-
-        public void Dispose()
-        {
-            _queue.Dispose();
+            queue.Send(rawMessage);
         }
     }
 }

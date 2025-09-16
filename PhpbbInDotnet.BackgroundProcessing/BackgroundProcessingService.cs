@@ -1,56 +1,65 @@
 ﻿using LightningQueues;
-using LightningQueues.Storage.LMDB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using PhpbbInDotnet.BackgroundProcessing.Handlers;
 using PhpbbInDotnet.Objects.Messages;
 using System.Text.Json;
-using System.Threading;
 
 namespace PhpbbInDotnet.BackgroundProcessing
 {
-    public class BackgroundProcessingService : IHostedService, IDisposable
+    public class BackgroundProcessingService(Queue queue, IServiceProvider serviceProvider) : IHostedService, IDisposable
     {
-        private readonly Queue _queue;
-        private readonly IServiceProvider _serviceProvider;
+        private Task? _allHandlersRunningTask;
+        private CancellationTokenSource? _cancellationTokenSource;
 
-        public BackgroundProcessingService(IServiceProvider serviceProvider, ILogger<BackgroundProcessingService> logger)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            _queue = new QueueConfiguration().StoreWithLmdb("background-queues").LogWith(logger).BuildQueue();
-            _queue.Start();
-            _serviceProvider = serviceProvider;
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _allHandlersRunningTask = Task.WhenAll(
+                Handle<AddPostCommand>(_cancellationTokenSource.Token));
+            
+            return Task.CompletedTask;
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        private async Task Handle<TMessage>(CancellationToken cancellationToken) where TMessage : class, IBackgroundMessage, new()
         {
-            //hacky hack https://github.com/dotnet/runtime/issues/36063
-            await Task.Yield();
+            if (!QueueUtility.TryGetQueueName(typeof(TMessage), out var queueName))
+            {
+                return;
+            }
 
-
-
-            await foreach (var message in _queue.Receive("add-post", cancellationToken).WithCancellation(cancellationToken))
+            await foreach (var message in queue.Receive(queueName, cancellationToken).WithCancellation(cancellationToken))
             {
                 using var stream = new MemoryStream(message.Message.Data);
-                var messageBody = await JsonSerializer.DeserializeAsync<AddPostCommand>(stream, cancellationToken: cancellationToken);
+                var messageBody = await JsonSerializer.DeserializeAsync<TMessage>(stream, cancellationToken: cancellationToken);
 
                 if (messageBody != null)
                 {
-                    using var scope = _serviceProvider.CreateScope();
-                    var handler = scope.ServiceProvider.GetRequiredService<IMessageHandler<AddPostCommand>>();
+                    using var scope = serviceProvider.CreateScope();
+                    var handler = scope.ServiceProvider.GetRequiredService<IMessageHandler<TMessage>>();
                     await handler.Handle(messageBody, cancellationToken);
 
                     message.QueueContext.SuccessfullyReceived();
+                    message.QueueContext.CommitChanges();
                 }
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
-            => Task.CompletedTask;
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            if (_cancellationTokenSource is not null)
+            {
+                await _cancellationTokenSource.CancelAsync();
+            }
+        }
 
         public void Dispose()
         {
-            _queue.Dispose();
+            _cancellationTokenSource?.Dispose();
+            _allHandlersRunningTask?.Dispose();
         }
     }
 }

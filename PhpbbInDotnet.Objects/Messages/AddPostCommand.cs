@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PhpbbInDotnet.Objects.Messages
+﻿namespace PhpbbInDotnet.Objects.Messages
 {
-    public class AddPostCommand
+    public class AddPostCommand : IBackgroundMessage
     {
+        public string QueueName => "add-post";
+        public string? PostText { get; set; }
     }
 }

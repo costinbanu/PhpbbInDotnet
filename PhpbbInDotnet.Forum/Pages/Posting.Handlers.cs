@@ -10,6 +10,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
+using PhpbbInDotnet.Objects.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGet()
         {
             var userAgent = Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) ? header.ToString() : "n/a";
-            _logger.Warning("Received call to default GET handler in Posting from user '{userName}' having user agent '{userAgent}' and query string '{queryString}'", 
+            logger.Warning("Received call to default GET handler in Posting from user '{userName}' having user agent '{userAgent}' and query string '{queryString}'", 
                 ForumUser.Username, userAgent, Request.QueryString);
 
             var cookie = (from kvp in Request.Cookies
@@ -124,7 +125,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 QuotedAttachments = dbQuotedAttachmentNames.Indexed().Select(a => new QuotedAttachment(a.Index, a.Item)).ToList();
 
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
-                QuotedPostText = _writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
+                QuotedPostText = writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                 await RestoreBackupIfAny();
                 ShowAttach = Attachments?.Count > 0;
@@ -188,7 +189,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject[Constants.REPLY.Length..] : curPost.PostSubject;
-                PostText = _writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
+                PostText = writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostTime = curPost.PostTime;
                 await RestoreBackupIfAny();
@@ -229,7 +230,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         images = await Task.WhenAll(images.Select(async image =>
                         {
-                            var resultStream = await _imageResizeService.ResizeImageByFileSize(image.OpenReadStream(), image.FileName, Constants.ONE_MB * sizeLimit.Images);
+                            var resultStream = await imageResizeService.ResizeImageByFileSize(image.OpenReadStream(), image.FileName, Constants.ONE_MB * sizeLimit.Images);
                             if (resultStream is null)
                             {
                                 return image;
@@ -244,7 +245,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                     catch (Exception ex)
                     {
-                        _logger.Warning(ex);
+                        logger.Warning(ex);
                     }
                 }
 
@@ -272,7 +273,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var minOrderInPost = (Attachments?.Max(attach => attach.OrderInPost) ?? 0) + 1;
-                var (succeeded, failed) = await _storageService.BulkAddAttachments(images.Union(nonImages), user.UserId, minOrderInPost);
+                var (succeeded, failed) = await storageService.BulkAddAttachments(images.Union(nonImages), user.UserId, minOrderInPost);
 
                 if (failed.Any())
                 {
@@ -357,7 +358,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
                 ReorderModelAttachmentsIfNeeded();
-                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, 1, true);
+                var cacheResult = await postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, 1, true);
                 PreviewablePost = new PostDto
                 {
                     Attachments = cacheResult.FirstOrDefault().Value ?? new List<AttachmentDto>(),
@@ -372,7 +373,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostEditUser = Action == PostingActions.EditForumPost ? user.Username : string.Empty,
                     PostId = currentPost?.PostId ?? 0,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = await _writingService.PrepareTextForSaving(newPostText),
+                    PostText = await writingService.PrepareTextForSaving(newPostText),
                     PostTime = currentPost?.PostTime ?? DateTime.UtcNow.ToUnixTimestamp()
                 };
 
@@ -399,13 +400,16 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostNewForumPost()
             => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async () =>
             {
-                ReorderModelAttachmentsIfNeeded();
-                var addedPostId = await UpsertPost(null, user);
-                if (addedPostId == null)
-                {
-                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[Language, "GENERIC_POSTING_ERROR"]);
-                }
-                return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
+                await backgroundProcessingSession.SendMessage(new AddPostCommand { PostText = PostText });
+                return PageWithError(curForum, nameof(PostText), "mesajul e postat");
+
+                //ReorderModelAttachmentsIfNeeded();
+                //var addedPostId = await UpsertPost(null, user);
+                //if (addedPostId == null)
+                //{
+                //    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[Language, "GENERIC_POSTING_ERROR"]);
+                //}
+                //return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             })), ReturnUrl)));
 
         public Task<IActionResult> OnPostEditForumPost()
@@ -475,7 +479,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         new
                         {
                             draft.DraftId,
-                            comment = await _writingService.PrepareTextForSaving(attach.AttachComment),
+                            comment = await writingService.PrepareTextForSaving(attach.AttachComment),
                             attach.AttachId,
                             attach.OrderInPost
                         });
@@ -489,7 +493,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 catch (Exception ex)
                 {
-					var id = _logger.ErrorWithId(ex);
+					var id = logger.ErrorWithId(ex);
 					SaveDraftMessage = string.Format(TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
 					SaveDraftSuccess = false;
 				}
@@ -524,7 +528,7 @@ namespace PhpbbInDotnet.Forum.Pages
 				}
                 catch (Exception ex)
                 {
-                    var id = _logger.ErrorWithId(ex);
+                    var id = logger.ErrorWithId(ex);
                     DeleteDraftMessage = string.Format(TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
                     DeleteDraftSuccess = false;
                 }

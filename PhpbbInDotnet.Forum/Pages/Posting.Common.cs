@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (TopicId > 0 && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                return await _postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, Language);
+                return await postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, Language);
             }
             return null;
         }
@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var attachment = search.Value.Item;
             var index = search.Value.Index;
-            if (!await _storageService.DeleteAttachment(attachment.PhysicalFilename))
+            if (!await storageService.DeleteAttachment(attachment.PhysicalFilename))
             {
                 return null;
             }
@@ -109,7 +109,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var isNewPost = post is null;
 
             await Policy.Handle<Exception>()
-                .RetryAsync((ex, _) => _logger.Warning(ex, "Error while posting, will retry once."))
+                .RetryAsync((ex, _) => logger.Warning(ex, "Error while posting, will retry once."))
                 .ExecuteAsync(async () =>
                 {
                     using var transaction = SqlExecuter.BeginTransaction();
@@ -126,7 +126,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
 
                     var hasAttachments = Attachments?.Any() == true;
-                    var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText?.Trim()), transaction);
+                    var textForSaving = await writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText?.Trim()), transaction);
                     if (isNewPost)
                     {
                         post = await transaction.QuerySingleAsync<PhpbbPosts>(
@@ -149,7 +149,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 username = HttpUtility.HtmlEncode(usr.Username)
                             });
 
-                        await _postService.CascadePostAdd(transaction, ignoreUser: false, ignoreForums: false, post);
+                        await postService.CascadePostAdd(transaction, ignoreUser: false, ignoreForums: false, post);
                     }
                     else
                     {
@@ -174,7 +174,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                         if (curTopic?.TopicFirstPostId == post.PostId)
                         {
-                            await _postService.CascadePostEdit(post, transaction);
+                            await postService.CascadePostEdit(post, transaction);
                         }
                     }
 
@@ -188,7 +188,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             {
                                 post.PostId,
                                 post.TopicId,
-                                comment = await _writingService.PrepareTextForSaving(attach.AttachComment, transaction),
+                                comment = await writingService.PrepareTextForSaving(attach.AttachComment, transaction),
                                 attach.AttachId,
                                 attach.OrderInPost
                             });
@@ -238,8 +238,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                     transaction.CommitTransaction();
 
-                    await _cachedDbInfoService.ForumTopicCount.InvalidateAsync();
-                    await _cachedDbInfoService.ForumTree.InvalidateAsync();
+                    await cachedDbInfoService.ForumTopicCount.InvalidateAsync();
+                    await cachedDbInfoService.ForumTree.InvalidateAsync();
                 });
 
             Response.Cookies.DeleteObject(CookieBackupKey);
@@ -250,11 +250,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     var tree = await ForumService.GetForumTree(ForumUser, forceRefresh: false, fetchUnreadData: false);
                     var path = ForumService.GetPathText(tree, post!.ForumId);
-                    await _notificationService.SendNewPostNotification(post.PosterId, post.ForumId, post.TopicId, post.PostId, path, curTopic!.TopicTitle);
+                    await notificationService.SendNewPostNotification(post.PosterId, post.ForumId, post.TopicId, post.PostId, path, curTopic!.TopicTitle);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Warning(ex, "Failed to notify subscribers");
+                    logger.Warning(ex, "Failed to notify subscribers");
                 }
             }
 

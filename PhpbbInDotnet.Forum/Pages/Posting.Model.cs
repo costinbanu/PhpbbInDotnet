@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.BackgroundProcessing;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -18,7 +20,10 @@ using System.Linq;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public partial class PostingModel
+    public partial class PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IConfiguration config, ILogger logger,
+        IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IImageResizeService imageResizeService,
+        INotificationService notificationService, ICachedDbInfoService cachedDbInfoService, IBackgroundProcessingSession backgroundProcessingSession)
+        : BasePostingModel(forumService, userService, sqlExecuter, translationProvider, config)
     {
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
@@ -45,10 +50,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? PollOptions { get; set; }
 
         [BindProperty]
-        public string? PollExpirationDaysString { get; set; }
+        public string? PollExpirationDaysString { get; set; } = "1";
 
         [BindProperty]
-        public int? PollMaxOptions { get; set; }
+        public int? PollMaxOptions { get; set; } = 1;
 
         [BindProperty]
         public bool PollCanChangeVote { get; set; }
@@ -113,34 +118,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     .Select(x => x.Trim())
                     .Where(x => !string.IsNullOrWhiteSpace(x))).EmptyIfNull();
 
-        private readonly IPostService _postService;
-        private readonly IStorageService _storageService;
-        private readonly IWritingToolsService _writingService;
-        private readonly IBBCodeRenderingService _renderingService;
-        private readonly ILogger _logger;
-		private readonly IImageResizeService _imageResizeService;
-        private readonly IModeratorService _moderatorService;
-		private readonly INotificationService _notificationService;
-		private readonly ICachedDbInfoService _cachedDbInfoService;
-
-		static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
-
-        public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, 
-            IConfiguration config, ILogger logger, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
-            IImageResizeService imageResizeService, IModeratorService moderatorService, INotificationService notificationService, ICachedDbInfoService cachedDbInfoService)
-            : base(forumService, userService, sqlExecuter, translationProvider, config)
-        {
-            PollExpirationDaysString = "1";
-            PollMaxOptions = 1;
-            _postService = postService;
-            _storageService = storageService;
-            _writingService = writingService;
-            _renderingService = renderingService;
-            _logger = logger;
-            _imageResizeService = imageResizeService;
-            _moderatorService = moderatorService;
-            _notificationService = notificationService;
-            _cachedDbInfoService = cachedDbInfoService;
-        }
+        static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
     }
 }
