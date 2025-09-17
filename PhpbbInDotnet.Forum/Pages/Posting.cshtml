@@ -48,7 +48,7 @@
 
 <script type="text/javascript">
 	var posting = new Posting(
-		@Json.Serialize(_renderingService.TagMap),
+		@Json.Serialize(await _renderingService.GetTagMap()),
 		@(_config.GetValue<int>("UploadLimitsMB:Images")),
 		@(_config.GetValue<int>("UploadLimitsCount:Images")),
 		@(IsMod.ToString().ToLower()),

@@ -53,9 +53,6 @@ namespace PhpbbInDotnet.Services
         public async Task<List<PhpbbWords>> GetBannedWordsAsync()
             => (await _sqlExecuter.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words")).AsList();
 
-        public List<PhpbbWords> GetBannedWords()
-            => _sqlExecuter.Query<PhpbbWords>("SELECT * FROM phpbb_words").AsList();
-
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
             var language = _translationProvider.GetLanguage();

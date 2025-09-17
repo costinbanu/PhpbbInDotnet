@@ -6,9 +6,8 @@ namespace PhpbbInDotnet.Services
 {
 	public interface IBBCodeRenderingService
     {
-        Dictionary<string, BBTagSummary> TagMap { get; }
-
-        string BbCodeToHtml(string? bbCodeText, string? bbCodeUid);
+        Task<Dictionary<string, BBTagSummary>> GetTagMap();
+        Task<string> BbCodeToHtml(string? bbCodeText, string? bbCodeUid);
         Task ProcessPost(PostDto post, bool isPreview, List<string>? toHighlight = null);
         List<string> SplitHighlightWords(string? search);
 		string HighlightWords(string text, List<string> words);

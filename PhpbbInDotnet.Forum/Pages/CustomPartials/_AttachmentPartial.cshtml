@@ -22,7 +22,7 @@
     <div class="Caption" style="clear:both">
         @if (!string.IsNullOrWhiteSpace(Model.Comment))
         {
-            @Html.Raw(_renderingService.HighlightWords(_renderingService.BbCodeToHtml(Model.Comment, string.Empty), Model.HighlightWords))
+            @Html.Raw(_renderingService.HighlightWords(await _renderingService.BbCodeToHtml(Model.Comment, string.Empty), Model.HighlightWords))
         }
         <div>
             @Html.Raw($"{_renderingService.HighlightWords(Model.DisplayName ?? string.Empty, Model.HighlightWords)} ({StringUtility.ReadableFileSize(Model.FileSize)}; {(Model.DownloadCount == 1 ? _translationProvider.BasicText[Model.Language, "DOWNLOADED_ONCE"] : string.Format(_translationProvider.BasicText[Model.Language, "DOWNLOADED_COUNT_FORMAT"], Model.DownloadCount))})")

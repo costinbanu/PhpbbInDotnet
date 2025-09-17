@@ -41,7 +41,7 @@
 <br />
 
 <div class="PostingControls" id="controls" style="width:100%">
-    @foreach (var code in _renderingService.TagMap)
+    @foreach (var code in await _renderingService.GetTagMap())
     {
         var caption = _translationProvider.BBCodes[Model.Language, $"CAPTION_{code.Value.OpenTag}", Casing.None, code.Key];
         var buttonText = _translationProvider.BBCodes[Model.Language, $"BUTTON_TEXT_{code.Value.OpenTag}", Casing.None, code.Key];

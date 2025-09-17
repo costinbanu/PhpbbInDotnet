@@ -140,7 +140,7 @@
                     @if (!string.IsNullOrWhiteSpace(group.GroupDesc))
                     {
                         <p>
-                            @Html.Raw(_renderingService.BbCodeToHtml(group.GroupDesc, group.GroupDescUid))
+                            @Html.Raw(await _renderingService.BbCodeToHtml(group.GroupDesc, group.GroupDescUid))
                         </p>
                     }
                     <a asp-page="/MemberList" asp-page-handler="search" asp-route-GroupId="@group.GroupId" asp-route-Mode="SearchUsers" asp-route-PageNum="1">

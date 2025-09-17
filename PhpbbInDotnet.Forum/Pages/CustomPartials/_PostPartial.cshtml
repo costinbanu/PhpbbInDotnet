@@ -96,7 +96,7 @@
                         reportId = lastOpenReport.Id,
                         reportReasonTitle = lastOpenReport.ReasonTitle,
                         reportReasonDescription = lastOpenReport.ReasonDescription,
-                        reportDetails = _renderingService.BbCodeToHtml(lastOpenReport.Details, string.Empty),
+                        reportDetails = await _renderingService.BbCodeToHtml(lastOpenReport.Details, string.Empty),
                         reportUsername = lastOpenReport.ReporterUsername
                     };
                     <a href="javascript:vt.showReportViewer(@Newtonsoft.Json.JsonConvert.SerializeObject(data))" style="font-weight:bold; font-size:1.2em">

@@ -194,7 +194,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         OthersColor = otherUser?.UserColour,
                         OthersAvatar = otherUser?.UserAvatar,
                         Subject = HttpUtility.HtmlDecode(message.MessageSubject),
-                        Text = _renderingService.BbCodeToHtml(message.MessageText, message.BbcodeUid),
+                        Text = await _renderingService.BbCodeToHtml(message.MessageText, message.BbcodeUid),
                         MessageTime = message.MessageTime
                     };
 
