@@ -147,7 +147,7 @@ namespace PhpbbInDotnet.Services
         private async Task<AttachmentDto?> GetAttachmentByNameAndIndex(IEnumerable<AttachmentDto>? attachments, string fileName, int index)
         {
             var candidates = new List<AttachmentDto>();
-            foreach (var (attach, i) in attachments.EmptyIfNull().Indexed())
+            foreach (var attach in attachments.EmptyIfNull())
             {
                 var name = await BbCodeToHtml(attach.DisplayName, string.Empty);
                 if (name == fileName)

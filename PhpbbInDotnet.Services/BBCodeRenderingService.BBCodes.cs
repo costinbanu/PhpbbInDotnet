@@ -215,6 +215,23 @@ namespace PhpbbInDotnet.Services
                                 }
                             ),
 
+                            ["quoted-attachment"] = (
+                                Tag: new BBTag(
+                                    name: "quoted-attachment",
+                                    openTagTemplate: "#{QuotedAttachmentFileName=${content}/QuotedAttachmentIndexAndPostId=${num}}#",
+                                    closeTagTemplate: "",
+                                    id: maxId + 12,
+                                    autoRenderContent: false,
+                                    tagClosingStyle: BBTagClosingStyle.AutoCloseElement,
+                                    contentTransformer: FileNameTransformer,
+                                    allowChildren: false,
+                                    attributes: new[] { new BBAttribute("num", "") }),
+                                Summary: new BBTagSummary
+                                {
+                                    ShowOnPage = false
+                                }
+                            ),
+
                             ["youtube"] = (
                                 Tag: new BBTag(
                                     name: "youtube",
