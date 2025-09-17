@@ -220,7 +220,7 @@ namespace PhpbbInDotnet.Services
                                     name: "quoted-attachment",
                                     openTagTemplate: "#{QuotedAttachmentFileName=${content}/QuotedAttachmentIndexAndPostId=${num}}#",
                                     closeTagTemplate: "",
-                                    id: maxId + 12,
+                                    id: maxId + 13,
                                     autoRenderContent: false,
                                     tagClosingStyle: BBTagClosingStyle.AutoCloseElement,
                                     contentTransformer: FileNameTransformer,
@@ -237,7 +237,7 @@ namespace PhpbbInDotnet.Services
                                     name: "youtube",
                                     openTagTemplate: "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />",
                                     closeTagTemplate: string.Empty,
-                                    id: maxId + 13,
+                                    id: maxId + 14,
                                     autoRenderContent: false,
                                     tagClosingStyle: BBTagClosingStyle.AutoCloseElement),
                                 Summary: new BBTagSummary
