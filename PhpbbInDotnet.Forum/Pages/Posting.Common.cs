@@ -54,7 +54,6 @@ namespace PhpbbInDotnet.Forum.Pages
 					pattern: $@"\[attachment={index}\]{Regex.Escape(attachment.RealFilename)}\[\/attachment\]",
 					replacement: string.Empty,
 					options: RegexOptions.IgnoreCase);
-				//PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
 				for (int i = index + 1; i < Attachments!.Count; i++)
                 {
                     PostText = Regex.Replace(
@@ -62,7 +61,6 @@ namespace PhpbbInDotnet.Forum.Pages
                         pattern: $@"\[attachment={i}\]{Regex.Escape(Attachments[i].RealFilename)}\[\/attachment\]",
                         replacement: $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]",
                         options: RegexOptions.IgnoreCase);
-                        //PostText.Replace($"[attachment={i}]{Attachments[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
                 }
             }
 
@@ -112,7 +110,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 .RetryAsync((ex, _) => _logger.Warning(ex, "Error while posting, will retry once."))
                 .ExecuteAsync(async () =>
                 {
-                    using var transaction = SqlExecuter.BeginTransaction();
+                    using var transaction = SqlExecuter.BeginTransaction(IsolationLevel.Serializable);
                     if (Action == PostingActions.NewTopic)
                     {
                         curTopic = await transaction.QuerySingleAsync<PhpbbTopics>(
