@@ -119,7 +119,7 @@ namespace PhpbbInDotnet.Services
                 }
 
                 node.IsUnread = IsUnread(forumId);
-                node.IsRestricted = user?.IsForumRestricted(forumId) == true;
+                node.IsRestricted |= user?.IsForumRestricted(forumId) == true;
                 node.TotalSubforumCount = node.ChildrenList?.Count ?? 0;
                 node.TotalTopicCount = GetTopicCount(forumId);
                 foreach (var childForumId in node.ChildrenList ?? new HashSet<int>())
@@ -127,8 +127,8 @@ namespace PhpbbInDotnet.Services
                     var childForum = GetTreeNode(_tree, childForumId);
                     if (childForum != null)
                     {
-                        //childForum.IsRestricted |= node.IsRestricted;
-                        //childForum.HasPassword |= node.HasPassword;
+                        childForum.IsRestricted |= node.IsRestricted;
+                        childForum.HasPassword |= node.HasPassword;
                         childForum.PathList ??= new List<int>(node.PathList ?? new List<int>());
                         childForum.PathList.Add(childForumId);
                         childForum.Level = node.Level + 1;
