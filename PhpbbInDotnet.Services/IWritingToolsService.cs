@@ -11,7 +11,6 @@ namespace PhpbbInDotnet.Services
     {
         string CleanBbTextForDisplay(string? text, string? uid);
         Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles();
-        List<PhpbbWords> GetBannedWords();
         Task<List<PhpbbWords>> GetBannedWordsAsync();
         string GetBbCodesCacheKey(string language);
         Task<List<PhpbbSmilies>> GetLazySmilies(ITransactionalSqlExecuter? transaction = null);

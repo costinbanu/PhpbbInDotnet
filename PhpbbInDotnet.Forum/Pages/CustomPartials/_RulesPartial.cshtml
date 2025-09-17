@@ -9,7 +9,7 @@
         <span>&#x26A0;&nbsp;</span>
         <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "FORUM_RULES", Domain.Casing.Title])</b>
         <br />
-        @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, string.Empty))
+        @Html.Raw(await _renderingService.BbCodeToHtml(Model.ForumRules, string.Empty))
     </div>
 }
 else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))

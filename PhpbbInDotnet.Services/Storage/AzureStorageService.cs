@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Services.Storage
 		protected override string AttachmentsPath => StorageOptions.Files!;
 		protected override string AvatarsPath =>  StorageOptions.Avatars!;
 
-		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
+		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId, int minOrderInPost)
 		{
 			var succeededUploads = new ConcurrentBag<(string uploadedFileName, string physicalFileName, long fileSize, string mimeType)>();
 			var failedUploads = new ConcurrentBag<string>();
@@ -56,16 +56,16 @@ namespace PhpbbInDotnet.Services.Storage
 			}));
 
 			var succeededUploadsToReturn = new List<PhpbbAttachments>();
-			foreach(var (uploadedFileName, physicalFileName, fileSize, mimeType) in succeededUploads)
+			foreach(var (item, index) in succeededUploads.OrderBy(f => f.uploadedFileName).Indexed())
 			{
 				try
 				{
-					var attachment = await AddToDatabase(uploadedFileName, physicalFileName, fileSize, mimeType, userId);
+					var attachment = await AddToDatabase(item.uploadedFileName, item.physicalFileName, item.fileSize, item.mimeType, userId, index + minOrderInPost);
 					succeededUploadsToReturn.Add(attachment);
 				}
 				catch (Exception ex)
 				{
-					failedUploads.Add(uploadedFileName);
+					failedUploads.Add(item.uploadedFileName);
 					Logger.Error(ex, "Error uploading attachment by user {id}.", userId);
 				}
 			}

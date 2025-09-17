@@ -60,13 +60,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShouldResize { get; set; } = true;
 
         [BindProperty]
-        public List<string> DeleteFileDummyForValidation { get; set; }
+        public string? DeleteFileDummyForValidation { get; set; }
 
         [BindProperty]
         public string? EditReason { get; set; }
-
-        [BindProperty]
-        public List<PhpbbAttachments>? Attachments { get; set; }
 
         [BindProperty]
         public long? PostTime { get; set; }
@@ -86,6 +83,15 @@ namespace PhpbbInDotnet.Forum.Pages
 		[BindProperty]
 		public PhpbbDrafts? ExistingPostDraft { get; set; }
 
+        [BindProperty]
+        public List<PhpbbAttachments>? Attachments { get; set; }
+
+        [BindProperty]
+        public List<int>? AttachmentOrder { get; set; }
+
+        [BindProperty]
+        public bool AttachmentOrderHasChanged { get; set; }
+
 		public PostDto? PreviewablePost { get; private set; }
         public PollDto? PreviewablePoll { get; private set; }
         public bool ShowAttach { get; private set; } = false;
@@ -95,6 +101,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? SaveDraftMessage { get; private set; }
         public string? DeleteDraftMessage { get; private set; }
 		public bool? DeleteDraftSuccess { get; private set; }
+        public string? QuotedPostText { get; private set; }
+        public string? QuotedPostAuthor { get; private set; }
+        public List<QuotedAttachment>? QuotedAttachments { get; private set; }
 
         private string CookieBackupKeyPrefix => $"{nameof(PostingBackup)}_{ForumUser.UserId}";
 		private string CookieBackupKey => $"{CookieBackupKeyPrefix}_{ForumId}_{(Action == PostingActions.NewTopic ? 0 : (TopicId ?? 0))}_{PostId ?? 0}";
@@ -123,7 +132,6 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
-            DeleteFileDummyForValidation = new List<string>();
             _postService = postService;
             _storageService = storageService;
             _writingService = writingService;

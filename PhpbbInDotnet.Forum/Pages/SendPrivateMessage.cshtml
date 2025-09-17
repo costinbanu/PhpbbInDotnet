@@ -36,7 +36,7 @@
 
 <script type="text/javascript">
     var posting = new Posting(
-        @Json.Serialize(_renderingService.TagMap),
+        @Json.Serialize(await _renderingService.GetTagMap()),
         null,
         null,
         @(IsAdmin.ToString().ToLower()),

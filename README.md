@@ -79,7 +79,8 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "RecurringTasksTimeToRun": "02:00",
   "ForumIsReadOnly": false,
   "MinimumAge": 16,
-  "RateLimitBots": false
+  "RateLimitBots": false,
+  HostInstanceCount: 1
 }
 ```
 
@@ -131,6 +132,8 @@ RecurringTasksTimeToRun | string | 02:00 | Required recurring tasks (DB table sy
 ForumIsReadOnly | bool | false | Whether the entire forum is in read-only mode. This means that the forum can be read, but no posts or private messages can be submitted.
 MinimumAge | int | 16 | Minimum age for users to register
 RateLimitBots | bool | false | Whether bots should be rate limited (if true, the app will allow at most 50 instances of a bot per user agent within the timespan configured in the UserActivityTrackingInterval setting, while all other instances would receive a 429 Too Many Requests response)
+HostInstanceCount | int | 1 | Number of hosts (if the application is deployed in an environment that scales horizontally). Must be set correctly, otherwise concurrency issues will occur. Values greater than 1 require a storage type other than HardDisk.
+
 ### Branding
 #### Forum header
 The application will display the `ForumName` app setting value in the upper left corner of the screen (as a header that links to the forum's first page).

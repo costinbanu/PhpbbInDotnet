@@ -10,7 +10,7 @@ namespace PhpbbInDotnet.Services.Storage
 {
 	public interface IStorageService
     {
-        Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId);
+        Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId, int minOrderInPost);
         Task<(IEnumerable<string> Succeeded, IEnumerable<string> Failed)> BulkDeleteAttachments(IEnumerable<string> files);
         Task<bool> DeleteAvatar(int userId, string originalFileName);
         Task<bool> DeleteAttachment(string name);

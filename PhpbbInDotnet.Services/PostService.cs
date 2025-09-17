@@ -109,7 +109,7 @@ namespace PhpbbInDotnet.Services
                 reports = (await results.ReadAsync<ReportDto>()).AsList();
             }
 
-            var attachments = await CacheAttachmentsAndPrepareForDisplay(dbAttachments, posts.FirstOrDefault()?.ForumId ?? 0, language, posts.Count, false);
+            var attachments = await CacheAttachmentsAndPrepareForDisplay(dbAttachments.OrderBy(a => a.OrderInPost), posts.FirstOrDefault()?.ForumId ?? 0, language, posts.Count, false);
 
             return new PostListDto
             {
