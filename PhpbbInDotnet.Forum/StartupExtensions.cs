@@ -98,7 +98,8 @@ namespace PhpbbInDotnet.Forum
 
             services.AddLazyCache();
 
-            if (config.GetValue<DatabaseType>("Database:DatabaseType") == DatabaseType.SqlServer)
+            var hostInstanceCount = config.GetValue<int>("HostInstanceCount");
+            if (config.GetValue<DatabaseType>("Database:DatabaseType") == DatabaseType.SqlServer && hostInstanceCount != 1)
             {
                 services.AddDistributedSqlServerCache(opts =>
                 {
