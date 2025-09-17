@@ -276,6 +276,7 @@
     "DOWNLOADED_COUNT_FORMAT": "downloaded {0} times",
     "SUBMITTED": "submitted",
     "NO_ATTACHMENTS": "No attached files",
+    "ORDER_FILES": "Order files",
 
     //navigation
     "CHOOSE_DESTINATION_FORUM_TOPIC": "Choose destination forum and topic",

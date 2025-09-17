@@ -313,7 +313,7 @@
                         {
                             <br />
                             <span class="Caption">
-                                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
+                                @Html.Raw(await _renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
                             </span>
                         }
                         break;

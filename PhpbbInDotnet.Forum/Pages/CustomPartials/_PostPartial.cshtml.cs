@@ -45,5 +45,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public string? Path { get; set; }
 
         public bool IsForumReadOnly { get; set; }
+
+        public bool IsPreview { get; set; }
     }
 }

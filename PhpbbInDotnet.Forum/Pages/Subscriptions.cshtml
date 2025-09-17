@@ -81,7 +81,7 @@
 					<br />
 					<a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="nav-link" style="font-weight:bold">@Html.Raw(forum.ForumName)</a>
 					<br />
-					@Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
+					@Html.Raw(await _renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
 				</span>
 				@await Html.PartialAsync(
 					"_SummaryPartial",

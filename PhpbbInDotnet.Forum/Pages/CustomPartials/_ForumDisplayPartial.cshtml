@@ -65,7 +65,7 @@
             <div class="@divClass">
                 <span class="ForumContent">
                     <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
-                    @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
+                    @Html.Raw(await _renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
                 </span>
                 @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
                     authorId: forum.ForumLastPosterId!.Value,
@@ -125,7 +125,7 @@
         <div class="FlexRow RowMargin">
             <span class="ForumContent">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
-                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
+                @Html.Raw(await _renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
             </span>
                 @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
                     authorId: forum.ForumLastPosterId!.Value,

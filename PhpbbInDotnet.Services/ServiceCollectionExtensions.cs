@@ -12,7 +12,7 @@ using StorageOptions = PhpbbInDotnet.Objects.Configuration.Storage;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-	public static class ServiceCollectionExtensions
+    public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
@@ -37,7 +37,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 case StorageType.HardDisk:
                     services.AddScoped<IStorageService, DiskStorageService>();
-                    services.AddScoped<ILockingService, InMemoryLockingService>();
                     break;
 
                 case StorageType.AzureStorage:
@@ -45,22 +44,34 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         throw new ArgumentException($"Selected StorageType is AzureStorage but the {nameof(StorageOptions.ConnectionString)} property is null or empty.");
                     }
-					if (string.IsNullOrWhiteSpace(storageOptions.ContainerName))
-					{
-						throw new ArgumentException($"Selected StorageType is AzureStorage but the {nameof(StorageOptions.ContainerName)} property is null or empty.");
-					}
-					services.AddAzureClients(builder => builder.AddBlobServiceClient(storageOptions.ConnectionString));
+                    if (string.IsNullOrWhiteSpace(storageOptions.ContainerName))
+                    {
+                        throw new ArgumentException($"Selected StorageType is AzureStorage but the {nameof(StorageOptions.ContainerName)} property is null or empty.");
+                    }
+                    services.AddAzureClients(builder => builder.AddBlobServiceClient(storageOptions.ConnectionString));
                     services.AddSingleton(sp => sp.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(storageOptions.ContainerName));
                     services.AddScoped<IStorageService, AzureStorageService>();
-                    services.AddScoped<ILockingService, AzureLockingService>();
                     break;
 
                 default:
                     throw new InvalidOperationException("Unknown StorageType in configuration.");
             }
 
+            var hostInstanceCount = configuration.GetValue<int>("HostInstanceCount");
+            if (storageOptions.StorageType == StorageType.HardDisk && hostInstanceCount != 1)
+            {
+                throw new InvalidOperationException("An instance count different than one is incompatible with the HardDisk storage type.");
+            }
+            if (storageOptions.StorageType == StorageType.AzureStorage && hostInstanceCount != 1)
+            {
+                services.AddScoped<ILockingService, AzureLockingService>();
+            }
+            else
+            {
+                services.AddScoped<ILockingService, InMemoryLockingService>();
+            }
 
-			services.AddSingleton<ITimeService, TimeService>();
+            services.AddSingleton<ITimeService, TimeService>();
             services.AddSingleton<IEncryptionService, EncryptionService>();
             services.AddSingleton<IAnonymousSessionCounter, AnonymousSessionCounter>();
             services.AddSingleton<IImageResizeService, ImageResizeService>();

@@ -63,7 +63,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRulesLink = thisForum.ForumRulesLink;
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
-                ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
+                ForumDesc = await _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
                 Topics = await topicGroupsTask;
                 var parent = await parentTask;
                 ParentForumId = parent.ForumId;

@@ -112,6 +112,12 @@ select, input:not([type=checkbox]):not([type=radio]), button {
     margin: 5px 5px 0px 5px !important;
 }
 
+.SlimButton {
+    height: 26px !important;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
 .size1300 {
     width: 80% !important;
 }

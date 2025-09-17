@@ -32,6 +32,15 @@ select, input {
         text-decoration: underline !important;
     }
 
+.MySortableItem {
+    padding: 5px;
+    margin: 5px;
+    border: solid 1px white;
+    border-radius: 5px;
+    cursor: move;
+    width: 95%;
+}
+
 .MyButton {
     box-shadow: inset 0px 1px 0px 0px #ffffff;
     background: linear-gradient(to bottom, #e3e1e1 5%, #cdcdcd 100%);
