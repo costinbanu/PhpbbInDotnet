@@ -71,7 +71,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public PhpbbTopics? CurrentTopic { get; set; }
 
-        [BindProperty]
+        [BindProperty(SupportsGet = true)]
         public PostingActions? Action { get; set; }
 
         [BindProperty]

@@ -79,13 +79,17 @@
 		}
 
 		$('#message').prop('disabled', false);
+		$('#PreviewButton').prop('disabled', false);
+		$('#SaveDraftButton').prop('disabled', false);
+		$('#SubmitButton').prop('disabled', false);
+
 		if (shouldFocusMessage) {
 			$('#message').focus();
 		}
 	});
 
 	var isFormSubmitting = false;
-	var isDraftSaved = @Html.Raw(JsonConvert.SerializeObject(Model.SaveDraftSuccess ?? false));
+	var isDraftSaved = @Json.Serialize(Model.SaveDraftSuccess ?? false);
 	window.addEventListener('beforeunload', (event) => {
 		if (isFormSubmitting) {
 			isFormSubmitting = false;
@@ -150,7 +154,7 @@ else if (Model.Action == PostingActions.NewTopic)
 	<p></p>
 }
 
-<form name="postform" method="post" enctype="multipart/form-data" onsubmit="isFormSubmitting = true">
+<form name="postform" method="post" enctype="multipart/form-data" onsubmit="isFormSubmitting = true;">
 	@await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
 
 	@if (Model.Action == PostingActions.EditForumPost)
@@ -174,17 +178,41 @@ else if (Model.Action == PostingActions.NewTopic)
 		</button>
 	}
 
-	<input type="submit" value="&#x1F440; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
+	<input type="submit" 
+		value="&#x1F440; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])"
+		id="PreviewButton"
+		onclick="return posting.censor()"
+		asp-page-handler="Preview" 
+		class="PostingButton MyButton SpacedButton" 
+		formnovalidate />
 
 	@switch (Model.Action)
 	{
 		case PostingActions.NewTopic:
 		case PostingActions.NewForumPost:
-			<input type="submit" value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
-			<input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
+			<input type="submit" 
+				value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])"
+				id="SaveDraftButton"
+				onclick="return posting.censor()"
+				asp-page-handler="SaveDraft" 
+				class="PostingButton MyButton SpacedButton" 
+				formnovalidate />
+			<input type="submit" 
+				value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])"
+				id="SubmitButton"
+				onclick="return posting.censor()"
+				asp-page-handler="NewForumPost" 
+				class="PostingButton MyButton SpacedButton MyMainButton" 
+				formnovalidate />
 			break;
 		case PostingActions.EditForumPost:
-			<input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
+			<input type="submit" 
+				value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" 
+				id="SubmitButton"
+				onclick="return posting.censor()" 
+				asp-page-handler="EditForumPost" 
+				class="PostingButton MyButton SpacedButton MyMainButton" 
+				formnovalidate />
 			break;
 		default:
 			<span class="validation">@Html.Raw(Model.TranslationProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
@@ -220,7 +248,11 @@ else if (Model.Action == PostingActions.NewTopic)
 		<span>&nbsp;&bull;&nbsp;</span>
 		<input asp-for="ExistingPostDraft!.DraftId" type="hidden" />
 		<input asp-for="ExistingPostDraft!.SaveTime" type="hidden" />
-		<input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_DRAFT", Casing.Title])" asp-page-handler="DeleteDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
+		<input type="submit" 
+			value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_DRAFT", Casing.Title])"
+			asp-page-handler="DeleteDraft" 
+			class="PostingButton MyButton SpacedButton" 
+			formnovalidate />
 		<p></p>
 	}
 
@@ -312,7 +344,12 @@ else if (Model.Action == PostingActions.NewTopic)
 			}
 			<span asp-validation-for="Files" class="validation"></span>
 			<div id="fileUploadStatus"></div>
-			<input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" formnovalidate />
+			<input type="submit" 
+				value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "LOAD_FILES"])"
+				asp-page-handler="AddAttachment" 
+				style="display:none" 
+				id="submitAttachmentsButton" 
+				formnovalidate />
 			@if (Model.Attachments?.Any() == true)
 			{
 				<hr class="SubtypeSeparator" />
@@ -391,11 +428,11 @@ else if (Model.Action == PostingActions.NewTopic)
 		}
 	</div>
 
-	<input asp-for="ForumId" type="hidden" />
-	<input asp-for="TopicId" type="hidden" />
-	<input asp-for="PostId" type="hidden" />
-	<input asp-for="PageNum" type="hidden" />
-	<input asp-for="Action" type="hidden" />
+	<input asp-for="ForumId" type="hidden" id="ForumId" />
+	<input asp-for="TopicId" type="hidden" id="TopicId" />
+	<input asp-for="PostId" type="hidden" id="PostId" />
+	<input asp-for="PageNum" type="hidden" id="PageNum" />
+	<input asp-for="Action" type="hidden" id="Action" />
 	<input asp-for="CurrentTopic!.TopicFirstPostId" type="hidden" />
 	<input asp-for="CurrentTopic!.TopicTitle" type="hidden" />
 	<input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
@@ -457,6 +494,11 @@ else if (Model.Action == PostingActions.NewTopic)
 	}
 
 	$('#message').prop('disabled', true);
+	$('#PreviewButton').prop('disabled', true);
+	$('#SaveDraftButton').prop('disabled', true);
+	$('#SubmitButton').prop('disabled', true);
+		
+	posting.persistQueryString();
 </script>
 
 <div id="imgcheckstatus" class="Popup"></div>
