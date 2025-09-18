@@ -415,6 +415,32 @@
         $('#submitAttachmentsButton').trigger('click');
         $('#fileUploadStatus').text(dictionary.Posting['LOADING_FILES']);
     }
+
+    persistQueryString() {
+        const params = new URLSearchParams(window.location.search);
+        const forumId = $('#ForumId').val();
+        const topicId = $('#TopicId').val();
+        const postId = $('#PostId').val();
+        const quotePostInDifferentTopic = $('#QuotePostInDifferentTopic').val();
+        const action = $('#Action').val();
+
+        if (forumId > 0) {
+            params.set('forumId', forumId);
+        }
+        if (topicId > 0) {
+            params.set('topicId', topicId);
+        }
+        if (postId > 0) {
+            params.set('postId', postId);
+        }
+        if (quotePostInDifferentTopic === true) {
+            params.set('quotePostInDifferentTopic', 'true');
+        }
+        if (action) {
+            params.set('action', action);
+        }
+        window.history.replaceState({}, "", window.location.pathname + "?" + params.toString());
+    }
 }
 
 class CaretPosition {

@@ -28,27 +28,31 @@ namespace PhpbbInDotnet.Forum.Pages
             _logger.Warning("Received call to default GET handler in Posting from user '{userName}' having user agent '{userAgent}' and query string '{queryString}'", 
                 ForumUser.Username, userAgent, Request.QueryString);
 
-            var cookie = (from kvp in Request.Cookies
-                          where kvp.Key.StartsWith(CookieBackupKeyPrefix) && !string.IsNullOrWhiteSpace(kvp.Value)
-                          let deserialized = suppressExceptions(() => JsonConvert.DeserializeObject<PostingBackup>(kvp.Value))
-                          where deserialized is not null && (DateTime.UtcNow - deserialized.TextTime) < TimeSpan.FromMinutes(2)
-                          orderby deserialized.TextTime descending
-                          select deserialized)
-                          .FirstOrDefault() ?? throw new InvalidOperationException("Attempted to retrieve latest possible cookie with posting backup, but did not found any.");
+            if (Action is null)
+            {
+                var cookie = (from kvp in Request.Cookies
+                              where kvp.Key.StartsWith(CookieBackupKeyPrefix) && !string.IsNullOrWhiteSpace(kvp.Value)
+                              let deserialized = suppressExceptions(() => JsonConvert.DeserializeObject<PostingBackup>(kvp.Value))
+                              where deserialized is not null && (DateTime.UtcNow - deserialized.TextTime) < TimeSpan.FromMinutes(2)
+                              orderby deserialized.TextTime descending
+                              select deserialized)
+                              .FirstOrDefault()
+                              ?? throw new InvalidOperationException("Attempted to retrieve latest possible cookie with posting backup, but did not found any.");
 
-            Action = cookie.PostingActions;
-            ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
-            TopicId ??= cookie.TopicId;
-            PostId ??= cookie.PostId;
-            QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
+                Action = cookie.PostingActions;
+                ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
+                TopicId ??= cookie.TopicId;
+                PostId ??= cookie.PostId;
+                QuotePostInDifferentTopic = cookie.QuotePostInDifferentTopic;
+            }
 
             return Action switch
             {
-                PostingActions.NewTopic => await OnGetNewTopic(),
+                PostingActions.NewTopic when ForumId > 0 => await OnGetNewTopic(),
                 PostingActions.NewForumPost when PostId > 0 => await OnGetQuoteForumPost(),
-                PostingActions.NewForumPost when PostId is null => await OnGetForumPost(),
-                PostingActions.EditForumPost => await OnGetEditPost(),
-                _ => throw new InvalidOperationException($"Unsupported value '{Action}' for PostingActions.")
+                PostingActions.NewForumPost when PostId is null && TopicId > 0 => await OnGetForumPost(),
+                PostingActions.EditForumPost when PostId > 0 => await OnGetEditPost(),
+                _ => throw new InvalidOperationException($"Unsupported combination of Action, ForumId, TopicId, PostId in request path {Request.Path} and query {Request.QueryString}.")
             };
 
             static T? suppressExceptions<T>(Func<T> toDo)
