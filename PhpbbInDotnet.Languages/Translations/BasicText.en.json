@@ -259,16 +259,16 @@
     "MP_SENT": "Sent: ",
 
     //attachments
-    "CHOOSE_FILES": "Choose one or more files",
+    "CHOOSE_FILES": "➕ Add",
     "CHOOSE_FILES_CAPTION_FORMAT": "Images: at most {0} files, maximum size: {1}MB each. Other file types: at most {2} files, maximum size: {3}MB each.",
     "SHOULD_RESIZE_IMAGES": "Resize images",
     "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES": "Hide license plates (experimental)",
     "LOAD_FILES": "Load selected files",
     "ALREADY_ATTACHED": "Files already attached",
     "FILE_NAME": "File name",
-    "FILE_COMMENT": "File comment",
+    "FILE_COMMENT": "File description",
     "MAKE_INLINE": "Place in-line",
-    "DELETE_FILE": "Delete file",
+    "DELETE_FILE": "Delete",
     "DELETE_ALL_FILES": "Delete all files",
     "CONFIRM_DELETE_ALL_ATTACHMENTS": "Are you sure you want to delete all of the attached files?",
     "CLICK_TO_ENLARGE": "Click to enlarge.",
@@ -276,7 +276,7 @@
     "DOWNLOADED_COUNT_FORMAT": "downloaded {0} times",
     "SUBMITTED": "submitted",
     "NO_ATTACHMENTS": "No attached files",
-    "ORDER_FILES": "Order files",
+    "ORDER_FILES": "Order",
 
     //navigation
     "CHOOSE_DESTINATION_FORUM_TOPIC": "Choose destination forum and topic",

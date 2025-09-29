@@ -260,16 +260,16 @@
     "MP_SENT": "Trimis: ",
 
     //attachments
-    "CHOOSE_FILES": "Alege unul sau mai multe fișiere",
+    "CHOOSE_FILES": "➕ Adaugă",
     "CHOOSE_FILES_CAPTION_FORMAT": "Imagini: maxim {0} fișiere, dimensiune maximă: {1}MB fiecare. Alte tipuri: maxim {2} fișiere, dimensiune maximă: {3}MB fiecare.",
     "SHOULD_RESIZE_IMAGES": "Redimensionează imaginile",
     "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES": "Ascunde numerele de înmatriculare (funcționalitate experimentală)",
     "LOAD_FILES": "Încarcă fișierele alese",
     "ALREADY_ATTACHED": "Fișiere deja atașate",
     "FILE_NAME": "Nume",
-    "FILE_COMMENT": "Comentariu fișier",
+    "FILE_COMMENT": "Descriere fișier",
     "MAKE_INLINE": "Așează în linie",
-    "DELETE_FILE": "Șterge fișier",
+    "DELETE_FILE": "Șterge",
     "DELETE_ALL_FILES": "Șterge toate fișierele",
     "CONFIRM_DELETE_ALL_ATTACHMENTS": "Sigur dorești să ștergi toate fișierele atașate?",
     "CLICK_TO_ENLARGE": "Click pentru imaginea mărită.",
@@ -277,7 +277,7 @@
     "DOWNLOADED_COUNT_FORMAT": "descărcat de {0} ori",
     "SUBMITTED": "trimis",
     "NO_ATTACHMENTS": "Nici un fisier atașat",
-    "ORDER_FILES": "Ordonează fișierele",
+    "ORDER_FILES": "Ordonează",
 
     //navigation
     "CHOOSE_DESTINATION_FORUM_TOPIC": "Alege forumul și subiectul de destinație",

@@ -318,12 +318,16 @@ else if (Model.Action == PostingActions.NewTopic)
 		var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
 		var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
 
-						<div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
-							<br />
-							<h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
-							<p></p>
-							<label>
-								@if (IsMod)
+		<div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
+			<br />
+			<h3 style="float:left">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
+			<span>
+				&nbsp;
+				<label for="Files" class="MyButton SpacedButtonNotTop SlimButton">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES"])</label>
+			</span>
+			<p></p>
+			<label>
+				@if (IsMod)
 				{
 									@Html.CheckBoxFor(m => m.ShouldResize)
 				}
@@ -331,12 +335,11 @@ else if (Model.Action == PostingActions.NewTopic)
 				{
 									<input type="checkbox" checked disabled />
 				}
-								@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
-							</label>
-							<p></p>
-							<input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
-							<label for="Files" class="MyButton">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
-							@if (!IsMod)
+				@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
+			</label>
+			<p></p>
+			<input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
+			@if (!IsMod)
 			{
 								<span class="Caption">
 									@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], countLimit.Images, sizeLimit.Images, countLimit.OtherFiles, sizeLimit.OtherFiles))
@@ -354,18 +357,18 @@ else if (Model.Action == PostingActions.NewTopic)
 			{
 				<hr class="SubtypeSeparator" />
 				<h4 style="float:left; margin-bottom:0px; margin-top:10px;">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
-				<span>
+				<span style="display: inline-block">
 					&nbsp;
+					<input type="button"
+						   onclick="posting.toggleAttachOrdering(this)"
+						   class="MyButton PostingButton SpacedButton"
+						   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ORDER_FILES"])" />
 					<input type="submit"
 						value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_ALL_FILES"])"
 						asp-page-handler="DeleteAllAttachments"
 						class="MyButton PostingButton SpacedButton"
 						formnovalidate
 						onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')" />
-					<input type="button" 
-						onclick="posting.toggleAttachOrdering(this)" 
-						class="MyButton PostingButton SpacedButton" 
-						value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ORDER_FILES"])" />
 				</span>
 				<p>&nbsp;</p>
 				<div id="attachManagementPanel">
@@ -374,25 +377,26 @@ else if (Model.Action == PostingActions.NewTopic)
 					{
 						<div data-attach-id="@Model.Attachments[i].AttachId" data-index="@i" style="clear:both">
 							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename
-							<input type="button"
-								   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])"
-								   onclick="posting.attach_inline($(this).parent().data('index'), '@Model.Attachments[i].RealFilename')"
-								   class="MyButton SpacedButton" />
-							<input type="submit"
-								   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])"
-								   asp-page-handler="DeleteAttachment"
-								   onclick="$('#idToDelete').val(@Model.Attachments[i].AttachId); return true;"
-								   class="MyButton SpacedButton"
-								   formnovalidate />
-							<br />
-							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
+							<span style="display: inline-block">
+								<input type="button"
+									   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])"
+									   onclick="posting.attach_inline($(this).parent().data('index'), '@Model.Attachments[i].RealFilename')"
+									   class="MyButton SpacedButton" />
+								<input type="submit"
+									   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])"
+									   asp-page-handler="DeleteAttachment"
+									   onclick="$('#idToDelete').val(@Model.Attachments[i].AttachId); return true;"
+									   class="MyButton SpacedButton"
+									   formnovalidate />
+							</span>
 							<br />
 							<textarea 
 								type="text" 
 								asp-for="Attachments![i].AttachComment" 
 								rows="2" 
 								style="display:inline-block; color:black; width: 100%" 
-								class="InputBox"></textarea>
+								class="InputBox"
+								placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"])"></textarea>
 							<input type="hidden" asp-for="Attachments![i].AttachId" />
 							<input type="hidden" asp-for="Attachments![i].RealFilename" />
 							<input type="hidden" asp-for="Attachments![i].PhysicalFilename" />
