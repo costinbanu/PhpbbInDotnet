@@ -72,6 +72,11 @@ namespace PhpbbInDotnet.Services
             try
             {
                 using var transaction = _sqlExecuter.BeginTransaction(IsolationLevel.Serializable);
+
+                var oldForumId = await transaction.QueryFirstOrDefaultAsync<int>(
+                    "SELECT forum_id FROM phpbb_topics WHERE topic_id = @topicId",
+                    new { topicId });
+
                 var topicRows = await transaction.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
                     new { topicId, destinationForumId });
@@ -81,13 +86,10 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "DESTINATION_DOESNT_EXIST"], false);
                 }
 
-                var oldPosts = (await transaction.QueryAsync<PhpbbPosts>(
-                    "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", 
-                    new { topicId })).AsList();
-                var oldForumId = oldPosts.FirstOrDefault()?.ForumId ?? 0;
                 await transaction.ExecuteAsync(
                     "UPDATE phpbb_posts SET forum_id = @destinationForumId WHERE topic_id = @topicId; " +
-                    "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId",
+                    "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId;" +
+                    "UPDATE phpbb_drafts SET forum_id = @destinationForumId WHERE topic_id = @topicId;",
                     new { destinationForumId, topicId });
 
                 await _postService.SyncForumWithPosts(transaction, oldForumId, destinationForumId);
@@ -176,7 +178,8 @@ namespace PhpbbInDotnet.Services
                     await transaction.ExecuteAsync(
                         @"DELETE FROM phpbb_topics WHERE topic_id = @topicId; 
                           DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
-                          DELETE FROM phpbb_topics_watch WHERE topic_id = @topicId",
+                          DELETE FROM phpbb_topics_watch WHERE topic_id = @topicId;
+                          DELETE FROM phpbb_drafts WHERE topic_id = @topicId",
                         new { topicId });
                 }
 
