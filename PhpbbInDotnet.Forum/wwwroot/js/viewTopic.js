@@ -33,9 +33,10 @@
         showElement(id2);
     }
 
-    showMessageDetails(ip, ipWhoIsLink, editTime, timeFormat, editCount, editUser, encodedReports) {
+    showMessageDetails(id, ip, ipWhoIsLink, editTime, timeFormat, editCount, editUser, encodedReports) {
         let content =
-            `<b>IP:</b> ${ip}
+            `<b>ID:</b> ${id}<br/>
+            <b>IP:</b> ${ip}
             [<a href='./IPLookup?ip=${ip}' target='_blank' class='PostInfoLink'>${dictionary.Admin['FORUM_IP_SEARCH']}</a>]
             [<a href='${ipWhoIsLink}' target='_blank' class='PostInfoLink'>${dictionary.Admin['IP_LOOKUP']}</a>]<br/>`;
         if (editCount > 0) {
