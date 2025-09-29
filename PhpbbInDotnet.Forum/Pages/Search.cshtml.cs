@@ -13,13 +13,15 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken, ResponseCache(NoStore = true, Duration = 0)]
-    public class SearchModel : AuthenticatedPageModel
+    public class SearchModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IConfiguration configuration)
+        : AuthenticatedPageModel(forumService, userService, sqlExecuter, translationProvider, configuration)
     {
         [BindProperty(SupportsGet = true)]
         public string? QueryString { get; set; }
@@ -59,11 +61,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? Paginator { get; private set; }
 
         public bool IsAuthorSearch { get; private set; }
-
-        public SearchModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
-            ITranslationProvider translationProvider, IConfiguration configuration)
-            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
-        { }
 
         public async Task<IActionResult> OnGet()
         {
@@ -142,30 +139,34 @@ namespace PhpbbInDotnet.Forum.Pages
                 $"&{nameof(DoSearch)}={true}" +
                 (IsAuthorSearch ? "&handler=byAuthor" : (IsAttachmentSearch ? "&handler=Attachments" : ""));
 
+        private static readonly Regex _disallowedChars = new ("[^a-z0-9 _-]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private async Task Search()
         {
-            if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
+            var decodedSearchText = string.IsNullOrWhiteSpace(SearchText) ? string.Empty : HttpUtility.UrlDecode(SearchText).Trim();
+            decodedSearchText = _disallowedChars.Replace(decodedSearchText, string.Empty);
+
+            if (string.IsNullOrWhiteSpace(decodedSearchText) && !IsAuthorSearch)
             {
                 ModelState.AddModelError(nameof(SearchText), TranslationProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
                 return;
             }
 
             var searchableForums = string.Join(",", await ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0));
-            var results = (await SqlExecuter.CallStoredProcedureAsync<PostDto>(
+            Posts = (await SqlExecuter.CallStoredProcedureAsync<PostDto>(
                 "search_posts",
                 new
                 {
                     Constants.ANONYMOUS_USER_ID,
                     topicId = TopicId ?? 0,
                     AuthorId,
-                    searchText = string.IsNullOrWhiteSpace(SearchText) ? string.Empty : HttpUtility.UrlDecode(SearchText),
+                    searchText = decodedSearchText,
                     searchableForums,
                     skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                     take = Constants.DEFAULT_PAGE_SIZE
                 })).AsList();
 
-            Posts = results.Cast<PostDto>().ToList();
-            TotalResults = results.Count == 0 ? 0 : results[0].TotalCount;
+            TotalResults = Posts.Count == 0 ? 0 : Posts[0].TotalCount;
             Attachments = await SqlExecuter.QueryAsync<PhpbbAttachmentExpanded>(
                 @"SELECT p.forum_id, a.*
                     FROM phpbb_attachments a
