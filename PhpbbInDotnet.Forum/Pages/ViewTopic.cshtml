@@ -260,7 +260,7 @@ else if (!isCurrentForumReadOnly)
 @*moderator menu*@
 @if (isMod)
 {
-    <form method="post" asp-page-handler="TopicModerator" style="padding-top:5px">
+    <form method="post" asp-page-handler="TopicModerator" style="padding-top:5px" autocomplete="off">
         @Html.Raw(Model.TranslationProvider.Moderator[lang, "MODERATE_TOPIC"]):
         @Html.DropDownList(
             nameof(Model.TopicAction),
@@ -285,7 +285,7 @@ else if (!isCurrentForumReadOnly)
         @Html.AntiForgeryToken()
     </form>
 
-    <form id="moderatorForm" method="post" asp-page-handler="PostModerator" style="padding-top:5px">
+    <form id="moderatorForm" method="post" asp-page-handler="PostModerator" style="padding-top:5px" autocomplete="off">
         @Html.Raw(Model.TranslationProvider.Moderator[lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper]):
         @Html.DropDownList(
             nameof(Model.PostAction),
@@ -321,7 +321,7 @@ else if (!isCurrentForumReadOnly)
         @Html.AntiForgeryToken()
     </form>
 
-    <form id="moderatorDuplicateMessageForm" method="post" asp-page-handler="DuplicatePost">
+    <form id="moderatorDuplicateMessageForm" method="post" asp-page-handler="DuplicatePost" autocomplete="off">
         <input type="hidden" name="PostIdForDuplication" id="PostIdForDuplication" />
     </form>
     <form id="modConfirmation" asp-page="Confirm" method="get">
@@ -336,6 +336,10 @@ else if (!isCurrentForumReadOnly)
         <input type="hidden" name="Destination" id="Destination" value="./ViewTopic" />
         @Html.AntiForgeryToken()
     </form>
+
+    <p></p>
+    @Html.Raw(string.Format(Model.TranslationProvider.Moderator[lang, "FORUM_ID_FORMAT"], Model.ForumId))<br/>
+    @Html.Raw(string.Format(Model.TranslationProvider.Moderator[lang, "TOPIC_ID_FORMAT"], Model.TopicId))
 
     <div class="MiddleBox" id="postInfo" style="display:none; padding: 10px; overflow-y: scroll">
         <h4 style="float:left">@Html.Raw(Model.TranslationProvider.BasicText[lang, "INFORMATION", Casing.Title])</h4>

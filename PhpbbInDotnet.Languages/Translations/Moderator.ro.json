@@ -15,6 +15,8 @@
     "NO_DELETED_ITEMS": "Nici un element șters",
     "IP_SEARCH_RESULTS_FORMAT": "Mesaje trimise de la IP '{0}'",
     "IP_MORE_INFO": "Mai multe informații despre acest IP",
+    "FORUM_ID_FORMAT": "ID Forum: {0}",
+    "TOPIC_ID_FORMAT": "ID Topic: {0}",
 
     //success messages
     "TOPIC_CHANGED_SUCCESSFULLY": "Subiectul a fost modificat cu succes!",
