@@ -378,9 +378,10 @@ else if (Model.Action == PostingActions.NewTopic)
 						<div data-attach-id="@Model.Attachments[i].AttachId" data-index="@i" style="clear:both">
 							<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename
 							<span style="display: inline-block">
+								&nbsp;
 								<input type="button"
 									   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])"
-									   onclick="posting.attach_inline($(this).parent().data('index'), '@Model.Attachments[i].RealFilename')"
+									   onclick="posting.attach_inline($(this).parent().parent().data('index'), '@Model.Attachments[i].RealFilename.Replace("'", "\\'")')"
 									   class="MyButton SpacedButton" />
 								<input type="submit"
 									   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])"
@@ -403,8 +404,8 @@ else if (Model.Action == PostingActions.NewTopic)
 							<input type="hidden" asp-for="Attachments![i].Mimetype" />
 							<input type="hidden" asp-for="Attachments![i].Filesize" />
 							<input type="hidden" asp-for="Attachments![i].OrderInPost" />
+							<p>&nbsp;</p>
 						</div>
-						<p>&nbsp;</p>
 					}
 					<input type="hidden" name="idToDelete" id="idToDelete" value="" />
 				</div>
