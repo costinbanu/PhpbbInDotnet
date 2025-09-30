@@ -34,8 +34,8 @@
         "POLL_EXPIRES_FORMAT": "The poll expires on {0}",
         "CONFIRM_POLL_OPTIONS_CHANGE": "If you change the poll options, all votes registered so far will be deleted. Are you sure you want to continue?",
         "LOADING_FILES": "The files are loading...",
-        "ORDER_FILES": "Order files",
-        "MANAGE_FILES": "Manage files"
+        "ORDER_FILES": "Order",
+        "MANAGE_FILES": "Manage"
     },
     "Moderator": {
         "DUPLICATE_POST": "Duplicate post"
