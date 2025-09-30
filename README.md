@@ -22,7 +22,7 @@ Either way,  ensure that its structure and contents follow the sample below. All
     "DatabaseType": "...",
     "ConnectionString": "..."
   },
-  "BotDetectionOptions": {
+  "BotDetectorOptions": {
     "SiteKey": "...",
     "SecretKey": "...",
     "BaseAddress": "https://challenges.cloudflare.com",
@@ -80,7 +80,7 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "ForumIsReadOnly": false,
   "MinimumAge": 16,
   "RateLimitBots": false,
-  HostInstanceCount: 1
+  "HostInstanceCount": 1
 }
 ```
 

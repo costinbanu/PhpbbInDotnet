@@ -81,7 +81,7 @@ namespace PhpbbInDotnet.Services
             var matches = from m in _attachRegex.Matches(post.PostText!).AsEnumerable()
                           where m.Success
                           orderby m.Index descending
-                          let parts = m.Value.Split(['/'], StringSplitOptions.RemoveEmptyEntries)
+                          let parts = m.Value.Split("/", StringSplitOptions.RemoveEmptyEntries)
                           let fn = parts[0].Trim("#{".ToCharArray()).Replace("AttachmentFileName=", string.Empty)
                           let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
                           select (FileName: fn, AttachIndex: i);
@@ -106,9 +106,10 @@ namespace PhpbbInDotnet.Services
             var matches = from m in _quotedAttachRegex.Matches(post.PostText!).AsEnumerable()
                           where m.Success
                           orderby m.Index descending
-                          let parts = m.Value.Split(['/'], StringSplitOptions.RemoveEmptyEntries)
+                          let parts = m.Value.Split("/", StringSplitOptions.RemoveEmptyEntries)
                           let fn = parts[0].Trim("#{".ToCharArray()).Replace("QuotedAttachmentFileName=", string.Empty)
-                          let indexAndPostId = parts[1].Trim("}#".ToCharArray()).Replace("QuotedAttachmentIndexAndPostId=", string.Empty).Split([','], StringSplitOptions.RemoveEmptyEntries)
+                          let indexAndPostId = parts[1].Trim("}#".ToCharArray()).Replace("QuotedAttachmentIndexAndPostId=", string.Empty)
+                                                        .Split(",", StringSplitOptions.RemoveEmptyEntries)
                           let index = int.Parse(indexAndPostId[0])
                           let postId = int.Parse(indexAndPostId[1])
                           select (FileName: fn, AttachIndex: index, PostId: postId);
