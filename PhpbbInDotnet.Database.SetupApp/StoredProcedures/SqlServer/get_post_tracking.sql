@@ -1,13 +1,4 @@
-﻿USE [forum]
-GO
-/****** Object:  StoredProcedure [dbo].[get_post_tracking]    Script Date: 06.07.2023 18:06:27 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[get_post_tracking]  
+﻿CREATE PROCEDURE [dbo].[get_post_tracking]  
    @user_id int = 1
 AS 
    BEGIN

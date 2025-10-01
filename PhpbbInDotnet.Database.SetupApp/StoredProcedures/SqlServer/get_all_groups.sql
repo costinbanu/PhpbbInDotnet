@@ -1,12 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_all_groups]    Script Date: 03.07.2023 20:33:56 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[get_all_groups]
+﻿CREATE PROCEDURE [dbo].[get_all_groups]
 
 AS
 BEGIN
@@ -27,5 +19,5 @@ BEGIN
 		   ) as [role]
 	  FROM phpbb_groups g;
 END;
-GO
+;
 

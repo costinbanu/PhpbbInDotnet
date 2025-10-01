@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[save_new_private_message]    Script Date: 03.07.2023 20:42:36 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[save_new_private_message]
+﻿CREATE PROCEDURE [dbo].[save_new_private_message]
 (
 	@sender_id int,
 	@receiver_id int,
@@ -34,5 +27,5 @@ BEGIN
     
 	COMMIT;
 END
-GO
+;
 

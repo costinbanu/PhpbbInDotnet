@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[sync_orphan_files]    Script Date: 03.07.2023 20:45:25 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[sync_orphan_files] (@now bigint, @retention_seconds bigint)
+﻿CREATE PROCEDURE [dbo].[sync_orphan_files] (@now bigint, @retention_seconds bigint)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -18,5 +11,5 @@ BEGIN
      WHERE p.post_id IS NULL AND d.draft_id IS NULL AND @now - a.filetime > @retention_seconds AND a.is_orphan = 0
 
 END
-GO
+;
 

@@ -1,12 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[mark_topic_read]    Script Date: 03.07.2023 20:42:01 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[mark_topic_read]  
+﻿CREATE PROCEDURE [dbo].[mark_topic_read]  
    @forumId int,
    @topicId int,
    @userId int,
@@ -39,5 +31,5 @@ AS
          END
 
    END
-GO
+;
 

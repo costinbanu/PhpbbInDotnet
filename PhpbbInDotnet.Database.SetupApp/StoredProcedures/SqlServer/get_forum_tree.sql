@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_forum_tree]    Script Date: 04.07.2023 18:42:26 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[get_forum_tree]
+﻿CREATE PROCEDURE [dbo].[get_forum_tree]
 AS 
    BEGIN
 
