@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Services
                     addItemFactory: async () =>
                     {
                         var tagList = (await _sqlExecuter.QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
-                        var maxId = tagList.Max(t => t.BbcodeId);
+                        var maxId = tagList.Count == 0 ? 0 : tagList.Max(t => t.BbcodeId);
                         var tagsCache = new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
                         {
                             ["b"] = (
