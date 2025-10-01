@@ -1,9 +1,4 @@
-﻿SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[adjust_user_post_count] (@post_ids nvarchar(max), @post_operation nvarchar(6))
+﻿CREATE PROCEDURE [dbo].[adjust_user_post_count] (@post_ids nvarchar(max), @post_operation nvarchar(6))
 AS
 BEGIN
 	SET NOCOUNT ON;

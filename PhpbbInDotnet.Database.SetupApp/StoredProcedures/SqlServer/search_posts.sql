@@ -1,11 +1,4 @@
-﻿USE [forum]
-GO
-/****** Object:  StoredProcedure [dbo].[search_posts]    Script Date: 06.07.2023 21:54:03 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[search_posts]
+﻿CREATE PROCEDURE [dbo].[search_posts]
 (
     @ANONYMOUS_USER_ID int = 1,
     @topic_id int = 0,

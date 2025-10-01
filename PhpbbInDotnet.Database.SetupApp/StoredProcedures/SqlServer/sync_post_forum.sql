@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[sync_post_forum]    Script Date: 03.07.2023 20:45:56 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[sync_post_forum]
+﻿CREATE PROCEDURE [dbo].[sync_post_forum]
 AS
 BEGIN
     SET NOCOUNT ON
@@ -17,5 +10,5 @@ BEGIN
 	 WHERE p.forum_id <> t.forum_id;
 
 END
-GO
+;
 

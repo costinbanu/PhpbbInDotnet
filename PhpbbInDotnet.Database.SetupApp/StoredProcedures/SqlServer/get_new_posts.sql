@@ -1,12 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_new_posts]    Script Date: 03.07.2023 20:36:24 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[get_new_posts] (@topic_list nvarchar(max), @restricted_forum_list nvarchar(max), @skip int, @take int)
+﻿CREATE PROCEDURE [dbo].[get_new_posts] (@topic_list nvarchar(max), @restricted_forum_list nvarchar(max), @skip int, @take int)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -40,5 +32,5 @@ BEGIN
 	 ORDER BY t.topic_last_post_time DESC
 	 OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
 END
-GO
+;
 

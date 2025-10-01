@@ -1,13 +1,4 @@
-﻿USE [forum]
-GO
-
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[sync_user_posts]
+﻿CREATE PROCEDURE [dbo].[sync_user_posts]
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -23,4 +14,4 @@ BEGIN
         JOIN post_counts c ON u.user_id = c.poster_id;
 
 END
-GO
+;

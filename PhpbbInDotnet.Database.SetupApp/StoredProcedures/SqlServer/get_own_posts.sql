@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_own_posts]    Script Date: 03.07.2023 20:37:43 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[get_own_posts] (@user_id int, @restricted_forum_list nvarchar(max), @skip int, @take int)
+﻿CREATE PROCEDURE [dbo].[get_own_posts] (@user_id int, @restricted_forum_list nvarchar(max), @skip int, @take int)
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -51,5 +44,5 @@ BEGIN
 		GROUP BY t.topic_id, t.topic_title, t.forum_id, t.topic_views, t.topic_type, t.topic_last_poster_id, t.topic_last_poster_name, t.topic_last_post_time, t.topic_last_poster_colour, t.topic_last_post_id
 		ORDER BY t.topic_last_post_time DESC
 END
-GO
+;
 

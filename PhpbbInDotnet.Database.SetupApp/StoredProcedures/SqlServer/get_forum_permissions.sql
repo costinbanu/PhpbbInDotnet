@@ -1,12 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_forum_permissions]    Script Date: 03.07.2023 20:35:11 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[get_forum_permissions]  
+﻿CREATE PROCEDURE [dbo].[get_forum_permissions]  
    @forum_id_param int
 AS 
    BEGIN
@@ -64,5 +56,5 @@ AS
       WHERE r.role_type = 'f_'
 
    END
-GO
+;
 

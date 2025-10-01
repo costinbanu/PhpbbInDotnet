@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using PhpbbInDotnet.Domain;
+using System.Data.Common;
+using Microsoft.Data.SqlClient;
 
 namespace PhpbbInDotnet.Database.SetupApp
 {
@@ -52,7 +54,13 @@ namespace PhpbbInDotnet.Database.SetupApp
                 Console.WriteLine();
                 var dbName = ReadInput(message: "Database name? (Will be created if not existing already)", regex: NAME_REGEX);
 
-                using var connection = new MySqlConnection(connectionString);
+                using DbConnection connection = dbType switch
+                {
+                    DatabaseType.MySql => new MySqlConnection(connectionString),
+                    DatabaseType.SqlServer => new SqlConnection(connectionString),
+                    _ => throw new InvalidOperationException("Unknown DB type")
+                };
+
                 await connection.OpenAsync();
 
                 if (newInstall)
@@ -61,7 +69,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                     Console.WriteLine("Creating database...");
                     await connection.ExecuteAsync(dbType switch
                     {
-                        DatabaseType.SqlServer => $"IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = 'DataBase) CREATE DATABASE [{dbName}];",
+                        DatabaseType.SqlServer => $"IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = '{dbName}') CREATE DATABASE [{dbName}];",
                         DatabaseType.MySql => $"CREATE DATABASE IF NOT EXISTS {dbName};",
                         _ => throw new ArgumentException("Invalid database type in configuration.")
                     });

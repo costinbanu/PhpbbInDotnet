@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_post_position_in_topic]    Script Date: 03.07.2023 20:38:52 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[get_post_position_in_topic](@topic_id int, @post_id int)
+﻿CREATE PROCEDURE [dbo].[get_post_position_in_topic](@topic_id int, @post_id int)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -19,5 +12,5 @@ BEGIN
 	FROM row_numbers
 	WHERE post_id = @post_id;
 END
-GO
+;
 

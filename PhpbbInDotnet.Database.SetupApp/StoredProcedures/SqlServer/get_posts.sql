@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_posts]    Script Date: 03.07.2023 20:40:16 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[get_posts] (@topic_id int, @anonymous_user_id int, @order nvarchar(4), @skip int, @take int, @include_reports bit)
+﻿CREATE PROCEDURE [dbo].[get_posts] (@topic_id int, @anonymous_user_id int, @order nvarchar(4), @skip int, @take int, @include_reports bit)
 AS
 BEGIN
 	SET NOCOUNT ON;

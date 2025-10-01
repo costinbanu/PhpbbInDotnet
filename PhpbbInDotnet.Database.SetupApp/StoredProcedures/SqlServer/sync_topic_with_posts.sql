@@ -1,9 +1,4 @@
-﻿SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[sync_topic_with_posts] (@topic_ids nvarchar(max), @anonymous_user_id int, @anonymous_username nvarchar(255), @default_user_colour nvarchar(6))
+﻿CREATE PROCEDURE [dbo].[sync_topic_with_posts] (@topic_ids nvarchar(max), @anonymous_user_id int, @anonymous_username nvarchar(255), @default_user_colour nvarchar(6))
 AS
 BEGIN
 	SET NOCOUNT ON;

@@ -1,12 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[get_user_permissions]    Script Date: 03.07.2023 20:40:47 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-
-CREATE PROCEDURE [dbo].[get_user_permissions]  
+﻿CREATE PROCEDURE [dbo].[get_user_permissions]  
    @user_id_parm int
 AS 
    BEGIN
@@ -39,5 +31,5 @@ AS
 		LEFT JOIN user_permissions up ON gp.forum_id = up.forum_id AND gp.auth_role_id = 16 AND up.auth_role_id in (14, 15, 17)
 		WHERE up.forum_id IS NULL;
 	END
-GO
+;
 
