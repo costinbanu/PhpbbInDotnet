@@ -35,11 +35,14 @@ namespace PhpbbInDotnet.RecurringTasks
 			_configuration = configuration;
         }
 
-        public async Task Invoke()
+		public Task Invoke()
 		{
-            //hacky hack https://github.com/dotnet/runtime/issues/36063
-            await Task.Yield();
+			_ = ExecuteTask();
+			return Task.CompletedTask;
+		}
 
+		private async Task ExecuteTask()
+		{
 			bool lockAcquiredSuccessfully = false;
 			bool shouldUpdateControlFile = false;
 			string? lockId = null;
@@ -93,16 +96,16 @@ namespace PhpbbInDotnet.RecurringTasks
 		private async Task RenewLockAsync(string lockId, TimeSpan duration, CancellationToken cancellationToken)
 		{
 			var sleepTime = duration - TimeSpan.FromSeconds(2);
-            bool shouldContinue;
-            do
-            {
+			bool shouldContinue;
+			do
+			{
 				try
 				{
 					await Task.Delay(sleepTime, cancellationToken);
 					shouldContinue = await _lockingService.RenewNamedLock(ControlFileName, lockId, cancellationToken);
 					_logger.Warning("Renewed lock {id} for another {time}", lockId, sleepTime);
 				}
-				catch 
+				catch
 				{
 					shouldContinue = false;
 				}
