@@ -274,3 +274,4 @@ __pycache__/
 /PhpbbInDotnet.Forum/Properties/PublishProfiles/FolderProfile.pubxml
 /PhpbbInDotnet.Forum/wwwroot/images/smilies/
 /PhpbbInDotnet.Forum/wwwroot/images/smilies/loco/
+PhpbbInDotnet.Forum/pythonVirtualEnvironment/*

@@ -6,12 +6,12 @@
 		<PackageReference Include="CryptSharp.Core" Version="5.0.0" />
 		<PackageReference Include="Diacritics" Version="4.0.17" />
 		<PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.0" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
 		<PackageReference Include="System.Linq.Async" Version="6.0.3" />
 		<PackageReference Include="MailKit" Version="4.14.1" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="../PhpbbInDotnet.Services.ImageProcessing/PhpbbInDotnet.Services.ImageProcessing.csproj" />
 		<ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
 		<ProjectReference Include="..\PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj" />
 		<ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />

@@ -14,6 +14,7 @@ using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Middlewares;
+using PhpbbInDotnet.Services.ImageProcessing;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects.Configuration;
 using Serilog;
@@ -21,7 +22,6 @@ using Serilog.Events;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StorageOptions = PhpbbInDotnet.Objects.Configuration.Storage;
@@ -81,6 +81,7 @@ namespace PhpbbInDotnet.Forum
 
             services.AddLanguageSupport();
             services.AddApplicationServices(config);
+            services.AddImageProcessingServices(environment);
             services.AddRecurringTasks();
             
             services.AddSingleton<FileExtensionContentTypeProvider>();

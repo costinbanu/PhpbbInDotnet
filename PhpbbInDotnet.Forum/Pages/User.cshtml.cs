@@ -16,6 +16,7 @@ using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Services.Caching;
+using PhpbbInDotnet.Services.ImageProcessing;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using SixLabors.ImageSharp;
@@ -101,12 +102,12 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly ILogger _logger;
         private readonly IAppCache _cache;
         private readonly IUserProfileDataValidationService _validationService;
-		private readonly IImageResizeService _imageResizeService;
+		private readonly IImageSizeService _imageSizeService;
 		private readonly ICachedDbInfoService _cachedDbInfoService;
 		private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
         public UserModel(IStorageService storageService, IWritingToolsService writingService, IOperationLogService operationLogService, IConfiguration config, 
-            IEmailService emailService, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, IImageResizeService imageResizeService,
+            IEmailService emailService, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, IImageSizeService imageSizeService,
             ITranslationProvider translationProvider, ILogger logger, IAppCache cache, IUserProfileDataValidationService validationService, ICachedDbInfoService cachedDbInfoService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
@@ -117,7 +118,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _logger = logger;
             _cache = cache;
             _validationService = validationService;
-            _imageResizeService = imageResizeService;
+            _imageSizeService = imageSizeService;
             _cachedDbInfoService = cachedDbInfoService;
         }
 
@@ -332,7 +333,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var maxSize = Configuration.GetObject<ImageSize>("AvatarMaxSize");
 					using var input = Avatar.OpenReadStream();
                     using var image = await Image.LoadAsync(input);
-                    output = await _imageResizeService.ResizeImageByResolution(image, Avatar.FileName, Math.Max(maxSize.Width, maxSize.Height));
+                    output = await _imageSizeService.ResizeImageByResolution(image, Avatar.FileName, Math.Max(maxSize.Width, maxSize.Height));
                     if (!string.IsNullOrWhiteSpace(dbUser.UserAvatar))
                     {
                         await _storageService.DeleteAvatar(dbUser.UserId, dbUser.UserAvatar);
