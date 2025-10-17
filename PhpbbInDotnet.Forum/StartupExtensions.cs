@@ -115,7 +115,6 @@ namespace PhpbbInDotnet.Forum
 
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            ServicePointManager.DefaultConnectionLimit = 100;
 
             webApplicationBuilder.Host
                 .UseSerilog((context, config) =>
