@@ -85,7 +85,7 @@ namespace PhpbbInDotnet.Forum.Models
                     into joinedForums
 
                     from joinedForum in joinedForums
-                    where !joinedForum.hasPassword || !Request.Cookies.IsUserLoggedIntoForum(ForumUser.UserId, currentForumId)
+                    where !joinedForum.hasPassword || !Request.Cookies.IsUserLoggedIntoForum(ForumUser.UserId, joinedForum.forumId)
                     select currentForumId
                 ).FirstOrDefault();
 
