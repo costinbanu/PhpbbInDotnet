@@ -99,6 +99,12 @@ namespace PhpbbInDotnet.Database.SqlExecuter
                 return await connection.QuerySingleAsync<T>(sql, param, commandTimeout: TIMEOUT);
             });
 
+        public virtual async Task<T> QuerySingleAsyncWithoutResiliency<T>(string sql, object? param)
+        {
+            using var connection = GetDbConnection();
+            return await connection.QuerySingleAsync<T>(sql, param, commandTimeout: TIMEOUT);
+        }
+
         public virtual Task<dynamic?> QuerySingleOrDefaultAsync(string sql, object? param)
             => ResilientExecuteAsync(async () =>
             {

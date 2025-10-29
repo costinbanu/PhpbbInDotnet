@@ -48,5 +48,14 @@ namespace PhpbbInDotnet.Domain
             public const string BREADCRUMBS = "BreadCrumbs";
             public const string FORUM_ID = "ForumId";
         }
+
+        public static readonly TimeSpan[] BACKOFF_DURATIONS =
+        [
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(3),
+            TimeSpan.FromSeconds(5)
+        ];
     }
 }
