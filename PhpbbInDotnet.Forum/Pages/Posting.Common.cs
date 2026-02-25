@@ -107,10 +107,13 @@ namespace PhpbbInDotnet.Forum.Pages
             var isNewPost = post is null;
 
             await Policy.Handle<Exception>()
-                .RetryAsync((ex, _) => _logger.Warning(ex, "Error while posting, will retry once."))
+                .WaitAndRetryAsync(Constants.BACKOFF_DURATIONS, (ex, duration, retryCount, context) => _logger.Warning(
+                    ex,
+                    "An error occurred, will retry after {duration} for at most {maxRetries} times, current retry count: {count}, retry correlation id: {correlationId}.",
+                    duration, Constants.BACKOFF_DURATIONS.Length, retryCount, context.CorrelationId))
                 .ExecuteAsync(async () =>
                 {
-                    using var transaction = SqlExecuter.BeginTransaction(IsolationLevel.Serializable);
+                    using var transaction = SqlExecuter.BeginTransaction(IsolationLevel.Serializable, useResiliency: false);
                     if (Action == PostingActions.NewTopic)
                     {
                         curTopic = await transaction.QuerySingleAsync<PhpbbTopics>(

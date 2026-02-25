@@ -128,7 +128,7 @@ namespace PhpbbInDotnet.Services
                     if (childForum != null)
                     {
                         childForum.IsRestricted |= node.IsRestricted;
-                        childForum.HasPassword |= node.HasPassword;
+                        //childForum.HasPassword |= node.HasPassword;
                         childForum.PathList ??= new List<int>(node.PathList ?? new List<int>());
                         childForum.PathList.Add(childForumId);
                         childForum.Level = node.Level + 1;

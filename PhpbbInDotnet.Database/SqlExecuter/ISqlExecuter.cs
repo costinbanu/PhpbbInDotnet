@@ -1,5 +1,4 @@
-﻿using Dapper;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
@@ -14,7 +13,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         Task CallStoredProcedureAsync(string storedProcedureName, object? param = null);
         Task<IMultipleResultsProxy> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param);
         IDapperProxy WithPagination(int skip, int take);
-        ITransactionalSqlExecuter BeginTransaction();
-		ITransactionalSqlExecuter BeginTransaction(IsolationLevel isolationLevel);
+        ITransactionalSqlExecuter BeginTransaction(bool useResiliency = true);
+		ITransactionalSqlExecuter BeginTransaction(IsolationLevel isolationLevel, bool useResiliency = true);
 	}
 }
