@@ -17,14 +17,6 @@ namespace PhpbbInDotnet.Database.SqlExecuter
     abstract class BaseDapperProxy
     {
         protected internal const int TIMEOUT = 60;
-        static readonly TimeSpan[] DURATIONS =
-        [
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromSeconds(2),
-            TimeSpan.FromSeconds(3),
-            TimeSpan.FromSeconds(5)
-        ];
         protected const string PAGINATION_WILDCARD = "##paginate";
 
         private readonly AsyncRetryPolicy _asyncRetryPolicy;
@@ -37,8 +29,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         protected BaseDapperProxy(IConfiguration configuration, ILogger logger)
         {
             _logger = logger;
-            _asyncRetryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetryAsync(DURATIONS, OnRetry);
-            _retryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetry(DURATIONS, OnRetry);
+            _asyncRetryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetryAsync(Constants.BACKOFF_DURATIONS, OnRetry);
+            _retryPolicy = Policy.Handle<Exception>(ExceptionFilter).WaitAndRetry(Constants.BACKOFF_DURATIONS, OnRetry);
             
             _connectionString = configuration.GetValue<string>("Database:ConnectionString")!;
             DatabaseType = configuration.GetValue<DatabaseType>("Database:DatabaseType");
@@ -96,7 +88,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             _logger.Warning(
                 new DatabaseException(ex.Message, myStackTrace),
                 "An error occurred, will retry after {duration} for at most {maxRetries} times, current retry count: {count}, retry correlation id: {correlationId}.",
-                duration, DURATIONS.Length, retryCount, context.CorrelationId);
+                duration, Constants.BACKOFF_DURATIONS.Length, retryCount, context.CorrelationId);
         }
 
         private static T ReturnResultOrThrowExceptionIfAny<T>(PolicyResult<T> result)

@@ -449,7 +449,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         _ when QuotePostInDifferentTopic => DestinationTopicId,
                         _ => TopicId
                     };
-                    
+
                     var draft = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbDrafts>(
                         "SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                         new { user.UserId, ForumId, topicId });
@@ -486,27 +486,20 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
 
                     SaveDraftMessage = TranslationProvider.BasicText[Language, "DRAFT_SAVED_SUCCESSFULLY"];
-					SaveDraftSuccess = true;
+                    SaveDraftSuccess = true;
                     Response.Cookies.DeleteObject(CookieBackupKey);
 
                     RemoveDraftFromModelState();
                 }
                 catch (Exception ex)
                 {
-					var id = _logger.ErrorWithId(ex);
-					SaveDraftMessage = string.Format(TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
-					SaveDraftSuccess = false;
-				}
+                    var id = _logger.ErrorWithId(ex);
+                    SaveDraftMessage = string.Format(TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+                    SaveDraftSuccess = false;
+                }
 
-                return Action switch
-                {
-                    PostingActions.NewTopic => await OnGetNewTopic(),
-                    PostingActions.NewForumPost when PostId > 0 => await OnGetQuoteForumPost(),
-                    PostingActions.NewForumPost when PostId is null => await OnGetForumPost(),
-                    PostingActions.EditForumPost => await OnGetEditPost(),
-                    _ => RedirectToPage("Index")
-                };
-			})), ReturnUrl)));
+                return Page();
+            })), ReturnUrl)));
 
         public Task<IActionResult> OnPostDeleteDraft()
             => WithInitialBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async curForum =>
