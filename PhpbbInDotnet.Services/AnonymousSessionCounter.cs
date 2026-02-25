@@ -13,6 +13,7 @@ namespace PhpbbInDotnet.Services
         {
             _sessionCache = new ConcurrentDictionary<string, Item<string>>();
             _userAgentCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();
+            _rateLimitCache = new ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>>();
         }
 
         public void UpsertSession(string sessionId, TimeSpan expiration)
@@ -55,8 +56,36 @@ namespace PhpbbInDotnet.Services
         public int GetActiveBotCountByUserAgent(string userAgent)
             => _userAgentCache.TryGetValue(userAgent, out var item) ? item.Value.Count : 0;
 
+        public bool ShouldRateLimit(string userAgent, string ip, string? sessionId, int threshold, TimeSpan timeWindow)
+        {
+            var key = string.IsNullOrWhiteSpace(sessionId) ? HashCode.Combine(userAgent, ip).ToString() : HashCode.Combine(userAgent, ip, sessionId).ToString();
+            var now = DateTimeOffset.UtcNow;
+
+            var value = _rateLimitCache.AddOrUpdate(
+                key: key,
+                addValueFactory: _ =>
+                {
+                    var dict = new ConcurrentDictionary<string, Item<DateTimeOffset>>();
+                    var subkey = Guid.NewGuid().ToString();
+                    dict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, timeWindow, dict));
+                    return dict;
+                },
+                updateValueFactory: (_, existingDict) =>
+                {
+                    var subkey = Guid.NewGuid().ToString();
+                    if (existingDict.Count < threshold)
+                    {
+                        existingDict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, timeWindow, existingDict));
+                    }
+                    return existingDict;
+                });
+
+            return value.Count >= threshold;
+        }
+
         private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;
         private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _userAgentCache;
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>> _rateLimitCache;
 
         private class Item<TValue> : IDisposable
         {

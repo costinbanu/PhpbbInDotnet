@@ -2,9 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -15,7 +13,6 @@ using PhpbbInDotnet.Services;
 using Serilog;
 using System;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
@@ -39,39 +36,9 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var isBot = false;
-            string? userAgent = null;
-            var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);
-            if ((!hasUserId || userId == 1) && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header))
-            {
-                try
-                {
-                    userAgent = header.ToString();
-                    var dd = new DeviceDetector(userAgent, ClientHints.Factory(context.Request.Headers.ToDictionary(a => a.Key, a => a.Value.ToArray().FirstOrDefault())));
-                    dd.Parse();
-                    if (dd.IsBot())
-                    {
-                        isBot = true;
-                        var now = DateTime.UtcNow;
-                        var shouldRateLimitBots = _config.GetValue<bool>("RateLimitBots");
-                        var shouldLimitBasedOnSessionCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 50 && !context.Request.Cookies.IsAnonymousSessionStarted();
-
-                        if (shouldRateLimitBots && shouldLimitBasedOnSessionCount)
-                        {
-                            context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                            return;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.Warning(ex, "Failed to detect if session is bot. User agent: {userAgent}, IP: {ip}", userAgent, context.GetIpAddress());
-                }
-            }
-
             ForumUser baseUser;
             PhpbbUsers? dbUser;
-            if (hasUserId)
+            if (IdentityUtility.TryGetUserId(context.User, out var userId))
             {
                 dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
@@ -111,6 +78,20 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 if (user.IsAnonymous && !context.Request.Cookies.IsAnonymousSessionStarted())
                 {
                     var sessionId = context.Response.Cookies.StartAnonymousSession();
+                    string? userAgent = null;
+                    bool isBot = false;
+                    try
+                    {
+                        userAgent = context.Request.Headers.UserAgent.ToString();
+                        var dd = new DeviceDetector(userAgent, ClientHints.Factory(context.Request.Headers.ToDictionary(a => a.Key, a => a.Value.ToArray().FirstOrDefault())));
+                        dd.Parse();
+                        isBot = dd.IsBot();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warning(ex, "Failed to detect if session is bot. User agent: {userAgent}, IP: {ip}", userAgent, context.GetIpAddress());
+                    }
+
                     if (isBot)
                     {
                         _sessionCounter.UpsertBot(context.GetIpAddress() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);

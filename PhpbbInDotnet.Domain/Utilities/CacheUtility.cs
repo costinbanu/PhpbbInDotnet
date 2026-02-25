@@ -7,7 +7,7 @@ namespace PhpbbInDotnet.Domain.Utilities
         public static string GetAttachmentCacheKey(int attachId, int postId)
             => $"AttachmentDto_{attachId}_{postId}";
 
-        public static string GetAvatarCacheKey(int userId, Guid correlationId)
-            => $"Avatar_{userId}_{correlationId}";
+        public static string GetAvatarCacheKey(int userId)
+            => $"Avatar_{userId}";
     }
 }
