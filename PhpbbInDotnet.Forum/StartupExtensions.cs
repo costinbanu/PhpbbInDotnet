@@ -85,6 +85,7 @@ namespace PhpbbInDotnet.Forum
             
             services.AddSingleton<FileExtensionContentTypeProvider>();
 
+            services.AddScoped<HostCheckerMiddleware>();
             services.AddScoped<AuthenticationMiddleware>();
             services.AddScoped<ErrorHandlingMiddleware>();
 
@@ -181,7 +182,10 @@ namespace PhpbbInDotnet.Forum
             webApplication.UseStaticFiles();
             webApplication.UseCookiePolicy();
             webApplication.UseAuthentication();
+
+            webApplication.UseMiddleware<HostCheckerMiddleware>();
             webApplication.UseMiddleware<AuthenticationMiddleware>();
+            
             webApplication.MapControllers();
             webApplication.MapRazorPages();
 

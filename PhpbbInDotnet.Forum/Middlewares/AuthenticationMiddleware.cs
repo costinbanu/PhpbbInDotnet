@@ -39,13 +39,6 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var allowedHost = new Uri(_config.GetValue<string>("BaseUrl")!).Host;
-            if (!context.Request.Host.Host.Equals(allowedHost, StringComparison.InvariantCultureIgnoreCase))
-            {
-                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                return;
-            }
-
             var isBot = false;
             string? userAgent = null;
             var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);
