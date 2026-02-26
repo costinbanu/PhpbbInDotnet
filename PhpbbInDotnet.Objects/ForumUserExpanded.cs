@@ -48,11 +48,6 @@ namespace PhpbbInDotnet.Objects
         public static ForumUserExpanded? GetValueOrDefault(HttpContext httpContext)
             => httpContext.Items.TryGetValue(nameof(ForumUserExpanded), out var raw) && raw is ForumUserExpanded aue ? aue : null;
 
-        public void SetValue(HttpContext httpContext)
-        {
-            httpContext.Items[nameof(ForumUserExpanded)] = this;
-        }
-
         public bool HasPrivateMessagePermissions
             => !IsAnonymous && AllPermissions?.Contains(new Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) != true;
 

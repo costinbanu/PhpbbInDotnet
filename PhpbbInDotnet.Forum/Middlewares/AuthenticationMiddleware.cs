@@ -70,7 +70,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
             }
 
             var user = await _userService.ExpandForumUser(baseUser, expansions);
-            user.SetValue(context);
+            context.Items[nameof(ForumUserExpanded)] = user;
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
