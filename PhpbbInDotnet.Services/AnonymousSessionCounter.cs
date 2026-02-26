@@ -12,8 +12,9 @@ namespace PhpbbInDotnet.Services
         public AnonymousSessionCounter()
         {
             _sessionCache = new ConcurrentDictionary<string, Item<string>>();
-            _userAgentCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();
+            _verifiedBotsCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();
             _rateLimitCache = new ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>>();
+            _ipsByUserAgentCache = new ConcurrentDictionary<string, Item<ConcurrentDictionary<string, DateTimeOffset>>>();
         }
 
         public void UpsertSession(string sessionId, TimeSpan expiration)
@@ -33,9 +34,9 @@ namespace PhpbbInDotnet.Services
                 UserAgent = userAgent
             };
 
-            _userAgentCache.AddOrUpdate(
+            _verifiedBotsCache.AddOrUpdate(
                 key: userAgent,
-                addValue: new Item<ConcurrentBag<BotData>>(userAgent, new ConcurrentBag<BotData> { data }, expiration, _userAgentCache),
+                addValue: new Item<ConcurrentBag<BotData>>(userAgent, new ConcurrentBag<BotData> { data }, expiration, _verifiedBotsCache),
                 updateValueFactory: (_, curValue) =>
                 {
                     curValue.Value.Add(data);
@@ -45,20 +46,22 @@ namespace PhpbbInDotnet.Services
         }
 
         public IEnumerable<BotData> GetBots()
-            => _userAgentCache.SelectMany(x => x.Value.Value);
+            => _verifiedBotsCache.SelectMany(x => x.Value.Value);
 
         public int GetTotalActiveBotCount()
-            => _userAgentCache.SelectMany(x => x.Value.Value).Count();
+            => _verifiedBotsCache.SelectMany(x => x.Value.Value).Count();
 
         public int GetUniqueBotCount()
-            => _userAgentCache.Count;
-
-        public int GetActiveBotCountByUserAgent(string userAgent)
-            => _userAgentCache.TryGetValue(userAgent, out var item) ? item.Value.Count : 0;
+            => _verifiedBotsCache.Count;
 
         public bool ShouldRateLimit(string userAgent, string ip, string? sessionId, int threshold, TimeSpan timeWindow)
+            => ShouldRateLimitByInstance(userAgent, ip, sessionId, threshold, timeWindow)
+                || ShouldRateLimitByVolume(userAgent, ip, sessionId, threshold, timeWindow);
+
+        //no more than threshold requests for the same user agent + IP + sessionId in the time window
+        private bool ShouldRateLimitByVolume(string userAgent, string ip, string? sessionId, int threshold, TimeSpan timeWindow)
         {
-            var key = string.IsNullOrWhiteSpace(sessionId) ? HashCode.Combine(userAgent, ip).ToString() : HashCode.Combine(userAgent, ip, sessionId).ToString();
+            var key = $"{userAgent}-{ip}-{sessionId}";
             var now = DateTimeOffset.UtcNow;
 
             var value = _rateLimitCache.AddOrUpdate(
@@ -72,9 +75,9 @@ namespace PhpbbInDotnet.Services
                 },
                 updateValueFactory: (_, existingDict) =>
                 {
-                    var subkey = Guid.NewGuid().ToString();
                     if (existingDict.Count < threshold)
                     {
+                        var subkey = Guid.NewGuid().ToString();
                         existingDict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, timeWindow, existingDict));
                     }
                     return existingDict;
@@ -83,9 +86,30 @@ namespace PhpbbInDotnet.Services
             return value.Count >= threshold;
         }
 
+        //no more than threshold different IPs for the same user agent + sessionId in the time window
+        private bool ShouldRateLimitByInstance(string userAgent, string ip, string? sessionId, int threshold, TimeSpan timeWindow)
+        {
+            var key = $"{userAgent}-{sessionId}";
+            var now = DateTimeOffset.UtcNow;
+            var value = _ipsByUserAgentCache.AddOrUpdate(
+                key: key,
+                addValue: new Item<ConcurrentDictionary<string, DateTimeOffset>>(key, new ConcurrentDictionary<string, DateTimeOffset> { [ip] = now }, timeWindow, _ipsByUserAgentCache),
+                updateValueFactory: (_, curValue) =>
+                {
+                    if (curValue.Value.Count < threshold && curValue.Value.TryAdd(ip, now))
+                    {
+                        curValue.ResetTimer();
+                    }
+                    return curValue;
+                });
+
+            return value.Value.Count >= threshold;
+        }
+
         private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;
-        private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _userAgentCache;
+        private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _verifiedBotsCache;
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>> _rateLimitCache;
+        private readonly ConcurrentDictionary<string, Item<ConcurrentDictionary<string, DateTimeOffset>>> _ipsByUserAgentCache;
 
         private class Item<TValue> : IDisposable
         {

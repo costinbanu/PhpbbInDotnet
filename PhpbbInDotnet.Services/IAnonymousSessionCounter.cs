@@ -7,7 +7,6 @@ namespace PhpbbInDotnet.Services
     public interface IAnonymousSessionCounter
     {
         int GetTotalActiveBotCount();
-        int GetActiveBotCountByUserAgent(string userAgent);
         int GetActiveSessionCount();
         int GetUniqueBotCount();
         IEnumerable<BotData> GetBots();
