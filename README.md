@@ -80,10 +80,12 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "ForumIsReadOnly": false,
   "MinimumAge": 16,
   "HostInstanceCount": 1,
-    "RateLimitOptions":{
+  "RateLimitOptions":{
     "ShouldRateLimit": true,
-    "TimeWindow": "00:01:00",
-    "Threshold": 60
+    "RequestTimeWindow": "00:01:00",
+    "ClientTimeWindow": "01:00:00",
+    "RequestThreshold": 60,
+    "ClientThreshold": 60
   }
 }
 ```
@@ -137,8 +139,10 @@ ForumIsReadOnly | bool | false | Whether the entire forum is in read-only mode. 
 MinimumAge | int | 16 | Minimum age for users to register
 HostInstanceCount | int | 1 | Number of hosts (if the application is deployed in an environment that scales horizontally). Must be set correctly, otherwise concurrency issues will occur. Values greater than 1 require a storage type other than HardDisk.
 RateLimitOptions.ShouldRateLimit | bool | true | Whether a rate limit should be applied
-RateLimitOptions.TimeWindow | TimeSpan | 00:01:00 | Rate limit time window
-RateLimitOptions.Threshold | int |  60 | Amount of requests allowd within the time window
+RateLimitOptions.RequestTimeWindow | TimeSpan | 00:01:00 | Request rate limit time window
+RateLimitOptions.RequestThreshold | int |  60 | Amount of requests allowed within the time window
+RateLimitOptions.ClientTimeWindow | TimeSpan | 01:00:00 | Unique client rate limit time window
+RateLimitOptions.ClientThreshold | int |  60 | Amount of unique clients allowed within the time window. One unique client is determined by the combination of IP address and a session id (either the user id, if registered, or a 60-minutes sliding window session id that persisted on the cookie, if one exists)
 
 ### Branding
 #### Forum header

@@ -1,4 +1,7 @@
-﻿using PhpbbInDotnet.Objects;
+﻿using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -9,12 +12,13 @@ namespace PhpbbInDotnet.Services
 {
     class AnonymousSessionCounter : IAnonymousSessionCounter
     {
-        public AnonymousSessionCounter()
+        public AnonymousSessionCounter(IConfiguration configuration)
         {
             _sessionCache = new ConcurrentDictionary<string, Item<string>>();
             _verifiedBotsCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();
             _rateLimitCache = new ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>>();
             _ipsByUserAgentCache = new ConcurrentDictionary<string, Item<ConcurrentDictionary<string, DateTimeOffset>>>();
+            _rateLimitOptions = configuration.GetObject<RateLimitOptions>();
         }
 
         public void UpsertSession(string sessionId, TimeSpan expiration)
@@ -54,12 +58,12 @@ namespace PhpbbInDotnet.Services
         public int GetUniqueBotCount()
             => _verifiedBotsCache.Count;
 
-        public bool ShouldRateLimit(string userAgent, string ip, string? sessionId, int threshold, TimeSpan timeWindow)
-            => ShouldRateLimitByInstance(userAgent, ip, sessionId, threshold, timeWindow)
-                || ShouldRateLimitByVolume(userAgent, ip, sessionId, threshold, timeWindow);
+        public bool ShouldRateLimit(string userAgent, string ip, string? sessionId)
+            => ShouldRateLimitByInstance(userAgent, ip, sessionId)
+                || ShouldRateLimitByVolume(userAgent, ip, sessionId);
 
-        //no more than threshold requests for the same user agent + IP + sessionId in the time window
-        private bool ShouldRateLimitByVolume(string userAgent, string ip, string? sessionId, int threshold, TimeSpan timeWindow)
+        //no more than requestThreshold requests for the same user agent + IP + sessionId in the requestTimeWindow
+        private bool ShouldRateLimitByVolume(string userAgent, string ip, string? sessionId)
         {
             var key = $"{userAgent}-{ip}-{sessionId}";
             var now = DateTimeOffset.UtcNow;
@@ -70,46 +74,51 @@ namespace PhpbbInDotnet.Services
                 {
                     var dict = new ConcurrentDictionary<string, Item<DateTimeOffset>>();
                     var subkey = Guid.NewGuid().ToString();
-                    dict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, timeWindow, dict));
+                    dict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, _rateLimitOptions.RequestTimeWindow, dict));
                     return dict;
                 },
                 updateValueFactory: (_, existingDict) =>
                 {
-                    if (existingDict.Count < threshold)
+                    if (existingDict.Count < _rateLimitOptions.RequestThreshold)
                     {
                         var subkey = Guid.NewGuid().ToString();
-                        existingDict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, timeWindow, existingDict));
+                        existingDict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, _rateLimitOptions.RequestTimeWindow, existingDict));
                     }
                     return existingDict;
                 });
 
-            return value.Count >= threshold;
+            return value.Count >= _rateLimitOptions.RequestThreshold;
         }
 
-        //no more than threshold different IPs for the same user agent + sessionId in the time window
-        private bool ShouldRateLimitByInstance(string userAgent, string ip, string? sessionId, int threshold, TimeSpan timeWindow)
+        //no more than clientThreshold different IPs for the same user agent + sessionId in the clientTimeWindow
+        private bool ShouldRateLimitByInstance(string userAgent, string ip, string? sessionId)
         {
             var key = $"{userAgent}-{sessionId}";
             var now = DateTimeOffset.UtcNow;
             var value = _ipsByUserAgentCache.AddOrUpdate(
                 key: key,
-                addValue: new Item<ConcurrentDictionary<string, DateTimeOffset>>(key, new ConcurrentDictionary<string, DateTimeOffset> { [ip] = now }, timeWindow, _ipsByUserAgentCache),
+                addValue: new Item<ConcurrentDictionary<string, DateTimeOffset>>(
+                    key: key, 
+                    value: new ConcurrentDictionary<string, DateTimeOffset> { [ip] = now }, 
+                    expiration: _rateLimitOptions.ClientTimeWindow,
+                    cache: _ipsByUserAgentCache),
                 updateValueFactory: (_, curValue) =>
                 {
-                    if (curValue.Value.Count < threshold && curValue.Value.TryAdd(ip, now))
+                    if (curValue.Value.Count < _rateLimitOptions.ClientThreshold && curValue.Value.TryAdd(ip, now))
                     {
                         curValue.ResetTimer();
                     }
                     return curValue;
                 });
 
-            return value.Value.Count >= threshold;
+            return value.Value.Count >= _rateLimitOptions.ClientThreshold;
         }
 
         private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;
         private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _verifiedBotsCache;
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>> _rateLimitCache;
         private readonly ConcurrentDictionary<string, Item<ConcurrentDictionary<string, DateTimeOffset>>> _ipsByUserAgentCache;
+        private readonly RateLimitOptions _rateLimitOptions;
 
         private class Item<TValue> : IDisposable
         {

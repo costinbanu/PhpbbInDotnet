@@ -21,7 +21,7 @@ public class RateLimitingMiddleware(IConfiguration configuration, IAnonymousSess
         var sessionId = IdentityUtility.TryGetUserId(context.User, out var userId) ? userId.ToString() : context.Request.Cookies.GetAnonymousSessionId();
         var options = configuration.GetObject<RateLimitOptions>();
 
-        if (options.ShouldRateLimit && await ShouldRateLimitPage(context) && anonymousSessionCounter.ShouldRateLimit(userAgent, ip, sessionId, options.Threshold, options.TimeWindow))
+        if (options.ShouldRateLimit && await ShouldRateLimitPage(context) && anonymousSessionCounter.ShouldRateLimit(userAgent, ip, sessionId))
         {
             context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
             return;
