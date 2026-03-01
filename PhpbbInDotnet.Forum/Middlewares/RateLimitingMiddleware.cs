@@ -12,14 +12,19 @@ using PhpbbInDotnet.Services;
 
 namespace PhpbbInDotnet.Forum.Middlewares;
 
-public class RateLimitingMiddleware(IConfiguration configuration, IAnonymousSessionCounter anonymousSessionCounter, IDistributedCache cache) : IMiddleware
+public class RateLimitingMiddleware(IConfiguration configuration, ISessionManager anonymousSessionCounter, IDistributedCache cache) : IMiddleware
 {
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         var userAgent = context.Request.Headers.UserAgent.ToString();
         var ip = context.GetIpAddress() ?? "n/a";
-        var sessionId = IdentityUtility.TryGetUserId(context.User, out var userId) ? userId.ToString() : context.Request.Cookies.GetAnonymousSessionId();
         var options = configuration.GetObject<RateLimitOptions>();
+
+        string? sessionId = null;
+        if (!context.IsBot())
+        {
+            sessionId = IdentityUtility.TryGetUserId(context.User, out var userId) ? userId.ToString() : context.Request.Cookies.GetAnonymousSessionId();
+        }
 
         if (options.ShouldRateLimit && await ShouldRateLimitPage(context) && anonymousSessionCounter.ShouldRateLimit(userAgent, ip, sessionId))
         {

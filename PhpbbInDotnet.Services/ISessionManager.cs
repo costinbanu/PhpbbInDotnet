@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Services
 {
-    public interface IAnonymousSessionCounter
+    public interface ISessionManager
     {
         int GetTotalActiveBotCount();
         int GetActiveSessionCount();

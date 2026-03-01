@@ -10,9 +10,9 @@ using System.Timers;
 
 namespace PhpbbInDotnet.Services
 {
-    class AnonymousSessionCounter : IAnonymousSessionCounter
+    class SessionManager : ISessionManager
     {
-        public AnonymousSessionCounter(IConfiguration configuration)
+        public SessionManager(IConfiguration configuration)
         {
             _sessionCache = new ConcurrentDictionary<string, Item<string>>();
             _verifiedBotsCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();

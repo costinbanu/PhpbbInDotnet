@@ -1,5 +1,4 @@
-﻿using DeviceDetectorNET;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -23,9 +22,9 @@ namespace PhpbbInDotnet.Forum.Middlewares
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
-        private readonly IAnonymousSessionCounter _sessionCounter;
+        private readonly ISessionManager _sessionCounter;
 
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, IAnonymousSessionCounter sessionCounter)
+        public AuthenticationMiddleware(ILogger logger, IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, ISessionManager sessionCounter)
         {
             _logger = logger;
             _sqlExecuter = sqlExecuter;
@@ -77,27 +76,13 @@ namespace PhpbbInDotnet.Forum.Middlewares
             {
                 if (user.IsAnonymous && !context.Request.Cookies.IsAnonymousSessionStarted())
                 {
-                    var sessionId = context.Response.Cookies.StartAnonymousSession();
-                    string? userAgent = null;
-                    bool isBot = false;
-                    try
+                    if (context.IsBot())
                     {
-                        userAgent = context.Request.Headers.UserAgent.ToString();
-                        var dd = new DeviceDetector(userAgent, ClientHints.Factory(context.Request.Headers.ToDictionary(a => a.Key, a => a.Value.ToArray().FirstOrDefault())));
-                        dd.Parse();
-                        isBot = dd.IsBot();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Warning(ex, "Failed to detect if session is bot. User agent: {userAgent}, IP: {ip}", userAgent, context.GetIpAddress());
-                    }
-
-                    if (isBot)
-                    {
-                        _sessionCounter.UpsertBot(context.GetIpAddress() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);
+                        _sessionCounter.UpsertBot(context.GetIpAddress() ?? "n/a", context.Request.Headers.UserAgent.ToString() ?? "n/a", sessionTrackingTimeout);
                     }
                     else
                     {
+                        var sessionId = context.Response.Cookies.StartAnonymousSession();
                         _sessionCounter.UpsertSession(sessionId, sessionTrackingTimeout);
                     }
                 }
