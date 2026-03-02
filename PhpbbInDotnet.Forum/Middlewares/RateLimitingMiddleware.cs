@@ -17,13 +17,18 @@ public class RateLimitingMiddleware(IConfiguration configuration, ISessionManage
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         var userAgent = context.Request.Headers.UserAgent.ToString();
-        var ip = context.GetIpAddress() ?? "n/a";
         var options = configuration.GetObject<RateLimitOptions>();
 
+        string ip;
         string? sessionId = null;
-        if (!context.IsBot())
+        if (context.IsBot())
+        {
+            ip = Guid.NewGuid().ToString();
+        }
+        else
         {
             sessionId = IdentityUtility.TryGetUserId(context.User, out var userId) ? userId.ToString() : context.Request.Cookies.GetAnonymousSessionId();
+            ip = context.GetIpAddress() ?? "n/a";
         }
 
         if (options.ShouldRateLimit && await ShouldRateLimitPage(context) && anonymousSessionCounter.ShouldRateLimit(userAgent, ip, sessionId))
@@ -40,7 +45,7 @@ public class RateLimitingMiddleware(IConfiguration configuration, ISessionManage
         var path = context.Request.Path.Value;
         var referrer = context.Request.Headers.Referer.ToString();
 
-        if(path?.Equals("/file", StringComparison.OrdinalIgnoreCase) == true)
+        if (path?.Equals("/file", StringComparison.OrdinalIgnoreCase) == true)
         {
             if (Uri.TryCreate(referrer, UriKind.Absolute, out var referrerUri) && referrerUri.Host.Equals(context.Request.Host.Host, StringComparison.OrdinalIgnoreCase))
             {
@@ -62,7 +67,7 @@ public class RateLimitingMiddleware(IConfiguration configuration, ISessionManage
                     }
                 }
             }
-        }       
+        }
         return true;
     }
 }
