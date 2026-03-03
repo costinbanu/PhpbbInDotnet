@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
         {
             ForumUser baseUser;
             PhpbbUsers? dbUser;
-            if (IdentityUtility.TryGetUserId(context.User, out var userId))
+            if (IdentityUtility.TryGetUserId(context.User, out var userId) && ForumUserUtility.IsValidRegisteredUserId(userId))
             {
                 dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
@@ -62,13 +62,17 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 baseUser = _userService.DbUserToForumUser(dbUser);
             }
 
-            var expansions = ForumUserExpansionType.Permissions;
+            ForumUserExpanded user;
             if (!baseUser.IsAnonymous)
             {
-                expansions |= ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
+                var expansions = ForumUserExpansionType.Permissions | ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
+                user = await _userService.ExpandForumUser(baseUser, expansions);
+            }
+            else
+            {
+                user = await _userService.GetAnonymousForumUserExpandedAsync();
             }
 
-            var user = await _userService.ExpandForumUser(baseUser, expansions);
             context.Items[nameof(ForumUserExpanded)] = user;
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);

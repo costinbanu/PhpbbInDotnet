@@ -5,6 +5,7 @@ using System.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects.Configuration;
@@ -18,20 +19,31 @@ public class RateLimitingMiddleware(IConfiguration configuration, ISessionManage
     {
         var userAgent = context.Request.Headers.UserAgent.ToString();
         var options = configuration.GetObject<RateLimitOptions>();
+        var ip = context.GetIpAddress() ?? "n/a";
 
-        string ip;
-        string? sessionId = null;
+        string? sessionId;
+        int? userId;
+        UserType userType;
         if (context.IsBot())
         {
-            ip = Guid.NewGuid().ToString();
+            userId = null;
+            sessionId = null;
+            userType = UserType.VerifiedBot;
+        }
+        else if (IdentityUtility.TryGetUserId(context.User, out var id) && ForumUserUtility.IsValidRegisteredUserId(id))
+        {
+            userId = id;
+            sessionId = id.ToString();
+            userType = UserType.RegisteredUser;
         }
         else
         {
-            sessionId = IdentityUtility.TryGetUserId(context.User, out var userId) ? userId.ToString() : context.Request.Cookies.GetAnonymousSessionId();
-            ip = context.GetIpAddress() ?? "n/a";
+            userId = null;
+            sessionId = context.Request.Cookies.GetAnonymousSessionId();
+            userType = UserType.Unknown;
         }
 
-        if (options.ShouldRateLimit && await ShouldRateLimitPage(context) && anonymousSessionCounter.ShouldRateLimit(userAgent, ip, sessionId))
+        if (options.ShouldRateLimit && await ShouldRateLimitPage(context) && anonymousSessionCounter.ShouldRateLimit(userAgent, ip, sessionId, userId, userType))
         {
             context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
             return;
@@ -50,10 +62,10 @@ public class RateLimitingMiddleware(IConfiguration configuration, ISessionManage
             if (Uri.TryCreate(referrer, UriKind.Absolute, out var referrerUri) && referrerUri.Host.Equals(context.Request.Host.Host, StringComparison.OrdinalIgnoreCase))
             {
                 var queryString = HttpUtility.ParseQueryString(context.Request.QueryString.Value ?? string.Empty);
-                if (queryString["handler"] == "avatar" && int.TryParse(queryString["userId"], out var userId))
+                if (queryString["handler"]?.Equals("avatar", StringComparison.OrdinalIgnoreCase) == true && int.TryParse(queryString["userId"], out var userId))
                 {
                     var avatar = await cache.GetStringAsync(CacheUtility.GetAvatarCacheKey(userId));
-                    if (!string.IsNullOrEmpty(avatar))
+                    if (!string.IsNullOrWhiteSpace(avatar))
                     {
                         return false;
                     }

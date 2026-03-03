@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Mysqlx.Notice;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
@@ -17,7 +19,7 @@ namespace PhpbbInDotnet.Services
             _sessionCache = new ConcurrentDictionary<string, Item<string>>();
             _verifiedBotsCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();
             _rateLimitCache = new ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>>();
-            _ipsByUserAgentCache = new ConcurrentDictionary<string, Item<ConcurrentDictionary<string, DateTimeOffset>>>();
+            _uniqueVisitorsCache = new ConcurrentDictionary<string, Item<int>>();
             _rateLimitOptions = configuration.GetObject<RateLimitOptions>();
         }
 
@@ -58,9 +60,8 @@ namespace PhpbbInDotnet.Services
         public int GetUniqueBotCount()
             => _verifiedBotsCache.Count;
 
-        public bool ShouldRateLimit(string userAgent, string ip, string? sessionId)
-            => ShouldRateLimitByInstance(userAgent, ip, sessionId)
-                || ShouldRateLimitByVolume(userAgent, ip, sessionId);
+        public bool ShouldRateLimit(string userAgent, string ip, string? sessionId, int? userId, UserType userType)
+            => ShouldRateLimitByInstance(userAgent, ip, userId, userType) || ShouldRateLimitByVolume(userAgent, ip, sessionId);
 
         //no more than requestThreshold requests for the same user agent + IP + sessionId in the requestTimeWindow
         private bool ShouldRateLimitByVolume(string userAgent, string ip, string? sessionId)
@@ -90,34 +91,36 @@ namespace PhpbbInDotnet.Services
             return value.Count >= _rateLimitOptions.RequestThreshold;
         }
 
-        //no more than clientThreshold different IPs for the same user agent + sessionId in the clientTimeWindow
-        private bool ShouldRateLimitByInstance(string userAgent, string ip, string? sessionId)
+        //no more than clientThreshold unique visitors in the clientTimeWindow
+        private bool ShouldRateLimitByInstance(string userAgent, string ip, int? userId, UserType userType)
         {
-            var key = $"{userAgent}-{sessionId}";
+            var key = userType switch
+            {
+                UserType.VerifiedBot => userAgent,
+                UserType.RegisteredUser => $"{userAgent}-{ip}-{userId}",
+                _ => $"{userAgent}-{ip}"
+            };
+
             var now = DateTimeOffset.UtcNow;
-            var value = _ipsByUserAgentCache.AddOrUpdate(
+            var value = _uniqueVisitorsCache.AddOrUpdate(
                 key: key,
-                addValue: new Item<ConcurrentDictionary<string, DateTimeOffset>>(
-                    key: key, 
-                    value: new ConcurrentDictionary<string, DateTimeOffset> { [ip] = now }, 
-                    expiration: _rateLimitOptions.ClientTimeWindow,
-                    cache: _ipsByUserAgentCache),
+                addValue: new Item<int>(key, 1, _rateLimitOptions.ClientTimeWindow, _uniqueVisitorsCache),
                 updateValueFactory: (_, curValue) =>
                 {
-                    if (curValue.Value.Count < _rateLimitOptions.ClientThreshold && curValue.Value.TryAdd(ip, now))
+                    if (curValue.Value <= _rateLimitOptions.ClientThreshold)
                     {
-                        curValue.ResetTimer();
+                        curValue.UpdateValueAndResetTimer(curValue.Value + 1);
                     }
                     return curValue;
                 });
 
-            return value.Value.Count >= _rateLimitOptions.ClientThreshold;
+            return value.Value > _rateLimitOptions.ClientThreshold;
         }
 
         private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;
         private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _verifiedBotsCache;
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>> _rateLimitCache;
-        private readonly ConcurrentDictionary<string, Item<ConcurrentDictionary<string, DateTimeOffset>>> _ipsByUserAgentCache;
+        private readonly ConcurrentDictionary<string, Item<int>> _uniqueVisitorsCache;
         private readonly RateLimitOptions _rateLimitOptions;
 
         private class Item<TValue> : IDisposable
@@ -147,6 +150,12 @@ namespace PhpbbInDotnet.Services
                     }
                 });
                 _timer.Start();
+            }
+
+            internal void UpdateValueAndResetTimer(TValue newValue)
+            {
+                Value = newValue;
+                ResetTimer();
             }
 
             public void Dispose()
