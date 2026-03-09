@@ -83,9 +83,8 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "RateLimitOptions":{
     "ShouldRateLimit": true,
     "RequestTimeWindow": "00:01:00",
-    "ClientTimeWindow": "01:00:00",
-    "RequestThreshold": 60,
-    "ClientThreshold": 60
+    "RequestThresholdForRegisteredUsers": 60,
+    "RequestThresholdForOtherUsers": 30
   }
 }
 ```
@@ -140,9 +139,8 @@ MinimumAge | int | 16 | Minimum age for users to register
 HostInstanceCount | int | 1 | Number of hosts (if the application is deployed in an environment that scales horizontally). Must be set correctly, otherwise concurrency issues will occur. Values greater than 1 require a storage type other than HardDisk.
 RateLimitOptions.ShouldRateLimit | bool | true | Whether a rate limit should be applied
 RateLimitOptions.RequestTimeWindow | TimeSpan | 00:01:00 | Request rate limit time window
-RateLimitOptions.RequestThreshold | int |  60 | Amount of requests allowed within the time window
-RateLimitOptions.ClientTimeWindow | TimeSpan | 01:00:00 | Unique client rate limit time window
-RateLimitOptions.ClientThreshold | int |  60 | Amount of unique clients allowed within the time window. One unique client is determined by the combination of IP address and a session id (either the user id, if registered, or a 60-minutes sliding window session id that persisted on the cookie, if one exists)
+RateLimitOptions.RequestThresholdForRegisteredUsers | int |  60 | Amount of requests allowed within the time window for registered users
+RateLimitOptions.RequestThresholdForOtherUsers | int |  30 | Amount of requests allowed within the time window for guests and bots
 
 ### Branding
 #### Forum header
