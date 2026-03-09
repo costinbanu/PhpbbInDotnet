@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Mysqlx.Notice;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects;
@@ -61,14 +60,20 @@ namespace PhpbbInDotnet.Services
             => _verifiedBotsCache.Count;
 
         public bool ShouldRateLimit(string userAgent, string ip, string? sessionId, int? userId, UserType userType)
-            => ShouldRateLimitByInstance(userAgent, ip, userId, userType) || ShouldRateLimitByVolume(userAgent, ip, sessionId);
-
-        //no more than requestThreshold requests for the same user agent + IP + sessionId in the requestTimeWindow
-        private bool ShouldRateLimitByVolume(string userAgent, string ip, string? sessionId)
         {
-            var key = $"{userAgent}-{ip}-{sessionId}";
-            var now = DateTimeOffset.UtcNow;
+            var key = userType switch
+            {
+                UserType.VerifiedBot => userAgent,
+                UserType.RegisteredUser => $"{userAgent}-{ip}-{userId}",
+                _ => $"{userAgent}-{ip}-{sessionId}"
+            };
+            var threshold = userType switch
+            {
+                UserType.RegisteredUser => _rateLimitOptions.RequestThresholdForRegisteredUsers,
+                _ => _rateLimitOptions.RequestThresholdForOtherUsers
+            };
 
+            var now = DateTimeOffset.UtcNow;
             var value = _rateLimitCache.AddOrUpdate(
                 key: key,
                 addValueFactory: _ =>
@@ -80,7 +85,7 @@ namespace PhpbbInDotnet.Services
                 },
                 updateValueFactory: (_, existingDict) =>
                 {
-                    if (existingDict.Count < _rateLimitOptions.RequestThreshold)
+                    if (existingDict.Count <= threshold)
                     {
                         var subkey = Guid.NewGuid().ToString();
                         existingDict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, _rateLimitOptions.RequestTimeWindow, existingDict));
@@ -88,33 +93,7 @@ namespace PhpbbInDotnet.Services
                     return existingDict;
                 });
 
-            return value.Count >= _rateLimitOptions.RequestThreshold;
-        }
-
-        //no more than clientThreshold unique visitors in the clientTimeWindow
-        private bool ShouldRateLimitByInstance(string userAgent, string ip, int? userId, UserType userType)
-        {
-            var key = userType switch
-            {
-                UserType.VerifiedBot => userAgent,
-                UserType.RegisteredUser => $"{userAgent}-{ip}-{userId}",
-                _ => $"{userAgent}-{ip}"
-            };
-
-            var now = DateTimeOffset.UtcNow;
-            var value = _uniqueVisitorsCache.AddOrUpdate(
-                key: key,
-                addValue: new Item<int>(key, 1, _rateLimitOptions.ClientTimeWindow, _uniqueVisitorsCache),
-                updateValueFactory: (_, curValue) =>
-                {
-                    if (curValue.Value <= _rateLimitOptions.ClientThreshold)
-                    {
-                        curValue.UpdateValueAndResetTimer(curValue.Value + 1);
-                    }
-                    return curValue;
-                });
-
-            return value.Value > _rateLimitOptions.ClientThreshold;
+            return value.Count > threshold;
         }
 
         private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;

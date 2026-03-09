@@ -30,7 +30,7 @@ public class RateLimitingMiddleware(IConfiguration configuration, ISessionManage
             sessionId = null;
             userType = UserType.VerifiedBot;
         }
-        else if (IdentityUtility.TryGetUserId(context.User, out var id) && ForumUserUtility.IsValidRegisteredUserId(id))
+        else if (IdentityUtility.TryGetUserId(context.User, out var id) && IdentityUtility.IsValidRegisteredUserId(id))
         {
             userId = id;
             sessionId = id.ToString();

@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
         {
             ForumUser baseUser;
             PhpbbUsers? dbUser;
-            if (IdentityUtility.TryGetUserId(context.User, out var userId) && ForumUserUtility.IsValidRegisteredUserId(userId))
+            if (IdentityUtility.TryGetUserId(context.User, out var userId) && IdentityUtility.IsValidRegisteredUserId(userId))
             {
                 dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
