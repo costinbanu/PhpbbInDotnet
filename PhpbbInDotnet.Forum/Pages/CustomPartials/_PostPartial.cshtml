@@ -7,10 +7,12 @@
 @using Domain.Extensions;
 @using Objects
 @using Microsoft.Extensions.Configuration
+@using PhpbbInDotnet.Services
 
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Languages.ITranslationProvider _translationProvider
 @inject IConfiguration _config
+@inject IUserService _userService
 
 @{
     var userDateFormat = Model.CurrentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(Model.Language);
@@ -19,6 +21,15 @@
     var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
     var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.Post.AuthorColor}";
     var authorIsOnFoeList = Model.CurrentUser?.Foes?.Contains(Model.Post.AuthorId) == true;
+    string? pmLink = null;
+    if (Model.CurrentUser?.UserId != Model.Post.AuthorId)
+    {
+        var author = await _userService.TryGetForumUserExpanded(Model.Post.AuthorId, ForumUserExpansionType.Permissions);
+        if(Model.HasCurrentUserPM && !authorIsOnFoeList && (author?.HasPrivateMessages == true || Model.IsCurrentUserMod))
+        {
+            pmLink = $"<a href=\"./SendPrivateMessage?postId={Model.Post.PostId}\">&#x1F5E8; {_translationProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>";
+        }
+    }
 
     @if (authorIsOnFoeList)
     {
@@ -51,7 +62,7 @@
             AuthorRank = Model.Post.AuthorRank,
             AlignLeft = true,
             IsLastPostSummary = false,
-            PMLink = Model.HasCurrentUserPM && !authorIsOnFoeList ? $"<a href=\"./SendPrivateMessage?postId={Model.Post.PostId}\">&#x1F5E8; {_translationProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
+            PMLink = pmLink
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
             @if (!string.IsNullOrWhiteSpace(Model.Path))
