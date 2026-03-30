@@ -17,6 +17,7 @@ namespace PhpbbInDotnet.Services
         ForumUserExpanded GetAnonymousForumUserExpanded();
         Task<ForumUserExpanded> GetAnonymousForumUserExpandedAsync();
         Task<ForumUser> GetForumUserById(int userId, ITransactionalSqlExecuter? transaction = null);
+        Task<ForumUserExpanded?> TryGetForumUserExpanded(int userId, ForumUserExpansionType expansionType);
         Task<IEnumerable<PhpbbGroups>> GetAllGroups();
         Task<IEnumerable<PhpbbRanks>> GetAllRanks();
         Task<PhpbbGroups?> GetUserGroup(int userId);

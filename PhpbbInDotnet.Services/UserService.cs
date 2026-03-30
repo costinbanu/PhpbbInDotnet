@@ -239,6 +239,27 @@ namespace PhpbbInDotnet.Services
             return DbUserToForumUser(usr);
         }
 
+        public async Task<ForumUserExpanded?> TryGetForumUserExpanded(int userId, ForumUserExpansionType expansionType)
+        {
+            var dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            if (dbUser is null)
+            {
+                return null;
+            }
+
+            var forumUser = DbUserToForumUser(dbUser);
+
+            try
+            {
+                return await ExpandForumUser(forumUser, expansionType);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error expanding forum user with ID {UserId}", userId);
+                return null;
+            }
+        }
+
         public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(ForumUserExpanded sender, int receiverId, string subject, string text)
         {
             var language = _translationProvider.GetLanguage();
@@ -254,7 +275,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Errors[language, "SENDER_CANT_SEND_PMS"], false);
                 }
 
-                var receiver = await ExpandForumUser(await GetForumUserById(receiverId), ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes);
+                var receiver = (await TryGetForumUserExpanded(receiverId, ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes))!;
                 var senderIsGlobalModerator = await IsUserModeratorInForum(sender, forumId: 0);
                 if (!receiver.HasPrivateMessages && !senderIsGlobalModerator)
                 {
