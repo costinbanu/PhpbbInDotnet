@@ -484,8 +484,8 @@ namespace PhpbbInDotnet.Services
                 //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
                 await MarkForumRead(userId, forumId);
 
-                //current forum is the user's last unread forum, and it has just been read; set the mark time.
-                if (tracking.Count == 1)
+                //current forum is the user's last unread forum that they have access to, and it has just been read; set the mark time.
+                if (tracking.Count(t => _tree?.TryGetValue(new ForumTree { ForumId = t.Key }, out var tree) == true && !IsNodeRestricted(tree, userId, includePasswordProtected: true)) == 1)
                 {
                     await SetLastMark(userId);
                 }
