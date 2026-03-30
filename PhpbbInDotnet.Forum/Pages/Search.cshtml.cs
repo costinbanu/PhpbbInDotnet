@@ -139,11 +139,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 $"&{nameof(DoSearch)}={true}" +
                 (IsAuthorSearch ? "&handler=byAuthor" : (IsAttachmentSearch ? "&handler=Attachments" : ""));
 
-        private static readonly Regex _disallowedChars = new ("[^a-z0-9 _-]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _disallowedChars = new ("[^a-z0-9 _\"-]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private async Task Search()
         {
             var decodedSearchText = string.IsNullOrWhiteSpace(SearchText) ? string.Empty : HttpUtility.UrlDecode(SearchText).Trim();
+            decodedSearchText = NormalizeDoubleQuotes(decodedSearchText);
             decodedSearchText = _disallowedChars.Replace(decodedSearchText, string.Empty);
 
             if (string.IsNullOrWhiteSpace(decodedSearchText) && !IsAuthorSearch)
@@ -174,6 +175,38 @@ namespace PhpbbInDotnet.Forum.Pages
                     WHERE p.post_id IN @posts",
                 new { posts = Posts.Select(p => p.PostId).DefaultIfEmpty() });
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum, link: GetSearchLinkForPage(PageNum + 1), topicId: null);
+        }
+
+        private static string NormalizeDoubleQuotes(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            return input
+                // Left double quotation mark: "
+                .Replace('\u201C', '"')
+                // Right double quotation mark: "
+                .Replace('\u201D', '"')
+                // Double low-9 quotation mark: „
+                .Replace('\u201E', '"')
+                // Double high-reversed-9 quotation mark: ‟
+                .Replace('\u201F', '"')
+                // Left-pointing double angle quotation mark: «
+                .Replace('\u00AB', '"')
+                // Right-pointing double angle quotation mark: »
+                .Replace('\u00BB', '"')
+                // Double prime: ″
+                .Replace('\u2033', '"')
+                // Reversed double prime: ‶
+                .Replace('\u2036', '"')
+                // Heavy double turned comma quotation mark ornament: ❝
+                .Replace('\u275D', '"')
+                // Heavy double comma quotation mark ornament: ❞
+                .Replace('\u275E', '"')
+                // Fullwidth quotation mark: ＂
+                .Replace('\uFF02', '"')
+                // Modifier letter double prime: ʺ
+                .Replace('\u02BA', '"');
         }
     }
 }

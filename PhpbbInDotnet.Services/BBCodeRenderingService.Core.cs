@@ -243,6 +243,20 @@ namespace PhpbbInDotnet.Services
                 indexOf: (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.InvariantCultureIgnoreCase), needle),
                 transform: (haystack, needle, index) =>
                 {
+                    var isStandaloneWord = true;
+                    if(index > 0 && char.IsLetterOrDigit(haystack[index - 1]))
+                    {
+                        isStandaloneWord = false;
+                    }
+                    if (index + needle.Length < haystack.Length && char.IsLetterOrDigit(haystack[index + needle.Length]))
+                    {
+                        isStandaloneWord = false;
+                    }
+                    if (!isStandaloneWord)
+                    {
+                        return (haystack, index);
+                    }
+
                     var openTag = "<span class=\"posthilit\">";
                     var closeTag = "</span>";
                     haystack = haystack.Insert(index, openTag);
