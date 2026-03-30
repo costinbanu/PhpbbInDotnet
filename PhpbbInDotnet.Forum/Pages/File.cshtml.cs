@@ -90,20 +90,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 _ => SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment));
         }
 
-        public async Task<IActionResult> OnGetAvatar(int userId, Guid? correlationId = null)
+        public async Task<IActionResult> OnGetAvatar(int userId)
         {
             string? file;
             string getActualFileName(string fileName)
                 => $"{Configuration.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
 
-            if (correlationId.HasValue)
+            file = await _cache.GetStringAsync(CacheUtility.GetAvatarCacheKey(userId));
+            if (file != null)
             {
-                file = await _cache.GetStringAsync(CacheUtility.GetAvatarCacheKey(userId, correlationId.Value));
-                if (file != null)
-                {
-                    file = getActualFileName(file);
-                    return await SendToClient(file, file, null, FileType.Avatar);
-                }
+                file = getActualFileName(file);
+                return await SendToClient(file, file, null, FileType.Avatar);
             }
 
             file = await SqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });

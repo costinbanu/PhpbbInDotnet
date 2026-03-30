@@ -79,8 +79,13 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "RecurringTasksTimeToRun": "02:00",
   "ForumIsReadOnly": false,
   "MinimumAge": 16,
-  "RateLimitBots": false,
-  "HostInstanceCount": 1
+  "HostInstanceCount": 1,
+  "RateLimitOptions":{
+    "ShouldRateLimit": true,
+    "RequestTimeWindow": "00:01:00",
+    "RequestThresholdForRegisteredUsers": 60,
+    "RequestThresholdForOtherUsers": 30
+  }
 }
 ```
 
@@ -131,8 +136,11 @@ IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
 RecurringTasksTimeToRun | string | 02:00 | Required recurring tasks (DB table sync etc) will run daily at this specified hour (UTC). Must be in the HH:mm format.
 ForumIsReadOnly | bool | false | Whether the entire forum is in read-only mode. This means that the forum can be read, but no posts or private messages can be submitted.
 MinimumAge | int | 16 | Minimum age for users to register
-RateLimitBots | bool | false | Whether bots should be rate limited (if true, the app will allow at most 50 instances of a bot per user agent within the timespan configured in the UserActivityTrackingInterval setting, while all other instances would receive a 429 Too Many Requests response)
 HostInstanceCount | int | 1 | Number of hosts (if the application is deployed in an environment that scales horizontally). Must be set correctly, otherwise concurrency issues will occur. Values greater than 1 require a storage type other than HardDisk.
+RateLimitOptions.ShouldRateLimit | bool | true | Whether a rate limit should be applied
+RateLimitOptions.RequestTimeWindow | TimeSpan | 00:01:00 | Request rate limit time window
+RateLimitOptions.RequestThresholdForRegisteredUsers | int |  60 | Amount of requests allowed within the time window for registered users
+RateLimitOptions.RequestThresholdForOtherUsers | int |  30 | Amount of requests allowed within the time window for guests and bots
 
 ### Branding
 #### Forum header

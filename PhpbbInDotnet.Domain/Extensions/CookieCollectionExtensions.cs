@@ -42,6 +42,9 @@ namespace PhpbbInDotnet.Domain.Extensions
         public static bool IsAnonymousSessionStarted (this IRequestCookieCollection cookies)
             => cookies.TryGetValue(SessionIdKey, out var val) && Guid.TryParse(val, out _);
 
+        public static string? GetAnonymousSessionId(this IRequestCookieCollection cookies)
+            => cookies.TryGetValue(SessionIdKey, out var val) ? val : null;
+
         public static string StartAnonymousSession(this IResponseCookies cookies)
         {
             var sessionId = Guid.NewGuid().ToString();

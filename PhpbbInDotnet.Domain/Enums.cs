@@ -290,4 +290,11 @@ namespace PhpbbInDotnet.Domain
         Forums,
         Topics
     }
+
+    public enum UserType
+    {
+        Unknown,
+        VerifiedBot,
+        RegisteredUser,
+    }
 }
