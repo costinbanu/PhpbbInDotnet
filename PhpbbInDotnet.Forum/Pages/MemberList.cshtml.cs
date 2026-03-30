@@ -23,7 +23,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         public const int PAGE_SIZE = 20;
 
-        private readonly IAnonymousSessionCounter _sessionCounter;
+        private readonly ISessionManager _sessionCounter;
 
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public int RegisteredUserCount { get; private set; }
 
         public MemberListModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
-            ITranslationProvider translationProvider, IConfiguration config, IAnonymousSessionCounter sessionCounter)
+            ITranslationProvider translationProvider, IConfiguration config, ISessionManager sessionCounter)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _sessionCounter = sessionCounter;

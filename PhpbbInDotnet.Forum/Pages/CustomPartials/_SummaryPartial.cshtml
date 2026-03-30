@@ -13,18 +13,16 @@
     <ul class="Summary @(Model.AlignLeft ? "FlexLeft" : "FlexRight")" id="summary@(Model.AssetId)">
         @if (!string.IsNullOrWhiteSpace(Model.AuthorAvatar) && !Model.AuthorOnFoeList)
         {
-            if (Model.CorrelationId.HasValue)
-            {
-                _cache.SetString(
-                    key: CacheUtility.GetAvatarCacheKey(Model.AuthorId, Model.CorrelationId ?? Guid.Empty), 
-                    value: Model.AuthorAvatar,
-                    options: new DistributedCacheEntryOptions
-                    {
-                        SlidingExpiration = TimeSpan.FromSeconds(60)                    
-                    });
-            }
+            _cache.SetString(
+                key: CacheUtility.GetAvatarCacheKey(Model.AuthorId), 
+                value: Model.AuthorAvatar,
+                options: new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60)                    
+                });
+
             <li>
-                <img src="./File?userId=@Model.AuthorId&correlationId=@Model.CorrelationId&handler=avatar" style="border-radius:8px" />
+                <img src="./File?userId=@Model.AuthorId&handler=avatar" style="border-radius:8px" />
             </li>
         }
         <li>

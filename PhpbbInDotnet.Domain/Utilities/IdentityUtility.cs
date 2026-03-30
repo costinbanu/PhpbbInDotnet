@@ -25,5 +25,8 @@ namespace PhpbbInDotnet.Domain.Utilities
             identity.AddClaim(new Claim(ClaimName, userId.ToString()));
             return new ClaimsPrincipal(identity);
         }
+
+        public static bool IsValidRegisteredUserId(int userId)
+            => userId > 0 && userId != Constants.ANONYMOUS_USER_ID;
     }
 }

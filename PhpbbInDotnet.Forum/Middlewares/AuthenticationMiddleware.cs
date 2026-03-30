@@ -1,10 +1,7 @@
-﻿using DeviceDetectorNET;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -15,7 +12,6 @@ using PhpbbInDotnet.Services;
 using Serilog;
 using System;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
@@ -26,9 +22,9 @@ namespace PhpbbInDotnet.Forum.Middlewares
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
-        private readonly IAnonymousSessionCounter _sessionCounter;
+        private readonly ISessionManager _sessionCounter;
 
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, IAnonymousSessionCounter sessionCounter)
+        public AuthenticationMiddleware(ILogger logger, IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, ISessionManager sessionCounter)
         {
             _logger = logger;
             _sqlExecuter = sqlExecuter;
@@ -39,46 +35,9 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var allowedHost = new Uri(_config.GetValue<string>("BaseUrl")!).Host;
-            if (!context.Request.Host.Host.Equals(allowedHost, StringComparison.InvariantCultureIgnoreCase))
-            {
-                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                return;
-            }
-
-            var isBot = false;
-            string? userAgent = null;
-            var hasUserId = IdentityUtility.TryGetUserId(context.User, out var userId);
-            if ((!hasUserId || userId == 1) && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header))
-            {
-                try
-                {
-                    userAgent = header.ToString();
-                    var dd = new DeviceDetector(userAgent, ClientHints.Factory(context.Request.Headers.ToDictionary(a => a.Key, a => a.Value.ToArray().FirstOrDefault())));
-                    dd.Parse();
-                    if (dd.IsBot())
-                    {
-                        isBot = true;
-                        var now = DateTime.UtcNow;
-                        var shouldRateLimitBots = _config.GetValue<bool>("RateLimitBots");
-                        var shouldLimitBasedOnSessionCount = _sessionCounter.GetActiveBotCountByUserAgent(userAgent) > 50 && !context.Request.Cookies.IsAnonymousSessionStarted();
-
-                        if (shouldRateLimitBots && shouldLimitBasedOnSessionCount)
-                        {
-                            context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                            return;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.Warning(ex, "Failed to detect if session is bot. User agent: {userAgent}, IP: {ip}", userAgent, context.GetIpAddress());
-                }
-            }
-
             ForumUser baseUser;
             PhpbbUsers? dbUser;
-            if (hasUserId)
+            if (IdentityUtility.TryGetUserId(context.User, out var userId) && IdentityUtility.IsValidRegisteredUserId(userId))
             {
                 dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
@@ -103,27 +62,31 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 baseUser = _userService.DbUserToForumUser(dbUser);
             }
 
-            var expansions = ForumUserExpansionType.Permissions;
+            ForumUserExpanded user;
             if (!baseUser.IsAnonymous)
             {
-                expansions |= ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
+                var expansions = ForumUserExpansionType.Permissions | ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
+                user = await _userService.ExpandForumUser(baseUser, expansions);
+            }
+            else
+            {
+                user = await _userService.GetAnonymousForumUserExpandedAsync();
             }
 
-            var user = await _userService.ExpandForumUser(baseUser, expansions);
-            user.SetValue(context);
+            context.Items[nameof(ForumUserExpanded)] = user;
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
             {
                 if (user.IsAnonymous && !context.Request.Cookies.IsAnonymousSessionStarted())
                 {
-                    var sessionId = context.Response.Cookies.StartAnonymousSession();
-                    if (isBot)
+                    if (context.IsBot())
                     {
-                        _sessionCounter.UpsertBot(context.GetIpAddress() ?? "n/a", userAgent ?? "n/a", sessionTrackingTimeout);
+                        _sessionCounter.UpsertBot(context.GetIpAddress() ?? "n/a", context.Request.Headers.UserAgent.ToString() ?? "n/a", sessionTrackingTimeout);
                     }
                     else
                     {
+                        var sessionId = context.Response.Cookies.StartAnonymousSession();
                         _sessionCounter.UpsertSession(sessionId, sessionTrackingTimeout);
                     }
                 }

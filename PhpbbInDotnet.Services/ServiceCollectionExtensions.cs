@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSingleton<ITimeService, TimeService>();
             services.AddSingleton<IEncryptionService, EncryptionService>();
-            services.AddSingleton<IAnonymousSessionCounter, AnonymousSessionCounter>();
+            services.AddSingleton<ISessionManager, SessionManager>();
             services.AddSingleton<IImageResizeService, ImageResizeService>();
 
             return services;
