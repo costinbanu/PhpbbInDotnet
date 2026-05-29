@@ -739,6 +739,10 @@ namespace PhpbbInDotnet.Services
                 {
                     try
                     {
+                        banlist[i].BanIp ??= string.Empty;
+                        banlist[i].BanEmail ??= string.Empty;
+                        banlist[i].BanEmailOldValue ??= string.Empty;
+                        banlist[i].BanIpOldValue ??= string.Empty;
                         AdminBanListActions? action = null;
                         if (indexHash.Contains(i))
                         {
