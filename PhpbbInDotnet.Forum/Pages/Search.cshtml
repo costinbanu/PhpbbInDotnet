@@ -148,7 +148,7 @@ else
     )
     <hr class="BoxSeparator" />
     var toHighlight = _renderingService.SplitHighlightWords(Model.SearchText);
-    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments!, Lang, Model.Posts!.Count, isPreview: false, toHighlight);
+    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments!.OrderBy(a => a.OrderInPost), Lang, Model.Posts!.Count, isPreview: false, toHighlight);
     foreach (var post in Model.Posts)
     {
         if (post.PostId == 0)
