@@ -92,7 +92,7 @@ namespace PhpbbInDotnet.Services
                 actual.ParentId = dto.ParentId ?? actual.ParentId;
                 actual.ForumType = dto.ForumType ?? actual.ForumType;
                 actual.ForumRules = HttpUtility.HtmlEncode(dto.ForumRules ?? actual.ForumRules ?? string.Empty);
-                actual.ForumRulesLink = HttpUtility.HtmlEncode(dto.ForumRulesLink ?? actual.ForumRules ?? string.Empty);
+                actual.ForumRulesLink = HttpUtility.HtmlEncode(dto.ForumRulesLink ?? actual.ForumRulesLink ?? string.Empty);
                 if (isNewForum)
                 {
                     actual = await _sqlExecuter.QuerySingleAsync<PhpbbForums>(
