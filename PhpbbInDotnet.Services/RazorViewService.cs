@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
@@ -14,9 +16,9 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
-        private readonly IActionContextAccessor _actionContextAccessor;
+        private readonly IHttpContextAccessor _actionContextAccessor;
 
-        public RazorViewService(ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IActionContextAccessor actionContextAccessor)
+        public RazorViewService(ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IHttpContextAccessor actionContextAccessor)
         {
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
@@ -25,7 +27,8 @@ namespace PhpbbInDotnet.Services
 
         public async Task<string> RenderRazorViewToString(string viewName, object model)
         {
-            var actionContext = _actionContextAccessor.ActionContext ?? throw new Exception($"Error rendering view '{viewName}': Expected a ActionContext but found none");
+            var httpContext = _actionContextAccessor.HttpContext ?? throw new Exception($"Error rendering view '{viewName}': Expected a HttpContext but found none");
+            var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), new ActionDescriptor());
             var viewResult = _viewEngine.FindView(actionContext, viewName, false);
 
             var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
