@@ -13,6 +13,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services.Storage
@@ -180,7 +181,7 @@ namespace PhpbbInDotnet.Services.Storage
         {
             try
             {
-				return await _blobContainerClient.GetBlobsAsync(prefix: "logs/")
+				return await _blobContainerClient.GetBlobsAsync(BlobTraits.All, BlobStates.All, prefix: "logs/", CancellationToken.None)
 					.Where(b => b is not null)
 					.Select(b => ParseLogName(b.Name))
 					.OrderByDescending(p => p.LogDate)

@@ -21,6 +21,7 @@ using Serilog.Events;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -73,10 +74,10 @@ namespace PhpbbInDotnet.Forum
             {
                 options.Limits.MaxRequestBodySize = ONE_GB; // if not set default value is: 30 MB
             });
-            services.Configure<IISServerOptions>(options =>
+
+            services.AddRazorPages(options =>
             {
-                options.MaxRequestBodySize = ONE_GB;
-                options.AutomaticAuthentication = false;
+                options.Conventions.ConfigureFilter(new ModelStateCaptureFilter());
             });
 
             services.AddLanguageSupport();
@@ -90,7 +91,6 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<AuthenticationMiddleware>();
             services.AddScoped<ErrorHandlingMiddleware>();
 
-            services.AddTransient<IActionContextAccessor, ActionContextAccessor>();
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
 
             var botDetectorOptions = config.GetObject<BotDetectorOptions>();

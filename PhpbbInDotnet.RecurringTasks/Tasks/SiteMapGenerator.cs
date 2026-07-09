@@ -54,20 +54,20 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
             var siteMaps = Sitemap.Create(urls);
 
             var sitemapInfos = new List<SitemapInfo>();
-            var serializeOptions = new SerializeOptions
+            var serializeOptions = new SitemapSerializerOptions
             {
                 EnableIndent = true,
                 EnableGzipCompression = false,
             };
 
-            foreach (var (sitemap, index) in siteMaps.Indexed())
+            foreach (var (index, sitemap) in siteMaps.Index())
             {
                 stoppingToken.ThrowIfCancellationRequested();
 
                 var sitemapName = $"sitemap_{index}.xml";
                 var sitemapPath = Path.Combine(_webHostEnvironment.WebRootPath, sitemapName);
                 using var sitemapStream = new FileStream(sitemapPath, FileMode.Create);
-                sitemap.Serialize(sitemapStream, serializeOptions);
+                SitemapSerializer.Serialize(sitemapStream, sitemap, serializeOptions);
                 sitemapInfos.Add(new SitemapInfo(
                     location: new Uri(new Uri(_config.GetValue<string>("BaseUrl")!), sitemapName).ToString(),
                     modifiedAt: DateTimeOffset.UtcNow));
@@ -76,7 +76,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
             var sitemapIndex = new SitemapIndex(sitemapInfos);
             var sitemapIndexPath = Path.Combine(_webHostEnvironment.WebRootPath, $"sitemap.xml");
             using var sitemapIndexStream = new FileStream(sitemapIndexPath, FileMode.Create);
-            sitemapIndex.Serialize(sitemapIndexStream, serializeOptions);
+            SitemapSerializer.Serialize(sitemapIndexStream, sitemapIndex, serializeOptions);
 
             _logger.Information("Sitemap generated successfully!");
         }

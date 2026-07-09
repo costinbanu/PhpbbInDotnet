@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Languages;
@@ -14,40 +14,41 @@ namespace PhpbbInDotnet.Services
         private readonly Regex USERNAME_REGEX = new(@"^[a-zA-Z0-9 \._-]+$", RegexOptions.Compiled);
 
         private readonly EmailAddressAttribute _emailValidator;
-        private readonly ModelStateDictionary _modelState;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ITranslationProvider _translationProvider;
         private readonly string _language;
 
-        public UserProfileDataValidationService(IActionContextAccessor actionContextAccessor, ITranslationProvider translationProvider)
+        public UserProfileDataValidationService(IHttpContextAccessor httpContextAccessor, ITranslationProvider translationProvider)
         {
-            _modelState = actionContextAccessor.ActionContext?.ModelState ?? throw new ArgumentNullException(nameof(actionContextAccessor.ActionContext));
+            _httpContextAccessor = httpContextAccessor;
             _translationProvider = translationProvider;
-            _language = translationProvider.GetLanguage(ForumUserExpanded.GetValueOrDefault(actionContextAccessor.ActionContext.HttpContext));
+            _language = translationProvider.GetLanguage(ForumUserExpanded.GetValueOrDefault(httpContextAccessor.HttpContext!));
             _emailValidator = new EmailAddressAttribute();
         }
 
         public bool ValidateUsername(string name, string? value)
         {
             var toReturn = true;
+            var modelState = (ModelStateDictionary)(_httpContextAccessor.HttpContext?.Items["ModelState"] ?? throw new Exception("Expected a ModelStateDictionary but found none"));
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (value.Length < 2 || value.Length > 32)
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_LENGTH"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_LENGTH"]);
                 toReturn = false;
             }
             else if (!USERNAME_REGEX.IsMatch(value))
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_CHARS"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_CHARS"]);
                 toReturn = false;
             }
             else if (value.Equals(Constants.ANONYMOUS_USER_NAME, StringComparison.InvariantCultureIgnoreCase))
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "ILLEGAL_USERNAME"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "ILLEGAL_USERNAME"]);
                 toReturn = false;
             }
 
@@ -57,15 +58,16 @@ namespace PhpbbInDotnet.Services
         public bool ValidateEmail(string name, string? value)
         {
             var toReturn = true;
+            var modelState = (ModelStateDictionary)(_httpContextAccessor.HttpContext?.Items["ModelState"] ?? throw new Exception("Expected a ModelStateDictionary but found none"));
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (!_emailValidator.IsValid(value))
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "INVALID_EMAIL_ADDRESS"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "INVALID_EMAIL_ADDRESS"]);
                 toReturn = false;
             }
 
@@ -75,20 +77,21 @@ namespace PhpbbInDotnet.Services
         public bool ValidatePassword(string name, string? value)
         {
             var toReturn = true;
-
+            var modelState = (ModelStateDictionary)(_httpContextAccessor.HttpContext?.Items["ModelState"] ?? throw new Exception("Expected a ModelStateDictionary but found none"));
+            
             if (string.IsNullOrWhiteSpace(value))
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (value.Length < 8 || value.Length > 256)
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_LENGTH"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_LENGTH"]);
                 toReturn = false;
             }
             else if (!IsPasswordValid(value))
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_CHARS"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_CHARS"]);
                 toReturn = false;
             }
 
@@ -115,15 +118,16 @@ namespace PhpbbInDotnet.Services
         public bool ValidateSecondPassword(string secondName, string? secondValue, string? firstValue)
         {
             var toReturn = true;
-
+            var modelState = (ModelStateDictionary)(_httpContextAccessor.HttpContext?.Items["ModelState"] ?? throw new Exception("Expected a ModelStateDictionary but found none"));
+            
             if (string.IsNullOrWhiteSpace(secondValue))
             {
-                _modelState.AddModelError(secondName, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                modelState.AddModelError(secondName, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (firstValue != secondValue)
             {
-                _modelState.AddModelError(secondName, _translationProvider.Errors[_language, "PASSWORD_MISMATCH"]);
+                modelState.AddModelError(secondName, _translationProvider.Errors[_language, "PASSWORD_MISMATCH"]);
                 toReturn = false;
             }
 
@@ -132,9 +136,10 @@ namespace PhpbbInDotnet.Services
 
         public bool ValidateTermsAgreement(string name, bool value)
         {
+            var modelState = (ModelStateDictionary)(_httpContextAccessor.HttpContext?.Items["ModelState"] ?? throw new Exception("Expected a ModelStateDictionary but found none"));
             if (!value)
             {
-                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MUST_AGREE_WITH_TERMS"]);
+                modelState.AddModelError(name, _translationProvider.Errors[_language, "MUST_AGREE_WITH_TERMS"]);
                 return false;
             }
             return true;
