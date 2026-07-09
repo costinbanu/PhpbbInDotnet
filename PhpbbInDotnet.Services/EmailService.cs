@@ -43,7 +43,7 @@ namespace PhpbbInDotnet.Services
             email.Subject = subject;
             email.Body = new TextPart(TextFormat.Html)
             {
-                Text = await _razorViewService.RenderRazorViewToString(bodyRazorViewName, bodyRazorViewModel)
+                Text = await _razorViewService.RenderRazorViewToString($"~/Pages/CustomPartials/Email/{bodyRazorViewName}.cshtml", bodyRazorViewModel)
             };
             using var smtp = new SmtpClient();
             smtp.Connect(_smtpConfig.Host, _smtpConfig.Port, SecureSocketOptions.SslOnConnect);

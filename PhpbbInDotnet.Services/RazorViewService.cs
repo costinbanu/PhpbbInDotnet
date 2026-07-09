@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -25,11 +25,11 @@ namespace PhpbbInDotnet.Services
             _actionContextAccessor = actionContextAccessor;
         }
 
-        public async Task<string> RenderRazorViewToString(string viewName, object model)
+        public async Task<string> RenderRazorViewToString(string viewPath, object model)
         {
-            var httpContext = _actionContextAccessor.HttpContext ?? throw new Exception($"Error rendering view '{viewName}': Expected a HttpContext but found none");
-            var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), new ActionDescriptor());
-            var viewResult = _viewEngine.FindView(actionContext, viewName, false);
+            var httpContext = _actionContextAccessor.HttpContext ?? throw new Exception($"Error rendering view '{viewPath}': Expected a HttpContext but found none");
+            var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), new PageActionDescriptor());
+            var viewResult = _viewEngine.GetView(executingFilePath: null, viewPath, isMainPage: false);
 
             var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
             {
@@ -39,7 +39,7 @@ namespace PhpbbInDotnet.Services
             using var sw = new StringWriter();
             var viewContext = new ViewContext(
                 actionContext,
-                viewResult.View ?? throw new Exception($"{viewName} does not match any available view"),
+                viewResult.View ?? throw new Exception($"{viewPath} does not match any available view"),
                 viewDictionary,
                 new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
                 sw,

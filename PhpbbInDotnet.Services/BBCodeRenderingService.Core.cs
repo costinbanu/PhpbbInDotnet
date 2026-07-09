@@ -93,7 +93,7 @@ namespace PhpbbInDotnet.Services
                 {
                     post.PostText = post.PostText!.Replace(
                         $"#{{AttachmentFileName={FileName}/AttachmentIndex={AttachIndex}}}#",
-                        await _razorViewService.RenderRazorViewToString("_AttachmentPartial", model));
+                        await _razorViewService.RenderRazorViewToString("~/Pages/CustomPartials/_AttachmentPartial.cshtml", model));
                     post.Attachments?.Remove(model);
                 }
             }
@@ -138,7 +138,7 @@ namespace PhpbbInDotnet.Services
                 {
                     post.PostText = post.PostText!.Replace(
                         $"#{{QuotedAttachmentFileName={FileName}/QuotedAttachmentIndexAndPostId={AttachIndex},{PostId}}}#",
-                        await _razorViewService.RenderRazorViewToString("_AttachmentPartial", model));
+                        await _razorViewService.RenderRazorViewToString("~/Pages/CustomPartials/_AttachmentPartial.cshtml", model));
                 }
             }
 
