@@ -220,9 +220,20 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Moderator[language, "INVALID_DESTINATION_FORUM"], false);
                 }
 
-                await _sqlExecuter.ExecuteAsync(
+                var destinationForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
+                if (destinationForum is null)
+                {
+                    return (_translationProvider.Moderator[language, "DESTINATION_DOESNT_EXIST"], false);
+                }
+
+                var rows = await _sqlExecuter.ExecuteAsync(
                     "INSERT INTO phpbb_shortcuts (topic_id, forum_id) VALUES(@topicId, @forumId)",
                     new { topicId, forumId });
+
+                if (rows == 0)
+                {
+                    return (_translationProvider.Moderator[language, "DESTINATION_DOESNT_EXIST"], false);
+                }
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
 
@@ -296,6 +307,12 @@ namespace PhpbbInDotnet.Services
                 if (posts.Count != postIds.Length)
                 {
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                }
+
+                var destinationForum = await transaction.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @destinationForumId", new { destinationForumId });
+                if (destinationForum is null)
+                {
+                    return (_translationProvider.Moderator[language, "DESTINATION_DOESNT_EXIST"], false);
                 }
 
                 var newTopic = await transaction.QuerySingleAsync<PhpbbTopics>(
