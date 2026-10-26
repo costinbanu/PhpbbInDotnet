@@ -233,12 +233,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         images = await Task.WhenAll(images.Select(async image =>
                         {
-                            var resultStream = await _imageResizeService.ResizeImageByFileSize(image.OpenReadStream(), image.FileName, Constants.ONE_MB * sizeLimit.Images);
-                            if (resultStream is null)
+                            var result = await _imageResizeService.ResizeImageByFileSize(image.OpenReadStream(), image.FileName, Constants.ONE_MB * sizeLimit.Images);
+                            if (result is null)
                             {
                                 return image;
                             }
-                            return new FormFile(resultStream, 0, resultStream.Length, image.Name, image.FileName)
+                            return new FormFile(result.Stream, 0, result.Stream.Length, image.Name, image.FileName)
                             {
                                 Headers = image.Headers,
                                 ContentType = image.ContentType,

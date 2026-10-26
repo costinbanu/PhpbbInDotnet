@@ -1,10 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.79" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
-    <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.7" />
-    <PackageReference Include="Polly" Version="8.7.0" />
+    <PackageReference Include="Dapper" Version="2.1.89" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="MySqlConnector" Version="2.6.2" />
+    <PackageReference Include="Polly" Version="8.8.1" />
+    
+    <!-- this is a dependency to Microsoft.Data.SqlClient which must be added explicitly to a higher version 
+          due to https://github.com/advisories/GHSA-846f-f764-76mx 
+          TODO: remove it when SqlClient targets a higher version -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>

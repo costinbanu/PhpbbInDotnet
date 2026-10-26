@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using LazyCache;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
@@ -11,7 +10,6 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
-using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -27,6 +25,7 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IStorageService _storageService;
+        private readonly IImageResizeService _imageService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
         private readonly ILogger _logger;
@@ -38,11 +37,12 @@ namespace PhpbbInDotnet.Services
         private List<PhpbbSmilies>? _smilies;
 
         public WritingToolsService(ISqlExecuter sqlExecuter, IStorageService storageService, ITranslationProvider translationProvider,
-            IConfiguration config, IAppCache cache, ILogger logger)
+            IImageResizeService imageService, IConfiguration config, IAppCache cache, ILogger logger)
         {
             _translationProvider = translationProvider;
             _sqlExecuter = sqlExecuter;
             _storageService = storageService;
+            _imageService = imageService;
             _config = config;
             _cache = cache;
             _logger = logger;
@@ -302,9 +302,8 @@ namespace PhpbbInDotnet.Services
                     else if (smiley.File != null)
                     {
                         using var stream = smiley.File.OpenReadStream();
-                        using var bmp = Image.Load(stream);
-                        stream.Seek(0, SeekOrigin.Begin);
-                        if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
+                        var (width, height) = await _imageService.GetImageSize(stream);
+                        if (width > maxSize.Width || height > maxSize.Height)
                         {
                             errors.Add(string.Format(_translationProvider.Admin[language, "INVALID_EMOJI_FILE_FORMAT"], fileName, maxSize.Width, maxSize.Height));
                         }

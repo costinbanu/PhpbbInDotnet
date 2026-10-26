@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.30.1" />
 		<PackageReference Include="CodeKicker.BBCode.Core" Version="5.0.0" />
 		<PackageReference Include="CryptSharp.Core" Version="5.0.0" />
 		<PackageReference Include="Diacritics" Version="4.1.8" />
-		<PackageReference Include="Microsoft.Extensions.Azure" Version="1.14.0" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+		<PackageReference Include="Microsoft.Extensions.Azure" Version="1.14.1" />
+		<PackageReference Include="Magick.NET-Q16-AnyCPU" Version="15.0.0" />
 		<PackageReference Include="System.Linq.Async" Version="7.0.1" />
-		<PackageReference Include="MailKit" Version="4.17.0" />
+		<PackageReference Include="MailKit" Version="4.18.2" />
 	</ItemGroup>
 
 	<ItemGroup>
