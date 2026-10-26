@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
@@ -12,6 +11,7 @@ using System.Threading.Tasks;
 using PhpbbInDotnet.Domain;
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
+using MySqlConnector;
 
 namespace PhpbbInDotnet.Database.SetupApp
 {

@@ -18,7 +18,6 @@ using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Services.Caching;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
-using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -326,26 +325,35 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (Avatar != null)
             {
-                Stream? output = null;
+                ImageResizeResult? imageResizeResult = null;
                 try
                 {
                     var maxSize = Configuration.GetObject<ImageSize>("AvatarMaxSize");
 					using var input = Avatar.OpenReadStream();
-                    using var image = await Image.LoadAsync(input);
-                    output = await _imageResizeService.ResizeImageByResolution(image, Avatar.FileName, Math.Max(maxSize.Width, maxSize.Height));
+                    imageResizeResult = await _imageResizeService.ResizeImageByResolution(input, Avatar.FileName, Math.Max(maxSize.Width, maxSize.Height));
                     if (!string.IsNullOrWhiteSpace(dbUser.UserAvatar))
                     {
                         await _storageService.DeleteAvatar(dbUser.UserId, dbUser.UserAvatar);
                     }
-                    if (!await _storageService.UploadAvatar(dbUser.UserId, output ?? input, Avatar.FileName))
+                    if (!await _storageService.UploadAvatar(dbUser.UserId, imageResizeResult?.Stream ?? input, Avatar.FileName))
                     {
                         return PageWithError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                     }
                     else
                     {
+                        uint width = 0, height = 0;
+                        if (imageResizeResult is null)
+                        {
+                            (width, height) = await _imageResizeService.GetImageSize(input);
+                        }
+                        else
+                        {
+                            width = imageResizeResult.NewWidth;
+                            height = imageResizeResult.NewHeight;
+                        }
                         dbUser.UserAvatarType = 1;
-                        dbUser.UserAvatarWidth = unchecked((short)image.Width);
-                        dbUser.UserAvatarHeight = unchecked((short)image.Height);
+                        dbUser.UserAvatarWidth = (short)width;
+                        dbUser.UserAvatarHeight = (short)height;
                         dbUser.UserAvatar = Avatar.FileName;
                     }
                 }
@@ -356,7 +364,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 finally
                 {
-                    output?.Dispose();
+                    imageResizeResult?.Dispose();
                 }
             }
 
