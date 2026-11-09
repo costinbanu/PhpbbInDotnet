@@ -20,7 +20,7 @@ public class BotDetectorMiddleware(ISessionManager sessionManager) : IMiddleware
 
         }
 
-        context.Response.Redirect($"./BotChallenge?Target={context.Request.GetEncodedPathAndQuery()}");
+        context.Response.Redirect($"/BotChallenge?Target={Uri.EscapeDataString(context.Request.GetEncodedPathAndQuery())}");
 
         return Task.CompletedTask;
     }

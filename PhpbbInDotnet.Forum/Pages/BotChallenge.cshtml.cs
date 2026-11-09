@@ -24,6 +24,11 @@ public class BotChallengeModel(IBotDetectionService botDetectionService) : PageM
             return Forbid();
         }
 
-        return Redirect(HttpUtility.UrlDecode(Target!));
+        if (!Url.IsLocalUrl(Target))
+        {
+            return BadRequest();
+        }
+
+        return LocalRedirect(Target);
     }
 }
