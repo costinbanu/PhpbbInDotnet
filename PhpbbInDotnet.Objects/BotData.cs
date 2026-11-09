@@ -9,5 +9,7 @@ namespace PhpbbInDotnet.Objects
         public string UserAgent { get; set; } = string.Empty;
 
         public DateTime EntryTime { get; set; }
+
+        public string SessionId { get; set; } = string.Empty;
     }
 }

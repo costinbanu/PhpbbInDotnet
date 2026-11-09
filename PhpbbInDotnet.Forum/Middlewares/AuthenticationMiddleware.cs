@@ -11,35 +11,19 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
 {
-    public class AuthenticationMiddleware : IMiddleware
+    public class AuthenticationMiddleware(ILogger logger, IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, ISessionManager sessionManager) : IMiddleware
     {
-        private readonly ILogger _logger;
-        private readonly ISqlExecuter _sqlExecuter;
-        private readonly IUserService _userService;
-        private readonly IConfiguration _config;
-        private readonly ISessionManager _sessionCounter;
-
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, ISessionManager sessionCounter)
-        {
-            _logger = logger;
-            _sqlExecuter = sqlExecuter;
-            _userService = userService;
-            _config = config;
-            _sessionCounter = sessionCounter;
-        }
-
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             ForumUser baseUser;
             PhpbbUsers? dbUser;
             if (IdentityUtility.TryGetUserId(context.User, out var userId) && IdentityUtility.IsValidRegisteredUserId(userId))
             {
-                dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                dbUser = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
                     new { userId });
 
@@ -47,53 +31,53 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 {
                     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     await SignInAnonymousUser(context);
-                    dbUser = await _userService.GetAnonymousDbUserAsync();
-                    baseUser = _userService.DbUserToForumUser(dbUser);
+                    dbUser = await userService.GetAnonymousDbUserAsync();
+                    baseUser = userService.DbUserToForumUser(dbUser);
                 }
                 else
                 {
-                    baseUser = _userService.DbUserToForumUser(dbUser);
+                    baseUser = userService.DbUserToForumUser(dbUser);
                 }
             }
             else
             {
                 await SignInAnonymousUser(context);
-                dbUser = await _userService.GetAnonymousDbUserAsync();
-                baseUser = _userService.DbUserToForumUser(dbUser);
+                dbUser = await userService.GetAnonymousDbUserAsync();
+                baseUser = userService.DbUserToForumUser(dbUser);
             }
 
             ForumUserExpanded user;
             if (!baseUser.IsAnonymous)
             {
                 var expansions = ForumUserExpansionType.Permissions | ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
-                user = await _userService.ExpandForumUser(baseUser, expansions);
+                user = await userService.ExpandForumUser(baseUser, expansions);
             }
             else
             {
-                user = await _userService.GetAnonymousForumUserExpandedAsync();
+                user = await userService.GetAnonymousForumUserExpandedAsync();
             }
 
             context.Items[nameof(ForumUserExpanded)] = user;
 
-            var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
+            var sessionTrackingTimeout = config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
             {
-                if (user.IsAnonymous && !context.Request.Cookies.IsAnonymousSessionStarted())
+                if (user.IsAnonymous && !sessionManager.IsSessionStarted(context.Request.Cookies.GetAnonymousSessionId()))
                 {
+                    var sessionId = context.Response.Cookies.StartAnonymousSession();
                     if (context.IsBot())
                     {
-                        _sessionCounter.UpsertBot(context.GetIpAddress() ?? "n/a", context.Request.Headers.UserAgent.ToString() ?? "n/a", sessionTrackingTimeout);
+                        sessionManager.UpsertBot(context.GetIpAddress() ?? "n/a", context.Request.Headers.UserAgent.ToString() ?? "n/a", sessionId, sessionTrackingTimeout);
                     }
                     else
                     {
-                        var sessionId = context.Response.Cookies.StartAnonymousSession();
-                        _sessionCounter.UpsertSession(sessionId, sessionTrackingTimeout);
+                        sessionManager.UpsertSession(sessionId, sessionTrackingTimeout);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, "Failed to detect anonymous session type.");
+                logger.Warning(ex, "Failed to detect anonymous session type.");
             }
 
             await next(context);
@@ -102,7 +86,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
             {
                 if (!user.IsAnonymous && DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout)
                 {
-                    await _sqlExecuter.ExecuteAsyncWithoutResiliency(
+                    await sqlExecuter.ExecuteAsyncWithoutResiliency(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
                         new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId },
                         commandTimeout: 10);
@@ -110,13 +94,13 @@ namespace PhpbbInDotnet.Forum.Middlewares
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, "Failed to update user last visit for {username}.", user.Username);
+                logger.Warning(ex, "Failed to update user last visit for {username}.", user.Username);
             }
         }
 
         private async Task SignInAnonymousUser(HttpContext context)
         {
-            var authenticationExpiration = _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
+            var authenticationExpiration = config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
             await context.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 IdentityUtility.CreateClaimsPrincipal(Constants.ANONYMOUS_USER_ID),

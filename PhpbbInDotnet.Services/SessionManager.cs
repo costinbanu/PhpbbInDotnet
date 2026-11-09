@@ -13,35 +13,39 @@ namespace PhpbbInDotnet.Services
 {
     class SessionManager : ISessionManager
     {
+
+        //TODO what if it is deployed on multiple instances? Arguably not critical, but still;
+
         public SessionManager(IConfiguration configuration)
         {
-            _sessionCache = new ConcurrentDictionary<string, Item<string>>();
-            _verifiedBotsCache = new ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>>();
-            _rateLimitCache = new ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>>();
-            _uniqueVisitorsCache = new ConcurrentDictionary<string, Item<int>>();
+            _sessionCache = new ConcurrentDictionary<string, Item<string, string>>();
+            _verifiedBotsCache = new ConcurrentDictionary<string, Item<string, ConcurrentBag<BotData>>>();
+            _rateLimitCache = new ConcurrentDictionary<string, ConcurrentDictionary<string, Item<string, DateTimeOffset>>>();
+            _uniqueVisitorsCache = new ConcurrentDictionary<string, Item<string, int>>();
             _rateLimitOptions = configuration.GetObject<RateLimitOptions>();
         }
 
         public void UpsertSession(string sessionId, TimeSpan expiration)
         {
-            _sessionCache.TryAdd(sessionId, new Item<string>(sessionId, string.Empty, expiration, _sessionCache));
+            _sessionCache.TryAdd(sessionId, new Item<string, string>(sessionId, string.Empty, expiration, _sessionCache));
         }
 
         public int GetActiveSessionCount()
             => _sessionCache.Count;
 
-        public void UpsertBot(string ip, string userAgent, TimeSpan expiration)
+        public void UpsertBot(string ip, string userAgent, string sessionId, TimeSpan expiration)
         {
             var data = new BotData
             {
                 EntryTime = DateTime.UtcNow,
                 IP = ip,
-                UserAgent = userAgent
+                UserAgent = userAgent,
+                SessionId = sessionId,
             };
 
             _verifiedBotsCache.AddOrUpdate(
-                key: userAgent,
-                addValue: new Item<ConcurrentBag<BotData>>(userAgent, new ConcurrentBag<BotData> { data }, expiration, _verifiedBotsCache),
+                key: sessionId,
+                addValue: new Item<string, ConcurrentBag<BotData>>(sessionId, [data], expiration, _verifiedBotsCache),
                 updateValueFactory: (_, curValue) =>
                 {
                     curValue.Value.Add(data);
@@ -78,9 +82,9 @@ namespace PhpbbInDotnet.Services
                 key: key,
                 addValueFactory: _ =>
                 {
-                    var dict = new ConcurrentDictionary<string, Item<DateTimeOffset>>();
+                    var dict = new ConcurrentDictionary<string, Item<string, DateTimeOffset>>();
                     var subkey = Guid.NewGuid().ToString();
-                    dict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, _rateLimitOptions.RequestTimeWindow, dict));
+                    dict.TryAdd(subkey, new Item<string, DateTimeOffset>(subkey, now, _rateLimitOptions.RequestTimeWindow, dict));
                     return dict;
                 },
                 updateValueFactory: (_, existingDict) =>
@@ -88,7 +92,7 @@ namespace PhpbbInDotnet.Services
                     if (existingDict.Count <= threshold)
                     {
                         var subkey = Guid.NewGuid().ToString();
-                        existingDict.TryAdd(subkey, new Item<DateTimeOffset>(subkey, now, _rateLimitOptions.RequestTimeWindow, existingDict));
+                        existingDict.TryAdd(subkey, new Item<string, DateTimeOffset>(subkey, now, _rateLimitOptions.RequestTimeWindow, existingDict));
                     }
                     return existingDict;
                 });
@@ -96,13 +100,16 @@ namespace PhpbbInDotnet.Services
             return value.Count > threshold;
         }
 
-        private readonly ConcurrentDictionary<string, Item<string>> _sessionCache;
-        private readonly ConcurrentDictionary<string, Item<ConcurrentBag<BotData>>> _verifiedBotsCache;
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Item<DateTimeOffset>>> _rateLimitCache;
-        private readonly ConcurrentDictionary<string, Item<int>> _uniqueVisitorsCache;
+        public bool IsSessionStarted(string? sessionId)
+            => !string.IsNullOrWhiteSpace(sessionId) && (_sessionCache.ContainsKey(sessionId) || _verifiedBotsCache.ContainsKey(sessionId));
+
+        private readonly ConcurrentDictionary<string, Item<string, string>> _sessionCache;
+        private readonly ConcurrentDictionary<string, Item<string, ConcurrentBag<BotData>>> _verifiedBotsCache;
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Item<string, DateTimeOffset>>> _rateLimitCache;
+        private readonly ConcurrentDictionary<string, Item<string, int>> _uniqueVisitorsCache;
         private readonly RateLimitOptions _rateLimitOptions;
 
-        private class Item<TValue> : IDisposable
+        private class Item<TKey, TValue> : IDisposable where TKey : notnull
         {
             private readonly Timer _timer;
 
@@ -114,7 +121,7 @@ namespace PhpbbInDotnet.Services
                 _timer.Start();
             }
 
-            internal Item(string key, TValue value, TimeSpan expiration, ConcurrentDictionary<string, Item<TValue>> cache)
+            internal Item(TKey key, TValue value, TimeSpan expiration, ConcurrentDictionary<TKey, Item<TKey, TValue>> cache)
             {
                 Value = value;
                 _timer = new Timer(expiration.TotalMilliseconds)
