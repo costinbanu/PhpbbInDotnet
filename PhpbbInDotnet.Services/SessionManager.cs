@@ -19,7 +19,7 @@ namespace PhpbbInDotnet.Services
         public SessionManager(IConfiguration configuration)
         {
             _sessionCache = new ConcurrentDictionary<string, Item<string, string>>();
-            _verifiedBotsCache = new ConcurrentDictionary<string, Item<string, ConcurrentBag<BotData>>>();
+            _verifiedBotsCache = new ConcurrentDictionary<string, Item<string, BotData>>();
             _rateLimitCache = new ConcurrentDictionary<string, ConcurrentDictionary<string, Item<string, DateTimeOffset>>>();
             _uniqueVisitorsCache = new ConcurrentDictionary<string, Item<string, int>>();
             _rateLimitOptions = configuration.GetObject<RateLimitOptions>();
@@ -45,23 +45,22 @@ namespace PhpbbInDotnet.Services
 
             _verifiedBotsCache.AddOrUpdate(
                 key: sessionId,
-                addValue: new Item<string, ConcurrentBag<BotData>>(sessionId, [data], expiration, _verifiedBotsCache),
+                addValue: new Item<string, BotData>(sessionId, data, expiration, _verifiedBotsCache),
                 updateValueFactory: (_, curValue) =>
                 {
-                    curValue.Value.Add(data);
-                    curValue.ResetTimer();
+                    curValue.UpdateValueAndResetTimer(data);
                     return curValue;
                 });
         }
 
         public IEnumerable<BotData> GetBots()
-            => _verifiedBotsCache.SelectMany(x => x.Value.Value);
+            => _verifiedBotsCache.Select(x => x.Value.Value);
 
         public int GetTotalActiveBotCount()
-            => _verifiedBotsCache.SelectMany(x => x.Value.Value).Count();
+            => _verifiedBotsCache.Count;
 
         public int GetUniqueBotCount()
-            => _verifiedBotsCache.Count;
+            => _verifiedBotsCache.Select(x => x.Value.Value).GroupBy(b => b.UserAgent).Count();
 
         public bool ShouldRateLimit(string userAgent, string ip, string? sessionId, int? userId, UserType userType)
         {
@@ -104,7 +103,7 @@ namespace PhpbbInDotnet.Services
             => !string.IsNullOrWhiteSpace(sessionId) && (_sessionCache.ContainsKey(sessionId) || _verifiedBotsCache.ContainsKey(sessionId));
 
         private readonly ConcurrentDictionary<string, Item<string, string>> _sessionCache;
-        private readonly ConcurrentDictionary<string, Item<string, ConcurrentBag<BotData>>> _verifiedBotsCache;
+        private readonly ConcurrentDictionary<string, Item<string, BotData>> _verifiedBotsCache;
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Item<string, DateTimeOffset>>> _rateLimitCache;
         private readonly ConcurrentDictionary<string, Item<string, int>> _uniqueVisitorsCache;
         private readonly RateLimitOptions _rateLimitOptions;
