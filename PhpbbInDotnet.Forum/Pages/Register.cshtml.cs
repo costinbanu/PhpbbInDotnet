@@ -1,7 +1,6 @@
 ﻿using CryptSharp.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -9,16 +8,11 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
-using PhpbbInDotnet.Objects.BotDetectorDtos;
-using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Objects.EmailDtos;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
@@ -27,8 +21,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class RegisterModel : BaseModel
     {
         private readonly ISqlExecuter _sqlExecuter;
-        private readonly HttpClient _botDetectorApiClient;
-        private readonly BotDetectorOptions _botDetectorOptions;
+        private readonly IBotDetectionService _botDetectionService;
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
         private readonly IUserProfileDataValidationService _validationService;
@@ -51,13 +44,12 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(Name = "cf-turnstile-response")]
         public string? BotDetectorResponse { get; set; }
 
-        public RegisterModel(ISqlExecuter sqlExecuter, IConfiguration config, IHttpClientFactory httpClientFactory, ITranslationProvider translationProvider, 
+        public RegisterModel(ISqlExecuter sqlExecuter, IConfiguration config, IBotDetectionService botDetectionService, ITranslationProvider translationProvider, 
             IUserService userService, ILogger logger, IEmailService emailService, IUserProfileDataValidationService validationService)
             : base(translationProvider, userService, config)
         {
             _sqlExecuter = sqlExecuter;
-            _botDetectorOptions = Configuration.GetObject<BotDetectorOptions>();
-            _botDetectorApiClient = httpClientFactory.CreateClient(_botDetectorOptions.ClientName!);
+            _botDetectionService = botDetectionService;
             _logger = logger;
             _emailService = emailService;
             _validationService = validationService;
@@ -93,25 +85,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
             try
             {
-                var response = await _botDetectorApiClient.PostAsync(
-                    requestUri: _botDetectorOptions.RelativeUri,
-                    content: JsonContent.Create(new SiteVerifyRequest
-                    {
-                        Secret = _botDetectorOptions.SecretKey,
-                        Response = BotDetectorResponse,
-                        RemoteIp = HttpContext.GetIpAddress()
-                    }));
-                response.EnsureSuccessStatusCode();
-
-                var result = await response.Content.ReadFromJsonAsync<SiteVerifyResponse>();
-                
-                if (!result!.Success && result.ErrorCodes.Contains("invalid-input-response") || result.ErrorCodes.Contains("missing-input-response"))
+                if (await _botDetectionService.IsBot(BotDetectorResponse, HttpContext.GetIpAddress() ?? string.Empty))
                 {
                     return PageWithError(nameof(BotDetectorResponse), string.Format(TranslationProvider.Errors[Language, "YOURE_A_BOT_FORMAT"], Configuration.GetValue<string>("AdminEmail")!.Replace("@", " at ").Replace(".", " dot ")));
-                }
-                else if (!result.Success)
-                {
-                    throw new InvalidOperationException($"Bot detection failed with error codes: {string.Concat(",", result.ErrorCodes)}");
                 }
             }
             catch (Exception ex)

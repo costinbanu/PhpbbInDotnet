@@ -39,9 +39,6 @@ namespace PhpbbInDotnet.Domain.Extensions
             return false;
         }
 
-        public static bool IsAnonymousSessionStarted (this IRequestCookieCollection cookies)
-            => cookies.TryGetValue(SessionIdKey, out var val) && Guid.TryParse(val, out _);
-
         public static string? GetAnonymousSessionId(this IRequestCookieCollection cookies)
             => cookies.TryGetValue(SessionIdKey, out var val) ? val : null;
 
