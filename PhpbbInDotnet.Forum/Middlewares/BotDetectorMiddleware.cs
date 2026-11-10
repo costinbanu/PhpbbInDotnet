@@ -17,7 +17,6 @@ public class BotDetectorMiddleware(ISessionManager sessionManager) : IMiddleware
             context.Request.Path.Equals("/BotChallenge", StringComparison.InvariantCultureIgnoreCase))
         {
             return next(context);
-
         }
 
         context.Response.Redirect($"/BotChallenge?Target={Uri.EscapeDataString(context.Request.GetEncodedPathAndQuery())}");

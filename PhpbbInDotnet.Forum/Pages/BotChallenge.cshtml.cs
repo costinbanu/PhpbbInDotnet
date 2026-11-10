@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
-using System.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Services;
 
 namespace PhpbbInDotnet.Forum.Pages;
@@ -19,7 +19,7 @@ public class BotChallengeModel(IBotDetectionService botDetectionService) : PageM
 
     public async Task<IActionResult> OnPost()
     {
-        if (await botDetectionService.IsBot(BotDetectorResponse, HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty))
+        if (await botDetectionService.IsBot(BotDetectorResponse, HttpContext.GetIpAddress() ?? string.Empty))
         {
             return Forbid();
         }
