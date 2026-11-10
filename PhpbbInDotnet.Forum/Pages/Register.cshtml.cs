@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         Secret = _botDetectorOptions.SecretKey,
                         Response = BotDetectorResponse,
-                        RemoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty
+                        RemoteIp = HttpContext.GetIpAddress() ?? string.Empty
                     }));
                 response.EnsureSuccessStatusCode();
 
@@ -120,7 +120,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(BotDetectorResponse), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+            var ip = HttpContext.GetIpAddress() ?? string.Empty;
             var checkBanlist = await _sqlExecuter.QueryAsync<(string? banEmail, string? banIp)>(
                 @"SELECT ban_email, ban_ip
                     FROM phpbb_banlist
@@ -171,7 +171,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     UserInactiveTime = now,
                     UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
                     UserActkey = registrationCode,
-                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                    UserIp = HttpContext.GetIpAddress()?? string.Empty,
                     UserRegdate = now,
                     UserLastmark = now,
                     UserDateformat = TranslationProvider.GetDefaultDateFormat(Language),
