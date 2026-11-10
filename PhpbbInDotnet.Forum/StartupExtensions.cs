@@ -89,6 +89,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<HostCheckerMiddleware>();
             services.AddScoped<RateLimitingMiddleware>();
             services.AddScoped<AuthenticationMiddleware>();
+            services.AddScoped<BotDetectorMiddleware>();
             services.AddScoped<ErrorHandlingMiddleware>();
 
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
@@ -187,6 +188,7 @@ namespace PhpbbInDotnet.Forum
             webApplication.UseMiddleware<HostCheckerMiddleware>();
             webApplication.UseMiddleware<RateLimitingMiddleware>();
             webApplication.UseMiddleware<AuthenticationMiddleware>();
+            webApplication.UseMiddleware<BotDetectorMiddleware>();
             
             webApplication.MapControllers();
             webApplication.MapRazorPages();

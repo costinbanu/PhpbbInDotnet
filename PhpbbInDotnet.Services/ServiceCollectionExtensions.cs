@@ -31,6 +31,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IUserProfileDataValidationService, UserProfileDataValidationService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<ICachedDbInfoService, CachedDbInfoService>();
+            services.AddScoped<IBotDetectionService, BotDetectionService>();
 
             var storageOptions = configuration.GetObject<StorageOptions>();
             switch (storageOptions.StorageType)

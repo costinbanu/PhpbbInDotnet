@@ -11,8 +11,9 @@ namespace PhpbbInDotnet.Services
         int GetActiveSessionCount();
         int GetUniqueBotCount();
         IEnumerable<BotData> GetBots();
-        void UpsertBot(string ip, string userAgent, TimeSpan expiration);
+        void UpsertBot(string ip, string userAgent, string sessionId, TimeSpan expiration);
         void UpsertSession(string sessionId, TimeSpan expiration);
         bool ShouldRateLimit(string userAgent, string ip, string? sessionId, int? userId, UserType userType);
+        bool IsSessionStarted(string? sessionId);
     }
 }

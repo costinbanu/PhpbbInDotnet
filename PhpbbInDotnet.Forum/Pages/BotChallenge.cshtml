@@ -1,0 +1,35 @@
+@page
+@model PhpbbInDotnet.Forum.Pages.BotChallengeModel
+
+@using PhpbbInDotnet.Domain.Extensions
+@using PhpbbInDotnet.Objects.Configuration
+
+@inject Microsoft.Extensions.Configuration.IConfiguration _config;
+
+@{
+    Layout = "~/Pages/_Layout.cshtml";
+    var opts = _config.GetObject<BotDetectorOptions>();
+}
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+
+<form method="POST" id="turnstileForm">
+    <div class="cf-turnstile" data-sitekey="@opts!.SiteKey" data-callback="onTurnstileSuccess"
+         data-expired-callback="onTurnstileExpired" data-error-callback="onTurnstileError"></div>
+    <input type="hidden" asp-for="Target" />
+    @Html.AntiForgeryToken()
+</form>
+
+<script>
+    function onTurnstileSuccess(token) {
+        document.getElementById('turnstileForm').submit();
+    }
+
+    function onTurnstileExpired() {
+        turnstile.reset();
+    }
+
+    function onTurnstileError() {
+        turnstile.reset();
+    }
+</script>

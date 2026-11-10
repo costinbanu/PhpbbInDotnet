@@ -71,7 +71,7 @@ namespace PhpbbInDotnet.Services
             var key1 = _config.GetValue<Guid>("Encryption:Key1").ToByteArray().ToList();
             var key2 = _config.GetValue<Guid>("Encryption:Key2").ToByteArray();
             key1.AddRange(key2);
-            return key1.ToArray();
+            return [.. key1];
         }
     }
 }
